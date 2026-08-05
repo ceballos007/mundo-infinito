@@ -1,6 +1,6 @@
 // =========================================================
-// MUNDO INFINITO · v0.4.0
-// Mapa + datos + vídeos + favoritos + buscador
+// MUNDO INFINITO · v0.4.1
+// Mapa + datos + vídeos + reproductor + favoritos + buscador
 // =========================================================
 
 "use strict";
@@ -24,9 +24,6 @@ const CONFIG = {
 // =========================================================
 // DATOS BASE
 // =========================================================
-
-// Estos lugares mantienen el mapa funcionando aunque
-// places.json todavía tenga pocos datos.
 
 const defaultPlaces = [
   {
@@ -171,7 +168,7 @@ const defaultPlaces = [
 ];
 
 // =========================================================
-// VARIABLES DE LA APLICACIÓN
+// VARIABLES
 // =========================================================
 
 let places = [];
@@ -283,13 +280,31 @@ const toast =
 const navButtons =
   document.querySelectorAll(".nav-button");
 
+// Reproductor
+
+const videoModal =
+  document.getElementById("videoModal");
+
+const closeVideoModal =
+  document.getElementById("closeVideoModal");
+
+const videoPlayer =
+  document.getElementById("videoPlayer");
+
+const videoModalTitle =
+  document.getElementById("videoModalTitle");
+
+const videoModalPlace =
+  document.getElementById("videoModalPlace");
+
 // =========================================================
 // UTILIDADES
 // =========================================================
 
 function loadJSON(key, fallback) {
   try {
-    const value = localStorage.getItem(key);
+    const value =
+      localStorage.getItem(key);
 
     if (!value) {
       return fallback;
@@ -335,6 +350,10 @@ function slug(text) {
 }
 
 function showToast(message) {
+  if (!toast) {
+    return;
+  }
+
   toast.textContent = message;
 
   toast.classList.add("show");
@@ -438,7 +457,7 @@ L.tileLayer(
 ).addTo(map);
 
 // =========================================================
-// ICONOS DEL MAPA
+// ICONOS
 // =========================================================
 
 function markerClass(category) {
@@ -448,7 +467,8 @@ function markerClass(category) {
 
 function createMarkerIcon(place) {
   const icon =
-    categoryIcons[place.category] || "📍";
+    categoryIcons[place.category] ||
+    "📍";
 
   return L.divIcon({
     className: "",
@@ -464,20 +484,24 @@ function createMarkerIcon(place) {
     iconSize: [38, 38],
     iconAnchor: [19, 38]
   });
-}// =========================================================
-// APP.JS · PARTE 2 DE 4
-// Carga de datos + marcadores + selección de lugares
-// =========================================================
+}
 
 // =========================================================
-// CARGA DE DATOS EXTERNOS
+// CARGAR JSON EXTERNOS
 // =========================================================
 
-async function fetchJSON(path, fallback = []) {
+async function fetchJSON(
+  path,
+  fallback = []
+) {
   try {
-    const response = await fetch(path, {
-      cache: "no-store"
-    });
+    const response =
+      await fetch(
+        path,
+        {
+          cache: "no-store"
+        }
+      );
 
     if (!response.ok) {
       throw new Error(
@@ -485,11 +509,13 @@ async function fetchJSON(path, fallback = []) {
       );
     }
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
     return Array.isArray(data)
       ? data
       : fallback;
+
   } catch (error) {
     console.warn(
       `No se pudo cargar ${path}.`,
@@ -501,14 +527,17 @@ async function fetchJSON(path, fallback = []) {
 }
 
 // =========================================================
-// NORMALIZAR DATOS DE PLACES.JSON
+// NORMALIZAR LUGAR
 // =========================================================
 
 function normalizePlace(place) {
   return {
     id:
       place.id ||
-      slug(place.name || place.nombre),
+      slug(
+        place.name ||
+        place.nombre
+      ),
 
     name:
       place.name ||
@@ -548,7 +577,9 @@ function normalizePlace(place) {
       ),
 
     rating:
-      Number(place.rating || 5),
+      Number(
+        place.rating || 5
+      ),
 
     image:
       place.image || ""
@@ -556,7 +587,7 @@ function normalizePlace(place) {
 }
 
 // =========================================================
-// NORMALIZAR DATOS DE VIDEOS.JSON
+// NORMALIZAR VÍDEO
 // =========================================================
 
 function normalizeVideo(video) {
@@ -585,10 +616,14 @@ function normalizeVideo(video) {
       video.descripcion ||
       "",
 
+    category:
+      video.category ||
+      "",
+
     type:
       video.type ||
       video.tipo ||
-      "instagram",
+      "Vídeo",
 
     url:
       video.url ||
@@ -599,11 +634,12 @@ function normalizeVideo(video) {
 }
 
 // =========================================================
-// COMBINAR LUGARES BASE + JSON
+// COMBINAR LUGARES
 // =========================================================
 
 function mergePlaces(externalPlaces) {
-  const combined = new Map();
+  const combined =
+    new Map();
 
   defaultPlaces.forEach(place => {
     combined.set(
@@ -642,13 +678,20 @@ function mergePlaces(externalPlaces) {
 function localDiscoveriesAsPlaces() {
   return userDiscoveries
     .filter(item =>
-      Number.isFinite(Number(item.lat)) &&
-      Number.isFinite(Number(item.lng))
+      Number.isFinite(
+        Number(item.lat)
+      ) &&
+      Number.isFinite(
+        Number(item.lng)
+      )
     )
     .map(item => ({
       id:
         item.id ||
-        `local-${slug(item.name || item.title)}`,
+        `local-${slug(
+          item.name ||
+          item.title
+        )}`,
 
       name:
         item.name ||
@@ -688,7 +731,7 @@ function localDiscoveriesAsPlaces() {
 }
 
 // =========================================================
-// AÑADIR MARCADOR
+// MARCADORES
 // =========================================================
 
 function addMarker(place) {
@@ -699,17 +742,23 @@ function addMarker(place) {
     return;
   }
 
-  if (markers.has(place.id)) {
+  if (
+    markers.has(place.id)
+  ) {
     return;
   }
 
-  const marker = L.marker(
-    [place.lat, place.lng],
-    {
-      icon: createMarkerIcon(place),
-      title: place.name
-    }
-  ).addTo(map);
+  const marker =
+    L.marker(
+      [place.lat, place.lng],
+      {
+        icon:
+          createMarkerIcon(place),
+
+        title:
+          place.name
+      }
+    ).addTo(map);
 
   marker.on(
     "click",
@@ -724,10 +773,6 @@ function addMarker(place) {
   );
 }
 
-// =========================================================
-// RENDERIZAR TODOS LOS MARCADORES
-// =========================================================
-
 function renderMarkers() {
   markers.forEach(marker => {
     marker.remove();
@@ -741,12 +786,13 @@ function renderMarkers() {
 }
 
 // =========================================================
-// OBTENER UN LUGAR
+// BUSCAR LUGAR POR ID
 // =========================================================
 
 function getPlaceById(placeId) {
   return places.find(
-    place => place.id === placeId
+    place =>
+      place.id === placeId
   );
 }
 
@@ -759,6 +805,7 @@ function getVideosForPlace(place) {
     normalize(place.name);
 
   return videos.filter(video => {
+
     if (
       video.placeId &&
       video.placeId === place.id
@@ -768,7 +815,8 @@ function getVideosForPlace(place) {
 
     if (
       video.place &&
-      normalize(video.place) === placeName
+      normalize(video.place) ===
+      placeName
     ) {
       return true;
     }
@@ -778,7 +826,7 @@ function getVideosForPlace(place) {
 }
 
 // =========================================================
-// ABRIR FICHA DE LUGAR
+// ABRIR FICHA
 // =========================================================
 
 function openPlace(placeId) {
@@ -793,12 +841,10 @@ function openPlace(placeId) {
 
   closeContent();
 
-  const icon =
-    categoryIcons[place.category] ||
-    "📍";
-
   placeCoverIcon.textContent =
-    icon;
+    categoryIcons[
+      place.category
+    ] || "📍";
 
   placeCategory.textContent =
     place.category;
@@ -827,7 +873,9 @@ function openPlace(placeId) {
       .join(", ");
 
   placeTip.textContent =
-    categoryTips[place.category] ||
+    categoryTips[
+      place.category
+    ] ||
     "Consulta tus descubrimientos antes de visitar este lugar.";
 
   const mapsQuery =
@@ -842,7 +890,9 @@ function openPlace(placeId) {
 
   updateSavedButton();
 
-  placePanel.classList.add("open");
+  placePanel.classList.add(
+    "open"
+  );
 
   placePanel.setAttribute(
     "aria-hidden",
@@ -868,7 +918,7 @@ function closePlace() {
 }
 
 // =========================================================
-// RENDERIZAR VÍDEOS DE UN LUGAR
+// RENDERIZAR VÍDEOS DEL LUGAR
 // =========================================================
 
 function renderPlaceVideos(place) {
@@ -888,6 +938,7 @@ function renderPlaceVideos(place) {
   ) {
     placeVideosList.innerHTML = `
       <div class="empty-state">
+
         <span>🎥</span>
 
         <strong>
@@ -897,6 +948,7 @@ function renderPlaceVideos(place) {
         <p>
           Añade un Reel relacionado con este lugar usando el botón +.
         </p>
+
       </div>
     `;
 
@@ -905,58 +957,72 @@ function renderPlaceVideos(place) {
 
   placeVideosList.innerHTML =
     relatedVideos
-      .map(video => {
+      .map(video => `
+        <button
+          class="video-card"
+          type="button"
+          data-video-id="${escapeHTML(video.id)}"
+        >
 
-        const source =
-          escapeHTML(
-            video.type ||
-            "vídeo"
-          );
+          <div class="video-thumb"></div>
 
-        return `
-          <a
-            class="video-card"
-            href="${escapeHTML(video.url)}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <div class="video-info">
 
-            <div class="video-thumb"></div>
+            <strong>
+              ${escapeHTML(video.title)}
+            </strong>
 
-            <div class="video-info">
+            <p>
+              ${
+                escapeHTML(
+                  video.description ||
+                  place.name
+                )
+              }
+            </p>
 
-              <strong>
-                ${escapeHTML(video.title)}
-              </strong>
+            <span class="video-source">
+              ${escapeHTML(video.type)}
+            </span>
 
-              <p>
-                ${
-                  escapeHTML(
-                    video.description ||
-                    place.name
-                  )
-                }
-              </p>
+          </div>
 
-              <span class="video-source">
-                ${source}
-              </span>
-
-            </div>
-
-          </a>
-        `;
-      })
+        </button>
+      `)
       .join("");
+
+  placeVideosList
+    .querySelectorAll(
+      "[data-video-id]"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const video =
+            videos.find(
+              item =>
+                item.id ===
+                button.dataset.videoId
+            );
+
+          openVideo(video);
+        }
+      );
+
+    });
 }
 
 // =========================================================
-// BOTÓN VÍDEOS DE LA FICHA
+// BOTÓN VÍDEOS
 // =========================================================
 
 placeVideosButton.addEventListener(
   "click",
   () => {
+
     if (!selectedPlace) {
       return;
     }
@@ -976,17 +1042,12 @@ placeVideosButton.addEventListener(
       return;
     }
 
-    placeVideosList
-      .scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
+    placeVideosList.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
   }
 );
-
-// =========================================================
-// CERRAR FICHA
-// =========================================================
 
 closePlacePanel.addEventListener(
   "click",
@@ -994,7 +1055,7 @@ closePlacePanel.addEventListener(
 );
 
 // =========================================================
-// GUARDADOS
+// FAVORITOS
 // =========================================================
 
 function getSavedPlaces() {
@@ -1024,12 +1085,10 @@ function updateSavedButton() {
       selectedPlace.id
     );
 
-  savePlaceButton
-    .classList
-    .toggle(
-      "saved",
-      saved
-    );
+  savePlaceButton.classList.toggle(
+    "saved",
+    saved
+  );
 
   savePlaceButton.innerHTML =
     saved
@@ -1043,13 +1102,10 @@ function updateSavedButton() {
       `;
 }
 
-// =========================================================
-// GUARDAR / QUITAR FAVORITO
-// =========================================================
-
 savePlaceButton.addEventListener(
   "click",
   () => {
+
     if (!selectedPlace) {
       return;
     }
@@ -1063,6 +1119,7 @@ savePlaceButton.addEventListener(
       );
 
     if (index >= 0) {
+
       saved.splice(
         index,
         1
@@ -1071,7 +1128,9 @@ savePlaceButton.addEventListener(
       showToast(
         "Eliminado de Guardados"
       );
+
     } else {
+
       saved.push(
         selectedPlace.id
       );
@@ -1088,10 +1147,7 @@ savePlaceButton.addEventListener(
 
     updateSavedButton();
   }
-);// =========================================================
-// APP.JS · PARTE 3 DE 4
-// Buscador + modal + crear descubrimientos
-// =========================================================
+);
 
 // =========================================================
 // BUSCADOR
@@ -1104,11 +1160,14 @@ function searchPlaces(query) {
       .split(/\s+/)
       .filter(Boolean);
 
-  if (words.length === 0) {
+  if (
+    words.length === 0
+  ) {
     return [];
   }
 
   return places.filter(place => {
+
     const searchable =
       normalize(
         [
@@ -1132,28 +1191,47 @@ function renderSearchResults(results) {
     searchInput.value.trim();
 
   if (!query) {
-    searchResults.innerHTML = "";
-    searchResults.classList.add("hidden");
 
-    clearSearch.classList.add("hidden");
+    searchResults.innerHTML = "";
+
+    searchResults.classList.add(
+      "hidden"
+    );
+
+    clearSearch.classList.add(
+      "hidden"
+    );
 
     return;
   }
 
-  clearSearch.classList.remove("hidden");
+  clearSearch.classList.remove(
+    "hidden"
+  );
 
-  if (results.length === 0) {
+  if (
+    results.length === 0
+  ) {
+
     searchResults.innerHTML = `
       <div class="no-results">
+
         <span>🔍</span>
-        <strong>Sin resultados</strong>
+
+        <strong>
+          Sin resultados
+        </strong>
+
         <p>
           Prueba con otra palabra.
         </p>
+
       </div>
     `;
 
-    searchResults.classList.remove("hidden");
+    searchResults.classList.remove(
+      "hidden"
+    );
 
     return;
   }
@@ -1167,14 +1245,17 @@ function renderSearchResults(results) {
           type="button"
           data-place-id="${escapeHTML(place.id)}"
         >
+
           <div class="search-result-icon">
             ${
-              categoryIcons[place.category] ||
-              "📍"
+              categoryIcons[
+                place.category
+              ] || "📍"
             }
           </div>
 
           <div>
+
             <strong>
               ${escapeHTML(place.name)}
             </strong>
@@ -1191,7 +1272,9 @@ function renderSearchResults(results) {
                 )
               }
             </small>
+
           </div>
+
         </button>
       `)
       .join("");
@@ -1201,9 +1284,11 @@ function renderSearchResults(results) {
       "[data-place-id]"
     )
     .forEach(button => {
+
       button.addEventListener(
         "click",
         () => {
+
           const placeId =
             button.dataset.placeId;
 
@@ -1234,9 +1319,12 @@ function renderSearchResults(results) {
           );
         }
       );
+
     });
 
-  searchResults.classList.remove("hidden");
+  searchResults.classList.remove(
+    "hidden"
+  );
 }
 
 function updateSearch() {
@@ -1255,6 +1343,7 @@ searchInput.addEventListener(
 clearSearch.addEventListener(
   "click",
   () => {
+
     searchInput.value = "";
 
     searchResults.innerHTML = "";
@@ -1281,6 +1370,7 @@ clearSearch.addEventListener(
 document.addEventListener(
   "click",
   event => {
+
     if (
       !event.target.closest(
         ".search-wrap"
@@ -1289,10 +1379,13 @@ document.addEventListener(
         "#searchResults"
       )
     ) {
+
       searchResults.classList.add(
         "hidden"
       );
+
     }
+
   }
 );
 
@@ -1301,6 +1394,7 @@ document.addEventListener(
 // =========================================================
 
 function openAddDiscovery() {
+
   closePlace();
   closeContent();
 
@@ -1315,6 +1409,7 @@ function openAddDiscovery() {
 
   window.setTimeout(
     () => {
+
       const input =
         document.getElementById(
           "discoveryTitle"
@@ -1323,12 +1418,14 @@ function openAddDiscovery() {
       if (input) {
         input.focus();
       }
+
     },
     200
   );
 }
 
 function closeAddDiscovery() {
+
   discoveryModal.classList.remove(
     "open"
   );
@@ -1352,12 +1449,14 @@ closeDiscoveryModal.addEventListener(
 discoveryModal.addEventListener(
   "click",
   event => {
+
     if (
       event.target ===
       discoveryModal
     ) {
       closeAddDiscovery();
     }
+
   }
 );
 
@@ -1368,6 +1467,7 @@ discoveryModal.addEventListener(
 useMapCenter.addEventListener(
   "click",
   () => {
+
     const center =
       map.getCenter();
 
@@ -1384,12 +1484,13 @@ useMapCenter.addEventListener(
 );
 
 // =========================================================
-// GUARDAR NUEVO DESCUBRIMIENTO
+// GUARDAR DESCUBRIMIENTO
 // =========================================================
 
 discoveryForm.addEventListener(
   "submit",
   event => {
+
     event.preventDefault();
 
     const form =
@@ -1437,6 +1538,7 @@ discoveryForm.addEventListener(
       !placeText ||
       !category
     ) {
+
       showToast(
         "Completa nombre, lugar y categoría"
       );
@@ -1460,6 +1562,7 @@ discoveryForm.addEventListener(
         : center.lng;
 
     const newDiscovery = {
+
       id:
         `local-${slug(title)}-${Date.now()}`,
 
@@ -1502,6 +1605,7 @@ discoveryForm.addEventListener(
 
     const newPlace =
       normalizePlace({
+
         id:
           newDiscovery.id,
 
@@ -1535,8 +1639,10 @@ discoveryForm.addEventListener(
     );
 
     if (link) {
+
       const localVideo =
         normalizeVideo({
+
           id:
             `local-video-${Date.now()}`,
 
@@ -1546,8 +1652,7 @@ discoveryForm.addEventListener(
           place:
             newPlace.name,
 
-          title:
-            title,
+          title,
 
           description:
             comment,
@@ -1579,9 +1684,11 @@ discoveryForm.addEventListener(
 
     window.setTimeout(
       () => {
+
         openPlace(
           newPlace.id
         );
+
       },
       250
     );
@@ -1593,32 +1700,14 @@ discoveryForm.addEventListener(
 );
 
 // =========================================================
-// ESCAPE
-// =========================================================
-
-document.addEventListener(
-  "keydown",
-  event => {
-    if (
-      event.key !== "Escape"
-    ) {
-      return;
-    }
-
-    closeAddDiscovery();
-    closePlace();
-    closeContent();
-  }
-);
-
-// =========================================================
-// ABRIR PANELES DEL MENÚ
+// PANEL GENERAL
 // =========================================================
 
 function openContent(
   title,
   html
 ) {
+
   closePlace();
 
   contentPanelTitle.textContent =
@@ -1638,6 +1727,7 @@ function openContent(
 }
 
 function closeContent() {
+
   contentPanel.classList.remove(
     "open"
   );
@@ -1651,26 +1741,33 @@ function closeContent() {
 closeContentPanel.addEventListener(
   "click",
   closeContent
-);// =========================================================
-// APP.JS · PARTE 4 DE 4
-// Paneles + menú + carga inicial
-// =========================================================
+);
 
 // =========================================================
-// PANEL: TODOS LOS VÍDEOS
+// PANEL TODOS LOS VÍDEOS
 // =========================================================
 
 function renderAllVideosPanel() {
-  if (videos.length === 0) {
+
+  if (
+    videos.length === 0
+  ) {
+
     openContent(
       "Vídeos",
       `
         <div class="empty-state">
+
           <span>🎥</span>
-          <strong>No hay vídeos todavía</strong>
+
+          <strong>
+            No hay vídeos todavía
+          </strong>
+
           <p>
-            Añade tus primeros Reels desde el botón +.
+            Añade tus primeros vídeos desde el botón +.
           </p>
+
         </div>
       `
     );
@@ -1681,17 +1778,18 @@ function renderAllVideosPanel() {
   const html =
     videos
       .map(video => `
-        <a
+        <button
           class="content-card"
-          href="${escapeHTML(video.url)}"
-          target="_blank"
-          rel="noopener noreferrer"
+          type="button"
+          data-global-video="${escapeHTML(video.id)}"
         >
+
           <div class="content-card-icon">
             🎥
           </div>
 
           <div class="content-card-text">
+
             <strong>
               ${escapeHTML(video.title)}
             </strong>
@@ -1704,8 +1802,10 @@ function renderAllVideosPanel() {
                 )
               }
             </p>
+
           </div>
-        </a>
+
+        </button>
       `)
       .join("");
 
@@ -1713,27 +1813,61 @@ function renderAllVideosPanel() {
     "Vídeos",
     html
   );
+
+  contentPanelBody
+    .querySelectorAll(
+      "[data-global-video]"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const video =
+            videos.find(
+              item =>
+                item.id ===
+                button.dataset.globalVideo
+            );
+
+          if (video) {
+            openVideo(video);
+          }
+
+        }
+      );
+
+    });
 }
 
 // =========================================================
-// PANEL: GASTRONOMÍA
+// GASTRONOMÍA
 // =========================================================
 
 function renderFoodPanel() {
+
   const foodPlaces =
     places.filter(place =>
       [
         "Restaurante",
         "Gastronomía"
-      ].includes(place.category)
+      ].includes(
+        place.category
+      )
     );
 
-  if (foodPlaces.length === 0) {
+  if (
+    foodPlaces.length === 0
+  ) {
+
     openContent(
       "Gastronomía",
       `
         <div class="empty-state">
+
           <span>🍴</span>
+
           <strong>
             Todavía no hay restaurantes
           </strong>
@@ -1741,6 +1875,7 @@ function renderFoodPanel() {
           <p>
             Los iremos añadiendo en las siguientes versiones.
           </p>
+
         </div>
       `
     );
@@ -1756,14 +1891,17 @@ function renderFoodPanel() {
           type="button"
           data-food-place="${escapeHTML(place.id)}"
         >
+
           <div class="content-card-icon">
             ${
-              categoryIcons[place.category] ||
-              "🍴"
+              categoryIcons[
+                place.category
+              ] || "🍴"
             }
           </div>
 
           <div class="content-card-text">
+
             <strong>
               ${escapeHTML(place.name)}
             </strong>
@@ -1776,7 +1914,9 @@ function renderFoodPanel() {
                 )
               }
             </p>
+
           </div>
+
         </button>
       `)
       .join("");
@@ -1791,9 +1931,11 @@ function renderFoodPanel() {
       "[data-food-place]"
     )
     .forEach(button => {
+
       button.addEventListener(
         "click",
         () => {
+
           const place =
             getPlaceById(
               button.dataset.foodPlace
@@ -1818,18 +1960,21 @@ function renderFoodPanel() {
           );
         }
       );
+
     });
 }
 
 // =========================================================
-// PANEL: MI VIAJE
+// MI VIAJE
 // =========================================================
 
 function renderTripPanel() {
+
   openContent(
     "Mi viaje",
     `
       <div class="empty-state">
+
         <span>📅</span>
 
         <strong>
@@ -1839,30 +1984,38 @@ function renderTripPanel() {
         <p>
           Aquí organizaremos los lugares por días para vuestro viaje a Brasil.
         </p>
+
       </div>
     `
   );
 }
 
 // =========================================================
-// PANEL: GUARDADOS
+// GUARDADOS
 // =========================================================
 
 function renderSavedPanel() {
+
   const savedIds =
     getSavedPlaces();
 
   const savedPlaces =
     places.filter(
       place =>
-        savedIds.includes(place.id)
+        savedIds.includes(
+          place.id
+        )
     );
 
-  if (savedPlaces.length === 0) {
+  if (
+    savedPlaces.length === 0
+  ) {
+
     openContent(
       "Guardados",
       `
         <div class="empty-state">
+
           <span>❤️</span>
 
           <strong>
@@ -1872,6 +2025,7 @@ function renderSavedPanel() {
           <p>
             Pulsa Guardar en cualquier ficha para añadirlo aquí.
           </p>
+
         </div>
       `
     );
@@ -1890,8 +2044,9 @@ function renderSavedPanel() {
 
           <div class="content-card-icon">
             ${
-              categoryIcons[place.category] ||
-              "📍"
+              categoryIcons[
+                place.category
+              ] || "📍"
             }
           </div>
 
@@ -1930,9 +2085,11 @@ function renderSavedPanel() {
       "[data-saved-place]"
     )
     .forEach(button => {
+
       button.addEventListener(
         "click",
         () => {
+
           const place =
             getPlaceById(
               button.dataset.savedPlace
@@ -1957,20 +2114,24 @@ function renderSavedPanel() {
           );
         }
       );
+
     });
 }
 
 // =========================================================
-// MENÚ INFERIOR
+// MENÚ
 // =========================================================
 
 function setActiveNav(
   activeButton
 ) {
+
   navButtons.forEach(button => {
+
     button.classList.remove(
       "active"
     );
+
   });
 
   activeButton.classList.add(
@@ -1979,17 +2140,21 @@ function setActiveNav(
 }
 
 navButtons.forEach(button => {
+
   button.addEventListener(
     "click",
     () => {
+
       setActiveNav(button);
 
       const section =
         button.dataset.section;
 
       if (
-        section === "explorar"
+        section ===
+        "explorar"
       ) {
+
         closeContent();
         closePlace();
 
@@ -2002,44 +2167,215 @@ navButtons.forEach(button => {
       }
 
       if (
-        section === "descubrimientos"
+        section ===
+        "descubrimientos"
       ) {
+
         renderAllVideosPanel();
+
         return;
       }
 
       if (
-        section === "gastronomia"
+        section ===
+        "gastronomia"
       ) {
+
         renderFoodPanel();
+
         return;
       }
 
       if (
-        section === "viaje"
+        section ===
+        "viaje"
       ) {
+
         renderTripPanel();
+
         return;
       }
 
       if (
-        section === "guardados"
+        section ===
+        "guardados"
       ) {
+
         renderSavedPanel();
+
       }
+
     }
   );
+
 });
 
 // =========================================================
-// CERRAR PANELES AL HACER CLIC EN MAPA
+// REPRODUCTOR DE VÍDEO
+// =========================================================
+
+function openVideo(video) {
+
+  if (
+    !video ||
+    !video.url
+  ) {
+
+    showToast(
+      "Este vídeo todavía no tiene archivo"
+    );
+
+    return;
+  }
+
+  if (
+    video.url.startsWith(
+      "http"
+    ) &&
+    !video.url
+      .toLowerCase()
+      .endsWith(".mp4")
+  ) {
+
+    window.open(
+      video.url,
+      "_blank",
+      "noopener"
+    );
+
+    return;
+  }
+
+  if (
+    !videoModal ||
+    !videoPlayer
+  ) {
+
+    window.open(
+      video.url,
+      "_blank"
+    );
+
+    return;
+  }
+
+  videoModalTitle.textContent =
+    video.title ||
+    "Vídeo";
+
+  videoModalPlace.textContent =
+    video.place ||
+    "Brasil";
+
+  videoPlayer.src =
+    video.url;
+
+  videoModal.classList.add(
+    "open"
+  );
+
+  videoModal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+  videoPlayer
+    .play()
+    .catch(() => {
+      // El usuario puede pulsar Play manualmente.
+    });
+}
+
+function closeVideo() {
+
+  if (!videoPlayer) {
+    return;
+  }
+
+  videoPlayer.pause();
+
+  videoPlayer.removeAttribute(
+    "src"
+  );
+
+  videoPlayer.load();
+
+  videoModal.classList.remove(
+    "open"
+  );
+
+  videoModal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+}
+
+if (
+  closeVideoModal
+) {
+
+  closeVideoModal.addEventListener(
+    "click",
+    closeVideo
+  );
+
+}
+
+if (
+  videoModal
+) {
+
+  videoModal.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target ===
+        videoModal
+      ) {
+
+        closeVideo();
+
+      }
+
+    }
+  );
+
+}
+
+// =========================================================
+// TECLA ESCAPE
+// =========================================================
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.key !==
+      "Escape"
+    ) {
+      return;
+    }
+
+    closeVideo();
+    closeAddDiscovery();
+    closePlace();
+    closeContent();
+  }
+);
+
+// =========================================================
+// CLIC EN MAPA
 // =========================================================
 
 map.on(
   "click",
   () => {
+
     closePlace();
     closeContent();
+
   }
 );
 
@@ -2048,20 +2384,24 @@ map.on(
 // =========================================================
 
 async function loadAppData() {
+
   const [
     placesData,
     videosData
-  ] = await Promise.all([
-    fetchJSON(
-      "data/places.json",
-      []
-    ),
+  ] =
+    await Promise.all([
 
-    fetchJSON(
-      "data/videos.json",
-      []
-    )
-  ]);
+      fetchJSON(
+        "data/places.json",
+        []
+      ),
+
+      fetchJSON(
+        "data/videos.json",
+        []
+      )
+
+    ]);
 
   places =
     mergePlaces(
@@ -2072,16 +2412,21 @@ async function loadAppData() {
     localDiscoveriesAsPlaces();
 
   localPlaces.forEach(place => {
+
     if (
       !places.some(
         item =>
-          item.id === place.id
+          item.id ===
+          place.id
       )
     ) {
+
       places.push(
         place
       );
+
     }
+
   });
 
   videos =
@@ -2095,6 +2440,7 @@ async function loadAppData() {
         discovery.link
     )
     .forEach(discovery => {
+
       const alreadyExists =
         videos.some(
           video =>
@@ -2103,87 +2449,98 @@ async function loadAppData() {
         );
 
       if (
-        !alreadyExists
+        alreadyExists
       ) {
-        videos.push(
-          normalizeVideo({
-            id:
-              `local-video-${discovery.id}`,
-
-            placeId:
-              discovery.id,
-
-            place:
-              discovery.name ||
-              discovery.title,
-
-            title:
-              discovery.title ||
-              discovery.name,
-
-            description:
-              discovery.comment ||
-              discovery.description,
-
-            type:
-              discovery.link.includes(
-                "instagram"
-              )
-                ? "Instagram"
-                : "Vídeo",
-
-            url:
-              discovery.link
-          })
-        );
+        return;
       }
+
+      videos.push(
+        normalizeVideo({
+
+          id:
+            `local-video-${discovery.id}`,
+
+          placeId:
+            discovery.id,
+
+          place:
+            discovery.name ||
+            discovery.title,
+
+          title:
+            discovery.title ||
+            discovery.name,
+
+          description:
+            discovery.comment ||
+            discovery.description,
+
+          type:
+            discovery.link.includes(
+              "instagram"
+            )
+              ? "Instagram"
+              : "Vídeo",
+
+          url:
+            discovery.link
+        })
+      );
+
     });
 
   renderMarkers();
 }
 
 // =========================================================
-// CENTRAR MAPA DESPUÉS DE REDIMENSIONAR
+// RESPONSIVE MAPA
 // =========================================================
 
 window.addEventListener(
   "resize",
   () => {
+
     window.setTimeout(
       () => {
+
         map.invalidateSize();
+
       },
       120
     );
+
   }
 );
 
 // =========================================================
-// CONTROL DE ERRORES
+// ERRORES
 // =========================================================
 
 window.addEventListener(
   "error",
   event => {
+
     console.error(
       "Mundo Infinito:",
       event.error ||
       event.message
     );
+
   }
 );
 
 // =========================================================
-// INICIALIZAR
+// INICIO
 // =========================================================
 
 async function init() {
+
   await loadAppData();
 
   map.invalidateSize();
 
   console.log(
-    "🌍 Mundo Infinito v0.4.0"
+    "🌍 Mundo Infinito v0.4.1"
   );
 
   console.log(
