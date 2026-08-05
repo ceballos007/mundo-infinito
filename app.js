@@ -1,5 +1,5 @@
 // =========================================================
-// MUNDO INFINITO · v0.6.0
+// MUNDO INFINITO · v0.5.0
 // Mapa + Supabase + descubrimientos compartidos
 // Vídeos + favoritos + buscador
 // =========================================================
@@ -22,67 +22,467 @@ const CONFIG = {
   zoom: 11,
 
   storage: {
-    saved: "mi-saved-places",
-    discoveries: "mi-discoveries"
+    discoveries:
+      "mundoInfinitoDescubrimientos",
+
+    savedPlaces:
+      "mundoInfinitoLugaresGuardados",
+
+    deviceId:
+      "mundoInfinitoDeviceId"
   }
 };
 
 // =========================================================
-// SUPABASE
+// CONEXIÓN CON SUPABASE
 // =========================================================
 
 let supabaseClient = null;
-let supabaseOnline = false;
+
+function initializeSupabase() {
+
+  try {
+
+    if (
+      typeof window.supabase === "undefined"
+    ) {
+
+      console.warn(
+        "Supabase todavía no está disponible."
+      );
+
+      return false;
+    }
+
+    if (
+      typeof SUPABASE_URL === "undefined" ||
+      typeof SUPABASE_KEY === "undefined"
+    ) {
+
+      console.warn(
+        "No se encontró supabase-config.js"
+      );
+
+      return false;
+    }
+
+    supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+      );
+
+    console.log(
+      "☁️ Supabase conectado"
+    );
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "Error conectando Supabase:",
+      error
+    );
+
+    return false;
+  }
+}
 
 // =========================================================
-// DATOS DE LA APP
+// IDENTIFICADOR DEL DISPOSITIVO
+// =========================================================
+
+function getDeviceId() {
+
+  let deviceId =
+    localStorage.getItem(
+      CONFIG.storage.deviceId
+    );
+
+  if (!deviceId) {
+
+    deviceId =
+      crypto.randomUUID
+        ? crypto.randomUUID()
+        : `device-${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2)}`;
+
+    localStorage.setItem(
+      CONFIG.storage.deviceId,
+      deviceId
+    );
+  }
+
+  return deviceId;
+}
+
+const DEVICE_ID =
+  getDeviceId();
+
+// =========================================================
+// LUGARES BASE
+// =========================================================
+
+const defaultPlaces = [
+
+  {
+    id: "cristo-redentor",
+
+    name:
+      "Cristo Redentor",
+
+    zone:
+      "Cosme Velho",
+
+    city:
+      "Río de Janeiro",
+
+    category:
+      "Lugar",
+
+    description:
+      "Uno de los iconos más reconocibles de Río de Janeiro.",
+
+    lat:
+      -22.9519,
+
+    lng:
+      -43.2105,
+
+    rating:
+      5,
+
+    image:
+      ""
+  },
+
+  {
+    id:
+      "pao-de-acucar",
+
+    name:
+      "Pão de Açúcar",
+
+    zone:
+      "Urca",
+
+    city:
+      "Río de Janeiro",
+
+    category:
+      "Mirador",
+
+    description:
+      "Teleférico y vistas panorámicas sobre la bahía de Guanabara.",
+
+    lat:
+      -22.9493,
+
+    lng:
+      -43.1546,
+
+    rating:
+      5,
+
+    image:
+      ""
+  },
+
+  {
+    id:
+      "copacabana",
+
+    name:
+      "Copacabana",
+
+    zone:
+      "Copacabana",
+
+    city:
+      "Río de Janeiro",
+
+    category:
+      "Playa",
+
+    description:
+      "Una de las playas urbanas más famosas del mundo.",
+
+    lat:
+      -22.9711,
+
+    lng:
+      -43.1822,
+
+    rating:
+      5,
+
+    image:
+      ""
+  },
+
+  {
+    id:
+      "ipanema",
+
+    name:
+      "Ipanema",
+
+    zone:
+      "Ipanema",
+
+    city:
+      "Río de Janeiro",
+
+    category:
+      "Playa",
+
+    description:
+      "Playa conocida por su ambiente y sus atardeceres.",
+
+    lat:
+      -22.9868,
+
+    lng:
+      -43.2047,
+
+    rating:
+      5,
+
+    image:
+      ""
+  },
+
+  {
+    id:
+      "selaron",
+
+    name:
+      "Escadaria Selarón",
+
+    zone:
+      "Lapa / Santa Teresa",
+
+    city:
+      "Río de Janeiro",
+
+    category:
+      "Cultura",
+
+    description:
+      "Escalera artística cubierta por azulejos de todo el mundo.",
+
+    lat:
+      -22.9153,
+
+    lng:
+      -43.179,
+
+    rating:
+      5,
+
+    image:
+      ""
+  },
+
+  {
+    id:
+      "parque-lage",
+
+    name:
+      "Parque Lage",
+
+    zone:
+      "Jardim Botânico",
+
+    city:
+      "Río de Janeiro",
+
+    category:
+      "Parque",
+
+    description:
+      "Parque histórico situado a los pies del Corcovado.",
+
+    lat:
+      -22.9608,
+
+    lng:
+      -43.2116,
+
+    rating:
+      5,
+
+    image:
+      ""
+  },
+
+  {
+    id:
+      "saara",
+
+    name:
+      "SAARA",
+
+    zone:
+      "Centro",
+
+    city:
+      "Río de Janeiro",
+
+    category:
+      "Compras",
+
+    description:
+      "Zona comercial popular con multitud de tiendas.",
+
+    lat:
+      -22.9028,
+
+    lng:
+      -43.1815,
+
+    rating:
+      4,
+
+    image:
+      ""
+  },
+
+  {
+    id:
+      "pedra-do-sal",
+
+    name:
+      "Pedra do Sal",
+
+    zone:
+      "Saúde",
+
+    city:
+      "Río de Janeiro",
+
+    category:
+      "Vida nocturna",
+
+    description:
+      "Lugar histórico estrechamente ligado a la samba carioca.",
+
+    lat:
+      -22.8976,
+
+    lng:
+      -43.1852,
+
+    rating:
+      5,
+
+    image:
+      ""
+  },
+
+  {
+    id:
+      "arnaldo-quintela",
+
+    name:
+      "Rua Arnaldo Quintela",
+
+    zone:
+      "Botafogo",
+
+    city:
+      "Río de Janeiro",
+
+    category:
+      "Vida nocturna",
+
+    description:
+      "Calle de Botafogo conocida por su concentración de bares.",
+
+    lat:
+      -22.9537,
+
+    lng:
+      -43.1866,
+
+    rating:
+      4,
+
+    image:
+      ""
+  },
+
+  {
+    id:
+      "galeao",
+
+    name:
+      "Aeropuerto de Galeão",
+
+    zone:
+      "Ilha do Governador",
+
+    city:
+      "Río de Janeiro",
+
+    category:
+      "Transporte",
+
+    description:
+      "Principal aeropuerto internacional de Río de Janeiro.",
+
+    lat:
+      -22.809,
+
+    lng:
+      -43.2506,
+
+    rating:
+      4,
+
+    image:
+      ""
+  }
+
+];
+
+// =========================================================
+// ESTADO DE LA APLICACIÓN
 // =========================================================
 
 let places = [];
+
 let videos = [];
+
 let discoveries = [];
 
 let selectedPlace = null;
 
-// =========================================================
-// MARCADORES
-// =========================================================
+let supabaseOnline = false;
 
-const markers = new Map();
-
-// =========================================================
-// ICONOS POR CATEGORÍA
-// =========================================================
-
-const categoryIcons = {
-  Lugar: "📍",
-  Mirador: "🌄",
-  Playa: "🏖️",
-  Parque: "🌿",
-  Cultura: "🎭",
-  Restaurante: "🍴",
-  Gastronomía: "🍴",
-  Compras: "🛍️",
-  "Vida nocturna": "🌙",
-  Transporte: "🚕",
-  Consejo: "💡"
-};
+const markers =
+  new Map();
 
 // =========================================================
-// ELEMENTOS DEL DOM
+// ELEMENTOS DE LA INTERFAZ
 // =========================================================
-
-const mapElement =
-  document.getElementById("map");
 
 const searchInput =
-  document.getElementById("searchInput");
+  document.getElementById(
+    "searchInput"
+  );
 
 const clearSearch =
-  document.getElementById("clearSearch");
+  document.getElementById(
+    "clearSearch"
+  );
 
 const searchResults =
-  document.getElementById("searchResults");
+  document.getElementById(
+    "searchResults"
+  );
 
 const openDiscoveryModal =
   document.getElementById(
@@ -104,29 +504,9 @@ const discoveryForm =
     "discoveryForm"
   );
 
-const discoveryTitle =
+const useMapCenter =
   document.getElementById(
-    "discoveryTitle"
-  );
-
-const discoveryPlace =
-  document.getElementById(
-    "discoveryPlace"
-  );
-
-const discoveryCategory =
-  document.getElementById(
-    "discoveryCategory"
-  );
-
-const discoveryVideoLink =
-  document.getElementById(
-    "discoveryVideoLink"
-  );
-
-const discoveryComment =
-  document.getElementById(
-    "discoveryComment"
+    "useMapCenter"
   );
 
 const discoveryLat =
@@ -138,124 +518,6 @@ const discoveryLng =
   document.getElementById(
     "discoveryLng"
   );
-
-const useMapCenter =
-  document.getElementById(
-    "useMapCenter"
-  );
-
-// =========================================================
-// NUEVOS ELEMENTOS v0.6
-// =========================================================
-
-const discoveryVideoFile =
-  document.getElementById(
-    "discoveryVideoFile"
-  );
-
-const discoveryVideoPreview =
-  document.getElementById(
-    "discoveryVideoPreview"
-  );
-
-const discoveryPreviewPlayer =
-  document.getElementById(
-    "discoveryPreviewPlayer"
-  );
-
-const videoExplorationStatus =
-  document.getElementById(
-    "videoExplorationStatus"
-  );
-
-const explorationMessage =
-  document.getElementById(
-    "explorationMessage"
-  );
-
-const explorationProgressBar =
-  document.getElementById(
-    "explorationProgressBar"
-  );
-
-const explorationResults =
-  document.getElementById(
-    "explorationResults"
-  );
-
-const detectedDetailsCount =
-  document.getElementById(
-    "detectedDetailsCount"
-  );
-
-const detectedDetailsList =
-  document.getElementById(
-    "detectedDetailsList"
-  );
-
-const addManualDetailButton =
-  document.getElementById(
-    "addManualDetailButton"
-  );
-
-const manualDetailEditor =
-  document.getElementById(
-    "manualDetailEditor"
-  );
-
-const detailType =
-  document.getElementById(
-    "detailType"
-  );
-
-const detailTimestampStart =
-  document.getElementById(
-    "detailTimestampStart"
-  );
-
-const detailTimestampEnd =
-  document.getElementById(
-    "detailTimestampEnd"
-  );
-
-const useCurrentVideoTime =
-  document.getElementById(
-    "useCurrentVideoTime"
-  );
-
-const cancelDetailEdit =
-  document.getElementById(
-    "cancelDetailEdit"
-  );
-
-const addDetailToDraft =
-  document.getElementById(
-    "addDetailToDraft"
-  );
-
-const videoDraftSummary =
-  document.getElementById(
-    "videoDraftSummary"
-  );
-
-const draftDetailsCount =
-  document.getElementById(
-    "draftDetailsCount"
-  );
-
-const videoDraftDetailsList =
-  document.getElementById(
-    "videoDraftDetailsList"
-  );
-
-const saveAllDiscoveriesButton =
-  document.getElementById(
-    "saveAllDiscoveriesButton"
-  );
-
-// =========================================================
-// FICHA DE LUGAR
-// =========================================================
 
 const placePanel =
   document.getElementById(
@@ -312,16 +574,6 @@ const placeVideoActionText =
     "placeVideoActionText"
   );
 
-const savePlaceButton =
-  document.getElementById(
-    "savePlaceButton"
-  );
-
-const placeMapsButton =
-  document.getElementById(
-    "placeMapsButton"
-  );
-
 const placeVideoCount =
   document.getElementById(
     "placeVideoCount"
@@ -332,9 +584,15 @@ const placeVideosList =
     "placeVideosList"
   );
 
-// =========================================================
-// PANEL GENERAL
-// =========================================================
+const savePlaceButton =
+  document.getElementById(
+    "savePlaceButton"
+  );
+
+const placeMapsButton =
+  document.getElementById(
+    "placeMapsButton"
+  );
 
 const contentPanel =
   document.getElementById(
@@ -356,6 +614,16 @@ const closeContentPanel =
     "closeContentPanel"
   );
 
+const toast =
+  document.getElementById(
+    "toast"
+  );
+
+const navButtons =
+  document.querySelectorAll(
+    ".nav-button"
+  );
+
 // =========================================================
 // REPRODUCTOR
 // =========================================================
@@ -370,6 +638,11 @@ const closeVideoModal =
     "closeVideoModal"
   );
 
+const videoPlayer =
+  document.getElementById(
+    "videoPlayer"
+  );
+
 const videoModalTitle =
   document.getElementById(
     "videoModalTitle"
@@ -380,92 +653,109 @@ const videoModalPlace =
     "videoModalPlace"
   );
 
-const videoPlayer =
-  document.getElementById(
-    "videoPlayer"
-  );
-
 // =========================================================
-// OTROS
-// =========================================================
-
-const toast =
-  document.getElementById("toast");
-
-const navButtons =
-  document.querySelectorAll(
-    ".nav-button"
-  );
-
-// =========================================================
-// ESTADO DEL NUEVO ➕ v0.6
-// =========================================================
-
-let videoDraftDetails = [];
-
-let editingDetailIndex = null;
-
-let selectedVideoFile = null;
-
-let explorationTimer = null;
-
-// =========================================================
-// MAPA
-// =========================================================
-
-const map =
-  L.map(
-    mapElement,
-    {
-      zoomControl: true
-    }
-  ).setView(
-    CONFIG.center,
-    CONFIG.zoom
-  );
-
-L.tileLayer(
-  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {
-    maxZoom: 19,
-    attribution:
-      "&copy; OpenStreetMap"
-  }
-).addTo(map);// =========================================================
 // UTILIDADES
 // =========================================================
 
-function escapeHTML(value) {
+function loadJSON(
+  key,
+  fallback
+) {
 
-  return String(
-    value ?? ""
-  )
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  try {
+
+    const value =
+      localStorage.getItem(key);
+
+    if (!value) {
+      return fallback;
+    }
+
+    return JSON.parse(value);
+
+  } catch (error) {
+
+    console.error(
+      `No se pudo leer ${key}:`,
+      error
+    );
+
+    return fallback;
+  }
 }
 
-function slug(value) {
+function saveJSON(
+  key,
+  value
+) {
+
+  try {
+
+    localStorage.setItem(
+      key,
+      JSON.stringify(value)
+    );
+
+  } catch (error) {
+
+    console.error(
+      `No se pudo guardar ${key}:`,
+      error
+    );
+  }
+}
+
+function normalize(text) {
 
   return String(
-    value || ""
+    text || ""
   )
     .normalize("NFD")
     .replace(
       /[\u0300-\u036f]/g,
       ""
     )
-    .toLowerCase()
+    .toLowerCase();
+}
+
+function slug(text) {
+
+  return normalize(text)
     .trim()
     .replace(
       /[^a-z0-9]+/g,
       "-"
     )
     .replace(
-      /^-+|-+$/g,
+      /^-|-$/g,
       ""
+    );
+}
+
+function escapeHTML(value) {
+
+  return String(
+    value || ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
     );
 }
 
@@ -483,10 +773,10 @@ function showToast(message) {
   );
 
   window.clearTimeout(
-    showToast.timer
+    showToast.timeout
   );
 
-  showToast.timer =
+  showToast.timeout =
     window.setTimeout(
       () => {
 
@@ -495,68 +785,151 @@ function showToast(message) {
         );
 
       },
-      2600
+      2500
     );
 }
 
-function loadJSON(
-  key,
-  fallback
-) {
+// =========================================================
+// CATEGORÍAS
+// =========================================================
 
-  try {
+const categoryIcons = {
 
-    const raw =
-      localStorage.getItem(
-        key
-      );
+  Lugar:
+    "📍",
 
-    if (!raw) {
-      return fallback;
-    }
+  Mirador:
+    "🌄",
 
-    return JSON.parse(
-      raw
-    );
+  Playa:
+    "🏖️",
 
-  } catch (error) {
+  Cultura:
+    "🎨",
 
-    console.warn(
-      "No se pudo leer:",
-      key,
-      error
-    );
+  Parque:
+    "🌿",
 
-    return fallback;
+  Compras:
+    "🛍️",
+
+  "Vida nocturna":
+    "🍹",
+
+  Transporte:
+    "✈️",
+
+  Restaurante:
+    "🍴",
+
+  Gastronomía:
+    "🥘",
+
+  Consejo:
+    "💡"
+};
+
+const categoryTips = {
+
+  Lugar:
+    "Comprueba horarios y entradas antes de ir.",
+
+  Mirador:
+    "El amanecer o el atardecer suelen ofrecer las mejores vistas.",
+
+  Playa:
+    "Lleva protección solar, agua y vigila tus pertenencias.",
+
+  Cultura:
+    "Ir temprano suele permitir disfrutarlo con más tranquilidad.",
+
+  Parque:
+    "Lleva agua y calzado cómodo.",
+
+  Compras:
+    "Compara precios antes de comprar y lleva algo de efectivo.",
+
+  "Vida nocturna":
+    "Planifica el transporte de vuelta antes de salir.",
+
+  Transporte:
+    "Confirma el punto exacto de recogida antes de desplazarte.",
+
+  Restaurante:
+    "Comprueba horarios y si es necesario reservar.",
+
+  Gastronomía:
+    "Pregunta por la especialidad de la casa.",
+
+  Consejo:
+    "Guárdalo para consultarlo durante el viaje."
+};// =========================================================
+// MAPA
+// =========================================================
+
+const map = L.map(
+  "map",
+  {
+    zoomControl: false
   }
-}
+).setView(
+  CONFIG.center,
+  CONFIG.zoom
+);
 
-function saveJSON(
-  key,
-  value
-) {
+L.control.zoom({
+  position: "bottomleft"
+}).addTo(map);
 
-  try {
-
-    localStorage.setItem(
-      key,
-      JSON.stringify(
-        value
-      )
-    );
-
-  } catch (error) {
-
-    console.warn(
-      "No se pudo guardar:",
-      key,
-      error
-    );
+L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
+    attribution: "&copy; OpenStreetMap",
+    maxZoom: 19
   }
+).addTo(map);
+
+// =========================================================
+// ICONOS DEL MAPA
+// =========================================================
+
+function markerClass(category) {
+
+  return normalize(category)
+    .replace(/\s+/g, "-");
 }
+
+function createMarkerIcon(place) {
+
+  const icon =
+    categoryIcons[place.category] ||
+    "📍";
+
+  return L.divIcon({
+
+    className: "",
+
+    html: `
+      <div
+        class="custom-marker ${markerClass(place.category)}"
+      >
+        <span>${icon}</span>
+      </div>
+    `,
+
+    iconSize: [38, 38],
+
+    iconAnchor: [19, 38]
+  });
+}
+
+// =========================================================
+// CARGAR JSON ANTIGUOS
+// Seguimos conservando places.json y videos.json
+// =========================================================
 
 async function fetchJSON(
-  url,
+  path,
   fallback = []
 ) {
 
@@ -564,26 +937,30 @@ async function fetchJSON(
 
     const response =
       await fetch(
-        url,
+        path,
         {
-          cache:
-            "no-store"
+          cache: "no-store"
         }
       );
 
     if (!response.ok) {
 
       throw new Error(
-        `HTTP ${response.status}`
+        `Error ${response.status} cargando ${path}`
       );
     }
 
-    return await response.json();
+    const data =
+      await response.json();
+
+    return Array.isArray(data)
+      ? data
+      : fallback;
 
   } catch (error) {
 
     console.warn(
-      `No se pudo cargar ${url}`,
+      `No se pudo cargar ${path}.`,
       error
     );
 
@@ -592,259 +969,40 @@ async function fetchJSON(
 }
 
 // =========================================================
-// TIMESTAMPS v0.6
-// Convierte 01:35 → 95 segundos
+// NORMALIZAR LUGARES
+// Permite mezclar:
+// - lugares originales
+// - places.json
+// - Supabase
 // =========================================================
 
-function timestampToSeconds(
-  value
-) {
-
-  const text =
-    String(
-      value || ""
-    ).trim();
-
-  if (!text) {
-    return 0;
-  }
-
-  if (
-    /^\d+$/.test(
-      text
-    )
-  ) {
-
-    return Math.max(
-      0,
-      Number(text)
-    );
-  }
-
-  const parts =
-    text
-      .split(":")
-      .map(
-        part =>
-          Number(part)
-      );
-
-  if (
-    parts.some(
-      part =>
-        !Number.isFinite(
-          part
-        )
-    )
-  ) {
-
-    return 0;
-  }
-
-  if (
-    parts.length === 2
-  ) {
-
-    return Math.max(
-      0,
-      (
-        parts[0] * 60
-      ) +
-      parts[1]
-    );
-  }
-
-  if (
-    parts.length === 3
-  ) {
-
-    return Math.max(
-      0,
-      (
-        parts[0] * 3600
-      ) +
-      (
-        parts[1] * 60
-      ) +
-      parts[2]
-    );
-  }
-
-  return 0;
-}
-
-// =========================================================
-// SEGUNDOS → 01:35
-// =========================================================
-
-function secondsToTimestamp(
-  totalSeconds
-) {
-
-  const seconds =
-    Math.max(
-      0,
-      Math.floor(
-        Number(
-          totalSeconds
-        ) || 0
-      )
-    );
-
-  const hours =
-    Math.floor(
-      seconds / 3600
-    );
-
-  const minutes =
-    Math.floor(
-      (
-        seconds % 3600
-      ) / 60
-    );
-
-  const remainingSeconds =
-    seconds % 60;
-
-  if (
-    hours > 0
-  ) {
-
-    return [
-      hours,
-      String(
-        minutes
-      ).padStart(
-        2,
-        "0"
-      ),
-      String(
-        remainingSeconds
-      ).padStart(
-        2,
-        "0"
-      )
-    ].join(":");
-  }
-
-  return [
-    String(
-      minutes
-    ).padStart(
-      2,
-      "0"
-    ),
-    String(
-      remainingSeconds
-    ).padStart(
-      2,
-      "0"
-    )
-  ].join(":");
-}
-
-// =========================================================
-// NORMALIZAR TIMESTAMP ESCRITO
-// =========================================================
-
-function normalizeTimestampText(
-  value
-) {
-
-  const seconds =
-    timestampToSeconds(
-      value
-    );
-
-  return secondsToTimestamp(
-    seconds
-  );
-}
-
-// =========================================================
-// ICONO DEL TIPO DE DETALLE
-// =========================================================
-
-function detailIcon(
-  type,
-  category
-) {
-
-  const icons = {
-    Lugar:
-      "📍",
-
-    Restaurante:
-      "🍴",
-
-    Playa:
-      "🏖️",
-
-    Mirador:
-      "🌄",
-
-    Consejo:
-      "💡",
-
-    Precio:
-      "💰",
-
-    Transporte:
-      "🚕",
-
-    Aviso:
-      "⚠️",
-
-    Compras:
-      "🛍️",
-
-    Evento:
-      "🎉",
-
-    Otro:
-      "✨"
-  };
-
-  return (
-    icons[type] ||
-    categoryIcons[
-      category
-    ] ||
-    "📍"
-  );
-}
-
-// =========================================================
-// NORMALIZAR LUGAR
-// =========================================================
-
-function normalizePlace(
-  place
-) {
+function normalizePlace(place) {
 
   return {
+
     id:
-      String(
-        place.id ||
-        `place-${Date.now()}`
+      place.id ||
+      slug(
+        place.name ||
+        place.nombre
       ),
 
     slug:
       place.slug ||
       slug(
         place.name ||
-        place.title ||
-        ""
+        place.nombre
       ),
 
     name:
       place.name ||
-      place.title ||
+      place.nombre ||
       "Lugar",
 
     zone:
       place.zone ||
-      place.place ||
+      place.zona ||
+      place.neighborhood ||
       "",
 
     city:
@@ -857,88 +1015,115 @@ function normalizePlace(
 
     category:
       place.category ||
+      place.categoria ||
       "Lugar",
 
     description:
       place.description ||
-      "",
-
-    tip:
-      place.tip ||
-      "",
+      place.descripcion ||
+      "Descubrimiento guardado en Mundo Infinito.",
 
     lat:
       Number(
-        place.lat
+        place.lat ??
+        place.latitude
       ),
 
     lng:
       Number(
-        place.lng
+        place.lng ??
+        place.longitude
       ),
+
+    rating:
+      Number(
+        place.rating || 5
+      ),
+
+    image:
+      place.image ||
+      place.image_url ||
+      "",
 
     source:
       place.source ||
-      "static"
+      "local"
   };
 }
 
 // =========================================================
-// NORMALIZAR VÍDEO
+// NORMALIZAR VÍDEOS
 // =========================================================
 
-function normalizeVideo(
-  video
-) {
+function normalizeVideo(video) {
 
   return {
+
     id:
-      String(
-        video.id ||
-        `video-${Date.now()}`
-      ),
+      video.id ||
+      `video-${Date.now()}-${Math.random()}`,
 
     placeId:
       video.placeId ||
       video.place_id ||
-      null,
+      "",
 
     place:
       video.place ||
+      video.lugar ||
       "",
 
     title:
       video.title ||
+      video.titulo ||
       "Vídeo",
 
     description:
       video.description ||
+      video.descripcion ||
+      "",
+
+    category:
+      video.category ||
       "",
 
     type:
       video.type ||
+      video.tipo ||
+      video.source_type ||
       "Vídeo",
 
     url:
       video.url ||
-      video.sourceUrl ||
+      video.video_url ||
+      video.link ||
+      video.enlace ||
       video.source_url ||
       "",
 
     sourceUrl:
-      video.sourceUrl ||
       video.source_url ||
       video.url ||
+      video.link ||
       "",
+
+    transcript:
+      video.transcript ||
+      "",
+
+    duration:
+      Number(
+        video.duration_seconds || 0
+      ),
 
     source:
       video.source ||
-      "static"
+      "local"
   };
 }
 
 // =========================================================
-// NORMALIZAR DESCUBRIMIENTO
+// NORMALIZAR DESCUBRIMIENTOS
 // =========================================================
 
 function normalizeDiscovery(
@@ -946,11 +1131,19 @@ function normalizeDiscovery(
 ) {
 
   return {
+
     id:
-      String(
-        discovery.id ||
-        `discovery-${Date.now()}`
-      ),
+      discovery.id,
+
+    videoId:
+      discovery.video_id ||
+      discovery.videoId ||
+      null,
+
+    placeId:
+      discovery.place_id ||
+      discovery.placeId ||
+      null,
 
     title:
       discovery.title ||
@@ -964,243 +1157,166 @@ function normalizeDiscovery(
       discovery.category ||
       "Lugar",
 
-    placeId:
-      discovery.placeId ||
-      discovery.place_id ||
-      null,
-
-    videoId:
-      discovery.videoId ||
-      discovery.video_id ||
-      null,
-
     timestampStart:
       Number(
-        discovery.timestampStart ??
-        discovery.timestamp_start ??
-        0
+        discovery.timestamp_start || 0
       ),
 
     timestampEnd:
-      discovery.timestampEnd ===
-        null ||
-      discovery.timestampEnd ===
-        undefined
+      discovery.timestamp_end === null ||
+      discovery.timestamp_end === undefined
         ? null
         : Number(
-            discovery.timestampEnd ??
             discovery.timestamp_end
           ),
 
-    source:
-      discovery.source ||
-      "supabase"
+    confidence:
+      discovery.confidence === null ||
+      discovery.confidence === undefined
+        ? null
+        : Number(
+            discovery.confidence
+          ),
+
+    approved:
+      Boolean(
+        discovery.approved
+      )
   };
 }
 
 // =========================================================
-// FAVORITOS
+// COMBINAR LUGARES
 // =========================================================
 
-function getSavedPlaces() {
-
-  const saved =
-    loadJSON(
-      CONFIG.storage.saved,
-      []
-    );
-
-  return Array.isArray(
-    saved
-  )
-    ? saved.map(String)
-    : [];
-}
-
-function isPlaceSaved(
-  placeId
+function mergePlaces(
+  ...placeGroups
 ) {
 
-  return getSavedPlaces()
-    .includes(
-      String(
-        placeId
+  const combined =
+    new Map();
+
+  defaultPlaces
+    .map(normalizePlace)
+    .forEach(place => {
+
+      combined.set(
+        place.id,
+        place
+      );
+    });
+
+  placeGroups.forEach(group => {
+
+    if (!Array.isArray(group)) {
+      return;
+    }
+
+    group
+      .map(normalizePlace)
+      .forEach(place => {
+
+        /*
+         * Para los lugares de Supabase usamos
+         * primero su UUID.
+         */
+
+        const existingById =
+          combined.get(place.id);
+
+        /*
+         * También buscamos por slug para evitar
+         * duplicar visualmente un lugar.
+         */
+
+        const existingBySlug =
+          Array.from(
+            combined.values()
+          ).find(
+            item =>
+              item.slug ===
+              place.slug
+          );
+
+        const existing =
+          existingById ||
+          existingBySlug;
+
+        if (existing) {
+
+          /*
+           * Si el nuevo lugar viene de Supabase,
+           * conservamos su UUID porque será necesario
+           * para relacionarlo con discoveries.
+           */
+
+          if (
+            place.source ===
+            "supabase"
+          ) {
+
+            if (
+              existing.id !==
+              place.id
+            ) {
+
+              combined.delete(
+                existing.id
+              );
+            }
+
+            combined.set(
+              place.id,
+              {
+                ...existing,
+                ...place
+              }
+            );
+
+          } else {
+
+            combined.set(
+              existing.id,
+              {
+                ...existing,
+                ...place,
+
+                id:
+                  existing.id
+              }
+            );
+          }
+
+        } else {
+
+          combined.set(
+            place.id,
+            place
+          );
+        }
+      });
+  });
+
+  return Array.from(
+    combined.values()
+  ).filter(
+    place =>
+      Number.isFinite(
+        place.lat
+      ) &&
+      Number.isFinite(
+        place.lng
       )
-    );
-}
-
-function toggleSavedPlace(
-  placeId
-) {
-
-  const id =
-    String(
-      placeId
-    );
-
-  const saved =
-    getSavedPlaces();
-
-  const index =
-    saved.indexOf(
-      id
-    );
-
-  if (
-    index >= 0
-  ) {
-
-    saved.splice(
-      index,
-      1
-    );
-
-    showToast(
-      "Eliminado de Guardados"
-    );
-
-  } else {
-
-    saved.push(
-      id
-    );
-
-    showToast(
-      "❤️ Guardado"
-    );
-  }
-
-  saveJSON(
-    CONFIG.storage.saved,
-    saved
-  );
-
-  return saved.includes(
-    id
   );
 }
 
 // =========================================================
-// SUPABASE · INICIALIZACIÓN
-// =========================================================
-
-function initializeSupabase() {
-
-  try {
-
-    if (
-      typeof window.supabase ===
-      "undefined"
-    ) {
-
-      console.warn(
-        "La librería de Supabase no está disponible."
-      );
-
-      return;
-    }
-
-    if (
-      typeof SUPABASE_URL ===
-        "undefined" ||
-      typeof SUPABASE_KEY ===
-        "undefined"
-    ) {
-
-      console.warn(
-        "Falta la configuración de Supabase."
-      );
-
-      return;
-    }
-
-    supabaseClient =
-      window.supabase
-        .createClient(
-          SUPABASE_URL,
-          SUPABASE_KEY
-        );
-
-  } catch (error) {
-
-    console.error(
-      "Error inicializando Supabase:",
-      error
-    );
-
-    supabaseClient =
-      null;
-  }
-}
-
-// =========================================================
-// COMPROBAR CONEXIÓN
-// =========================================================
-
-async function testSupabaseConnection() {
-
-  if (
-    !supabaseClient
-  ) {
-
-    supabaseOnline =
-      false;
-
-    return false;
-  }
-
-  try {
-
-    const {
-      error
-    } =
-      await supabaseClient
-        .from(
-          "places"
-        )
-        .select(
-          "id"
-        )
-        .limit(
-          1
-        );
-
-    if (error) {
-
-      throw error;
-    }
-
-    supabaseOnline =
-      true;
-
-    console.log(
-      "🟢 Supabase conectado"
-    );
-
-    return true;
-
-  } catch (error) {
-
-    supabaseOnline =
-      false;
-
-    console.warn(
-      "🟠 Supabase no disponible:",
-      error
-    );
-
-    return false;
-  }
-}// =========================================================
-// SUPABASE · CARGAR DATOS COMPARTIDOS
+// LEER LUGARES DESDE SUPABASE
 // =========================================================
 
 async function loadSupabasePlaces() {
 
-  if (
-    !supabaseClient
-  ) {
-
+  if (!supabaseClient) {
     return [];
   }
 
@@ -1224,40 +1340,10 @@ async function loadSupabasePlaces() {
       throw error;
     }
 
-    return (
-      data || []
-    ).map(
-      item =>
+    return (data || []).map(
+      place =>
         normalizePlace({
-          id:
-            item.id,
-
-          slug:
-            item.slug,
-
-          name:
-            item.name,
-
-          zone:
-            item.zone,
-
-          city:
-            item.city,
-
-          country:
-            item.country,
-
-          category:
-            item.category,
-
-          description:
-            item.description,
-
-          lat:
-            item.latitude,
-
-          lng:
-            item.longitude,
+          ...place,
 
           source:
             "supabase"
@@ -1267,7 +1353,7 @@ async function loadSupabasePlaces() {
   } catch (error) {
 
     console.error(
-      "No se pudieron cargar los lugares:",
+      "No se pudieron cargar los lugares de Supabase:",
       error
     );
 
@@ -1275,12 +1361,13 @@ async function loadSupabasePlaces() {
   }
 }
 
+// =========================================================
+// LEER VÍDEOS DESDE SUPABASE
+// =========================================================
+
 async function loadSupabaseVideos() {
 
-  if (
-    !supabaseClient
-  ) {
-
+  if (!supabaseClient) {
     return [];
   }
 
@@ -1304,33 +1391,10 @@ async function loadSupabaseVideos() {
       throw error;
     }
 
-    return (
-      data || []
-    ).map(
-      item =>
+    return (data || []).map(
+      video =>
         normalizeVideo({
-          id:
-            item.id,
-
-          title:
-            item.title,
-
-          description:
-            item.description,
-
-          type:
-            item.source_type ||
-            "Vídeo",
-
-          url:
-            item.video_url ||
-            item.source_url ||
-            "",
-
-          sourceUrl:
-            item.source_url ||
-            item.video_url ||
-            "",
+          ...video,
 
           source:
             "supabase"
@@ -1340,7 +1404,7 @@ async function loadSupabaseVideos() {
   } catch (error) {
 
     console.error(
-      "No se pudieron cargar los vídeos:",
+      "No se pudieron cargar los vídeos de Supabase:",
       error
     );
 
@@ -1348,12 +1412,13 @@ async function loadSupabaseVideos() {
   }
 }
 
+// =========================================================
+// LEER DESCUBRIMIENTOS DESDE SUPABASE
+// =========================================================
+
 async function loadSupabaseDiscoveries() {
 
-  if (
-    !supabaseClient
-  ) {
-
+  if (!supabaseClient) {
     return [];
   }
 
@@ -1377,16 +1442,14 @@ async function loadSupabaseDiscoveries() {
       throw error;
     }
 
-    return (
-      data || []
-    ).map(
+    return (data || []).map(
       normalizeDiscovery
     );
 
   } catch (error) {
 
     console.error(
-      "No se pudieron cargar los descubrimientos:",
+      "No se pudieron cargar los descubrimientos de Supabase:",
       error
     );
 
@@ -1395,781 +1458,79 @@ async function loadSupabaseDiscoveries() {
 }
 
 // =========================================================
-// SUPABASE · BUSCAR LUGAR POR SLUG
+// COMPROBAR CONEXIÓN CON SUPABASE
 // =========================================================
 
-async function findSupabasePlaceBySlug(
-  placeSlug
-) {
+async function testSupabaseConnection() {
 
-  if (
-    !supabaseClient
-  ) {
+  if (!supabaseClient) {
 
-    return null;
+    supabaseOnline = false;
+
+    return false;
   }
 
   try {
 
     const {
-      data,
       error
     } =
       await supabaseClient
         .from("places")
-        .select("*")
-        .eq(
-          "slug",
-          placeSlug
-        )
-        .maybeSingle();
+        .select(
+          "id",
+          {
+            head: true,
+            count: "exact"
+          }
+        );
 
     if (error) {
       throw error;
     }
 
-    if (!data) {
-      return null;
-    }
+    supabaseOnline = true;
 
-    return normalizePlace({
-      id:
-        data.id,
+    console.log(
+      "☁️ Base compartida disponible"
+    );
 
-      slug:
-        data.slug,
-
-      name:
-        data.name,
-
-      zone:
-        data.zone,
-
-      city:
-        data.city,
-
-      country:
-        data.country,
-
-      category:
-        data.category,
-
-      description:
-        data.description,
-
-      lat:
-        data.latitude,
-
-      lng:
-        data.longitude,
-
-      source:
-        "supabase"
-    });
+    return true;
 
   } catch (error) {
 
-    console.error(
-      "Error buscando lugar:",
+    supabaseOnline = false;
+
+    console.warn(
+      "Mundo Infinito continuará sin conexión compartida:",
       error
     );
 
-    return null;
+    return false;
   }
-}
-
-// =========================================================
-// SUPABASE · CREAR O REUTILIZAR LUGAR
-// =========================================================
-
-async function createOrGetPlace(
-  detail
-) {
-
-  const name =
-    String(
-      detail.title ||
-      "Descubrimiento"
-    ).trim();
-
-  const placeSlug =
-    slug(name);
-
-  const existing =
-    await findSupabasePlaceBySlug(
-      placeSlug
-    );
-
-  if (existing) {
-
-    return existing;
-  }
-
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("places")
-      .insert({
-        slug:
-          placeSlug,
-
-        name,
-
-        category:
-          detail.category ||
-          "Lugar",
-
-        zone:
-          detail.place ||
-          detail.zone ||
-          "",
-
-        city:
-          CONFIG.city,
-
-        country:
-          CONFIG.country,
-
-        description:
-          detail.comment ||
-          detail.description ||
-          "Descubrimiento guardado en Mundo Infinito.",
-
-        latitude:
-          Number(
-            detail.lat
-          ),
-
-        longitude:
-          Number(
-            detail.lng
-          )
-      })
-      .select()
-      .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return normalizePlace({
-    id:
-      data.id,
-
-    slug:
-      data.slug,
-
-    name:
-      data.name,
-
-    zone:
-      data.zone,
-
-    city:
-      data.city,
-
-    country:
-      data.country,
-
-    category:
-      data.category,
-
-    description:
-      data.description,
-
-    lat:
-      data.latitude,
-
-    lng:
-      data.longitude,
-
-    source:
-      "supabase"
-  });
-}
-
-// =========================================================
-// SUPABASE · CREAR O REUTILIZAR VÍDEO
-// Un vídeo solo se guarda UNA VEZ.
-// =========================================================
-
-async function createOrGetSupabaseVideo({
-  title,
-  description,
-  url
-}) {
-
-  if (
-    !url
-  ) {
-
-    return null;
-  }
-
-  const {
-    data: existing,
-    error: searchError
-  } =
-    await supabaseClient
-      .from("videos")
-      .select("*")
-      .eq(
-        "source_url",
-        url
-      )
-      .limit(
-        1
-      );
-
-  if (searchError) {
-    throw searchError;
-  }
-
-  if (
-    Array.isArray(
-      existing
-    ) &&
-    existing.length > 0
-  ) {
-
-    return normalizeVideo({
-      id:
-        existing[0].id,
-
-      title:
-        existing[0].title,
-
-      description:
-        existing[0].description,
-
-      type:
-        existing[0].source_type ||
-        "Vídeo",
-
-      url:
-        existing[0].video_url ||
-        existing[0].source_url,
-
-      sourceUrl:
-        existing[0].source_url,
-
-      source:
-        "supabase"
-    });
-  }
-
-  let sourceType =
-    "Vídeo";
-
-  if (
-    url.includes(
-      "instagram.com"
-    )
-  ) {
-
-    sourceType =
-      "Instagram";
-
-  } else if (
-    url.includes(
-      "tiktok.com"
-    )
-  ) {
-
-    sourceType =
-      "TikTok";
-
-  } else if (
-    url.includes(
-      "youtube.com"
-    ) ||
-    url.includes(
-      "youtu.be"
-    )
-  ) {
-
-    sourceType =
-      "YouTube";
-  }
-
-  const directVideo =
-    /\.(mp4|webm|ogg)(\?.*)?$/i.test(
-      url
-    );
-
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("videos")
-      .insert({
-        title:
-          title ||
-          "Vídeo de Mundo Infinito",
-
-        description:
-          description ||
-          "",
-
-        video_url:
-          directVideo
-            ? url
-            : null,
-
-        source_type:
-          sourceType,
-
-        source_url:
-          url,
-
-        transcript:
-          null,
-
-        duration_seconds:
-          null
-      })
-      .select()
-      .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return normalizeVideo({
-    id:
-      data.id,
-
-    title:
-      data.title,
-
-    description:
-      data.description,
-
-    type:
-      data.source_type ||
-      "Vídeo",
-
-    url:
-      data.video_url ||
-      data.source_url,
-
-    sourceUrl:
-      data.source_url,
-
-    source:
-      "supabase"
-  });
-}
-
-// =========================================================
-// SUPABASE · CREAR DESCUBRIMIENTO
-// Cada detalle del vídeo crea una fila diferente.
-// =========================================================
-
-async function createSupabaseDiscovery({
-  detail,
-  placeId,
-  videoId
-}) {
-
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("discoveries")
-      .insert({
-        video_id:
-          videoId ||
-          null,
-
-        place_id:
-          placeId ||
-          null,
-
-        title:
-          detail.title,
-
-        description:
-          detail.comment ||
-          detail.description ||
-          "",
-
-        category:
-          detail.category ||
-          detail.type ||
-          "Lugar",
-
-        timestamp_start:
-          Number(
-            detail.timestampStart ||
-            0
-          ),
-
-        timestamp_end:
-          detail.timestampEnd ===
-            null ||
-          detail.timestampEnd ===
-            undefined
-            ? null
-            : Number(
-                detail.timestampEnd
-              ),
-
-        confidence:
-          detail.confidence ??
-          1,
-
-        approved:
-          true
-      })
-      .select()
-      .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return normalizeDiscovery(
-    data
-  );
-}
-
-// =========================================================
-// RELACIONES VÍDEO ↔ LUGAR
-// =========================================================
-
-function getDiscoveriesForPlace(
-  place
-) {
-
-  if (!place) {
-    return [];
-  }
-
-  return discoveries.filter(
-    discovery =>
-      String(
-        discovery.placeId
-      ) ===
-      String(
-        place.id
-      )
-  );
-}
-
-function getDiscoveriesForVideo(
-  video
-) {
-
-  if (!video) {
-    return [];
-  }
-
-  return discoveries.filter(
-    discovery =>
-      String(
-        discovery.videoId
-      ) ===
-      String(
-        video.id
-      )
-  );
-}
-
-// =========================================================
-// VÍDEOS RELACIONADOS CON UN LUGAR
-// =========================================================
-
-function getVideosForPlace(
-  place
-) {
-
-  const relatedDiscoveries =
-    getDiscoveriesForPlace(
-      place
-    );
-
-  const videoIds =
-    new Set(
-      relatedDiscoveries
-        .map(
-          item =>
-            String(
-              item.videoId ||
-              ""
-            )
-        )
-        .filter(Boolean)
-    );
-
-  return videos.filter(
-    video => {
-
-      if (
-        videoIds.has(
-          String(
-            video.id
-          )
-        )
-      ) {
-
-        return true;
-      }
-
-      if (
-        video.placeId &&
-        String(
-          video.placeId
-        ) ===
-        String(
-          place.id
-        )
-      ) {
-
-        return true;
-      }
-
-      if (
-        video.place &&
-        slug(
-          video.place
-        ) ===
-        slug(
-          place.name
-        )
-      ) {
-
-        return true;
-      }
-
-      return false;
-    }
-  );
-}
-
-// =========================================================
-// TIMESTAMP PARA UN LUGAR DENTRO DE UN VÍDEO
-// =========================================================
-
-function getVideoTimestampForPlace(
-  videoId,
-  placeId
-) {
-
-  const discovery =
-    discoveries.find(
-      item =>
-        String(
-          item.videoId
-        ) ===
-        String(
-          videoId
-        ) &&
-        String(
-          item.placeId
-        ) ===
-        String(
-          placeId
-        )
-    );
-
-  if (!discovery) {
-    return 0;
-  }
-
-  return Number(
-    discovery.timestampStart ||
-    0
-  );
-}
-
-// =========================================================
-// OBTENER TODOS LOS MOMENTOS DE UN VÍDEO
-// =========================================================
-
-function getVideoMoments(
-  videoId
-) {
-
-  return discoveries
-    .filter(
-      item =>
-        String(
-          item.videoId
-        ) ===
-        String(
-          videoId
-        )
-    )
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        Number(
-          a.timestampStart ||
-          0
-        ) -
-        Number(
-          b.timestampStart ||
-          0
-        )
-    );
-}
-
-// =========================================================
-// COMBINAR LUGARES
-// Evitamos duplicados entre JSON, local y Supabase.
-// =========================================================
-
-function mergePlaces(
-  ...groups
-) {
-
-  const result =
-    new Map();
-
-  groups
-    .flat()
-    .filter(Boolean)
-    .map(
-      normalizePlace
-    )
-    .forEach(
-      place => {
-
-        const key =
-          place.slug ||
-          slug(
-            place.name
-          ) ||
-          place.id;
-
-        if (
-          !result.has(
-            key
-          )
-        ) {
-
-          result.set(
-            key,
-            place
-          );
-
-          return;
-        }
-
-        const previous =
-          result.get(
-            key
-          );
-
-        if (
-          place.source ===
-          "supabase"
-        ) {
-
-          result.set(
-            key,
-            {
-              ...previous,
-              ...place
-            }
-          );
-        }
-      }
-    );
-
-  return Array.from(
-    result.values()
-  );
 }
 
 // =========================================================
 // MARCADORES
 // =========================================================
 
-function markerClass(
-  category
-) {
-
-  return slug(
-    category ||
-    "Lugar"
-  );
-}
-
-function createMarkerIcon(
-  place
-) {
-
-  const icon =
-    categoryIcons[
-      place.category
-    ] ||
-    "📍";
-
-  return L.divIcon({
-    className:
-      "",
-
-    html:
-      `
-        <div
-          class="custom-marker ${markerClass(place.category)}"
-        >
-          <span>
-            ${icon}
-          </span>
-        </div>
-      `,
-
-    iconSize:
-      [
-        38,
-        38
-      ],
-
-    iconAnchor:
-      [
-        19,
-        38
-      ]
-  });
-}
-
-function addMarker(
-  place
-) {
+function addMarker(place) {
 
   if (
     !Number.isFinite(
-      Number(
-        place.lat
-      )
+      place.lat
     ) ||
     !Number.isFinite(
-      Number(
-        place.lng
-      )
+      place.lng
     )
   ) {
 
     return;
   }
 
-  const id =
-    String(
-      place.id
-    );
-
   if (
     markers.has(
-      id
+      place.id
     )
   ) {
 
@@ -2191,22 +1552,20 @@ function addMarker(
         title:
           place.name
       }
-    ).addTo(
-      map
-    );
+    ).addTo(map);
 
   marker.on(
     "click",
     () => {
 
       openPlace(
-        id
+        place.id
       );
     }
   );
 
   markers.set(
-    id,
+    place.id,
     marker
   );
 }
@@ -2233,7 +1592,7 @@ function renderMarkers() {
 }
 
 // =========================================================
-// BUSCAR LUGAR POR ID
+// BUSCAR LUGAR
 // =========================================================
 
 function getPlaceById(
@@ -2242,2370 +1601,184 @@ function getPlaceById(
 
   return places.find(
     place =>
-      String(
-        place.id
-      ) ===
-      String(
-        placeId
-      )
-  );
-}// =========================================================
-// BLOQUE 4 · NUEVO ➕ v0.6
-// Exploración + borrador + edición manual
-// =========================================================
-
-
-// =========================================================
-// ABRIR / CERRAR MODAL
-// =========================================================
-
-function resetDiscoveryFlow() {
-
-  videoDraftDetails =
-    [];
-
-  editingDetailIndex =
-    null;
-
-  selectedVideoFile =
-    null;
-
-  if (
-    explorationTimer
-  ) {
-
-    window.clearInterval(
-      explorationTimer
-    );
-
-    explorationTimer =
-      null;
-  }
-
-  if (
-    discoveryForm
-  ) {
-
-    discoveryForm.reset();
-  }
-
-  if (
-    discoveryPreviewPlayer
-  ) {
-
-    discoveryPreviewPlayer.pause();
-
-    discoveryPreviewPlayer
-      .removeAttribute(
-        "src"
-      );
-
-    discoveryPreviewPlayer.load();
-  }
-
-  if (
-    discoveryVideoPreview
-  ) {
-
-    discoveryVideoPreview
-      .classList
-      .add(
-        "hidden"
-      );
-  }
-
-  const card =
-    discoveryModal
-      ?.querySelector(
-        ".discovery-v06-card"
-      );
-
-  if (card) {
-
-    card.classList.remove(
-      "is-exploring",
-      "has-results"
-    );
-  }
-
-  if (
-    videoExplorationStatus
-  ) {
-
-    videoExplorationStatus
-      .classList
-      .remove(
-        "active"
-      );
-  }
-
-  if (
-    explorationResults
-  ) {
-
-    explorationResults
-      .classList
-      .remove(
-        "active"
-      );
-  }
-
-  if (
-    videoDraftSummary
-  ) {
-
-    videoDraftSummary
-      .classList
-      .remove(
-        "active"
-      );
-  }
-
-  if (
-    manualDetailEditor
-  ) {
-
-    manualDetailEditor
-      .classList
-      .remove(
-        "open"
-      );
-  }
-
-  if (
-    saveAllDiscoveriesButton
-  ) {
-
-    saveAllDiscoveriesButton
-      .classList
-      .remove(
-        "visible"
-      );
-  }
-
-  if (
-    detectedDetailsList
-  ) {
-
-    detectedDetailsList.innerHTML =
-      "";
-  }
-
-  if (
-    videoDraftDetailsList
-  ) {
-
-    videoDraftDetailsList.innerHTML =
-      "";
-  }
-
-  if (
-    detectedDetailsCount
-  ) {
-
-    detectedDetailsCount.textContent =
-      "0";
-  }
-
-  if (
-    draftDetailsCount
-  ) {
-
-    draftDetailsCount.textContent =
-      "0";
-  }
-
-  if (
-    explorationProgressBar
-  ) {
-
-    explorationProgressBar.style.width =
-      "0%";
-  }
-
-  if (
-    explorationMessage
-  ) {
-
-    explorationMessage.textContent =
-      "Preparando el contenido…";
-  }
-}
-
-function openAddDiscovery() {
-
-  closePlace();
-  closeContent();
-
-  resetDiscoveryFlow();
-
-  discoveryModal
-    .classList
-    .add(
-      "open"
-    );
-
-  discoveryModal
-    .setAttribute(
-      "aria-hidden",
-      "false"
-    );
-
-  window.setTimeout(
-    () => {
-
-      if (
-        discoveryVideoLink
-      ) {
-
-        discoveryVideoLink.focus();
-      }
-
-    },
-    180
+      place.id ===
+      placeId
   );
 }
 
-function closeAddDiscovery() {
-
-  discoveryModal
-    .classList
-    .remove(
-      "open"
-    );
-
-  discoveryModal
-    .setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-  if (
-    explorationTimer
-  ) {
-
-    window.clearInterval(
-      explorationTimer
-    );
-
-    explorationTimer =
-      null;
-  }
-}
-
-openDiscoveryModal
-  ?.addEventListener(
-    "click",
-    openAddDiscovery
-  );
-
-closeDiscoveryModal
-  ?.addEventListener(
-    "click",
-    closeAddDiscovery
-  );
-
-discoveryModal
-  ?.addEventListener(
-    "click",
-    event => {
-
-      if (
-        event.target ===
-        discoveryModal
-      ) {
-
-        closeAddDiscovery();
-      }
-    }
-  );
-
-
 // =========================================================
-// CENTRO DEL MAPA
+// DESCUBRIMIENTOS DE UN LUGAR
 // =========================================================
 
-useMapCenter
-  ?.addEventListener(
-    "click",
-    () => {
-
-      const center =
-        map.getCenter();
-
-      discoveryLat.value =
-        center.lat.toFixed(
-          6
-        );
-
-      discoveryLng.value =
-        center.lng.toFixed(
-          6
-        );
-
-      showToast(
-        "📍 Ubicación añadida"
-      );
-    }
-  );
-
-
-// =========================================================
-// SELECCIONAR ARCHIVO LOCAL
-// =========================================================
-
-discoveryVideoFile
-  ?.addEventListener(
-    "change",
-    event => {
-
-      const file =
-        event.target.files?.[0];
-
-      if (!file) {
-        return;
-      }
-
-      selectedVideoFile =
-        file;
-
-      const objectURL =
-        URL.createObjectURL(
-          file
-        );
-
-      discoveryPreviewPlayer.src =
-        objectURL;
-
-      discoveryVideoPreview
-        .classList
-        .remove(
-          "hidden"
-        );
-
-      beginVideoExploration({
-        sourceType:
-          "file",
-
-        source:
-          objectURL
-      });
-    }
-  );
-
-
-// =========================================================
-// PEGAR ENLACE
-// Al terminar de escribir el enlace,
-// comienza automáticamente la exploración.
-// =========================================================
-
-let videoLinkTimer =
-  null;
-
-discoveryVideoLink
-  ?.addEventListener(
-    "input",
-    () => {
-
-      window.clearTimeout(
-        videoLinkTimer
-      );
-
-      const url =
-        discoveryVideoLink
-          .value
-          .trim();
-
-      if (
-        !url ||
-        url.length < 8
-      ) {
-
-        return;
-      }
-
-      videoLinkTimer =
-        window.setTimeout(
-          () => {
-
-            beginVideoExploration({
-              sourceType:
-                "url",
-
-              source:
-                url
-            });
-
-          },
-          700
-        );
-    }
-  );
-
-
-// =========================================================
-// EXPLORACIÓN DEL VÍDEO
-// En esta fase mostramos el flujo visual.
-// El análisis automático real se conectará después.
-// =========================================================
-
-function beginVideoExploration({
-  sourceType,
-  source
-}) {
-
-  const card =
-    discoveryModal
-      ?.querySelector(
-        ".discovery-v06-card"
-      );
-
-  if (!card) {
-    return;
-  }
-
-  card.classList.remove(
-    "has-results"
-  );
-
-  card.classList.add(
-    "is-exploring"
-  );
-
-  videoExplorationStatus
-    ?.classList
-    .add(
-      "active"
-    );
-
-  explorationResults
-    ?.classList
-    .remove(
-      "active"
-    );
-
-  manualDetailEditor
-    ?.classList
-    .remove(
-      "open"
-    );
-
-  if (
-    explorationProgressBar
-  ) {
-
-    explorationProgressBar.style.width =
-      "8%";
-  }
-
-  const phases = [
-
-    {
-      progress:
-        18,
-
-      message:
-        "Escuchando lo que cuentan…"
-    },
-
-    {
-      progress:
-        35,
-
-      message:
-        "Localizando lugares mencionados…"
-    },
-
-    {
-      progress:
-        52,
-
-      message:
-        "Buscando gastronomía y recomendaciones…"
-    },
-
-    {
-      progress:
-        69,
-
-      message:
-        "Identificando consejos útiles…"
-    },
-
-    {
-      progress:
-        86,
-
-      message:
-        "Localizando momentos exactos…"
-    },
-
-    {
-      progress:
-        100,
-
-      message:
-        "Preparando tus descubrimientos…"
-    }
-
-  ];
-
-  let phaseIndex =
-    0;
-
-  if (
-    explorationTimer
-  ) {
-
-    window.clearInterval(
-      explorationTimer
-    );
-  }
-
-  explorationTimer =
-    window.setInterval(
-      () => {
-
-        const phase =
-          phases[
-            phaseIndex
-          ];
-
-        if (!phase) {
-
-          window.clearInterval(
-            explorationTimer
-          );
-
-          explorationTimer =
-            null;
-
-          finishVideoExploration({
-            sourceType,
-            source
-          });
-
-          return;
-        }
-
-        if (
-          explorationMessage
-        ) {
-
-          explorationMessage.textContent =
-            phase.message;
-        }
-
-        if (
-          explorationProgressBar
-        ) {
-
-          explorationProgressBar
-            .style
-            .width =
-              `${phase.progress}%`;
-        }
-
-        phaseIndex +=
-          1;
-
-      },
-      650
-    );
-}
-
-
-// =========================================================
-// FIN DE EXPLORACIÓN
-// Todavía no inventamos resultados.
-// Ofrecemos añadir/corregir manualmente.
-// =========================================================
-
-function finishVideoExploration({
-  sourceType,
-  source
-}) {
-
-  const card =
-    discoveryModal
-      ?.querySelector(
-        ".discovery-v06-card"
-      );
-
-  if (!card) {
-    return;
-  }
-
-  card.classList.remove(
-    "is-exploring"
-  );
-
-  card.classList.add(
-    "has-results"
-  );
-
-  videoExplorationStatus
-    ?.classList
-    .remove(
-      "active"
-    );
-
-  explorationResults
-    ?.classList
-    .add(
-      "active"
-    );
-
-  /*
-   * IMPORTANTE:
-   * En esta versión NO fingimos detecciones.
-   * La exploración automática real vendrá después.
-   */
-
-  videoDraftDetails =
-    [];
-
-  renderDetectedDetails();
-
-  renderDraftSummary();
-
-  if (
-    detectedDetailsCount
-  ) {
-
-    detectedDetailsCount.textContent =
-      "0";
-  }
-
-  showToast(
-    "Vídeo preparado para revisar"
-  );
-
-  /*
-   * Abrimos directamente el editor
-   * para que puedas añadir el primer detalle.
-   */
-
-  openManualDetailEditor();
-}
-
-
-// =========================================================
-// EDITOR MANUAL
-// =========================================================
-
-function resetManualEditor() {
-
-  editingDetailIndex =
-    null;
-
-  if (
-    detailType
-  ) {
-
-    detailType.value =
-      "Lugar";
-  }
-
-  if (
-    discoveryTitle
-  ) {
-
-    discoveryTitle.value =
-      "";
-  }
-
-  if (
-    discoveryPlace
-  ) {
-
-    discoveryPlace.value =
-      "";
-  }
-
-  if (
-    discoveryCategory
-  ) {
-
-    discoveryCategory.value =
-      "";
-  }
-
-  if (
-    detailTimestampStart
-  ) {
-
-    detailTimestampStart.value =
-      "00:00";
-  }
-
-  if (
-    detailTimestampEnd
-  ) {
-
-    detailTimestampEnd.value =
-      "";
-  }
-
-  if (
-    discoveryComment
-  ) {
-
-    discoveryComment.value =
-      "";
-  }
-
-  if (
-    discoveryLat
-  ) {
-
-    discoveryLat.value =
-      "";
-  }
-
-  if (
-    discoveryLng
-  ) {
-
-    discoveryLng.value =
-      "";
-  }
-
-  if (
-    cancelDetailEdit
-  ) {
-
-    cancelDetailEdit
-      .classList
-      .add(
-        "hidden"
-      );
-  }
-
-  if (
-    addDetailToDraft
-  ) {
-
-    addDetailToDraft.textContent =
-      "＋ Añadir detalle";
-  }
-}
-
-function openManualDetailEditor(
-  detailIndex = null
-) {
-
-  manualDetailEditor
-    ?.classList
-    .add(
-      "open"
-    );
-
-  if (
-    detailIndex === null
-  ) {
-
-    resetManualEditor();
-
-  } else {
-
-    editDraftDetail(
-      detailIndex
-    );
-  }
-
-  window.setTimeout(
-    () => {
-
-      manualDetailEditor
-        ?.scrollIntoView({
-          behavior:
-            "smooth",
-
-          block:
-            "start"
-        });
-
-    },
-    100
-  );
-}
-
-function closeManualDetailEditor() {
-
-  manualDetailEditor
-    ?.classList
-    .remove(
-      "open"
-    );
-
-  resetManualEditor();
-}
-
-addManualDetailButton
-  ?.addEventListener(
-    "click",
-    () => {
-
-      openManualDetailEditor();
-    }
-  );
-
-cancelDetailEdit
-  ?.addEventListener(
-    "click",
-    () => {
-
-      closeManualDetailEditor();
-    }
-  );
-
-
-// =========================================================
-// USAR MINUTO ACTUAL DEL REPRODUCTOR
-// =========================================================
-
-useCurrentVideoTime
-  ?.addEventListener(
-    "click",
-    () => {
-
-      if (
-        !discoveryPreviewPlayer
-      ) {
-
-        return;
-      }
-
-      const current =
-        Number(
-          discoveryPreviewPlayer
-            .currentTime ||
-          0
-        );
-
-      detailTimestampStart.value =
-        secondsToTimestamp(
-          current
-        );
-
-      showToast(
-        `⏱ ${secondsToTimestamp(current)}`
-      );
-    }
-  );
-
-
-// =========================================================
-// LEER DATOS DEL EDITOR
-// =========================================================
-
-function getDetailFromEditor() {
-
-  const title =
-    String(
-      discoveryTitle?.value ||
-      ""
-    ).trim();
-
-  const place =
-    String(
-      discoveryPlace?.value ||
-      ""
-    ).trim();
-
-  const type =
-    String(
-      detailType?.value ||
-      "Lugar"
-    ).trim();
-
-  const category =
-    String(
-      discoveryCategory?.value ||
-      type ||
-      "Lugar"
-    ).trim();
-
-  const comment =
-    String(
-      discoveryComment?.value ||
-      ""
-    ).trim();
-
-  const start =
-    timestampToSeconds(
-      detailTimestampStart?.value
-    );
-
-  const endText =
-    String(
-      detailTimestampEnd?.value ||
-      ""
-    ).trim();
-
-  const end =
-    endText
-      ? timestampToSeconds(
-          endText
-        )
-      : null;
-
-  const center =
-    map.getCenter();
-
-  let lat =
-    Number(
-      discoveryLat?.value
-    );
-
-  let lng =
-    Number(
-      discoveryLng?.value
-    );
-
-  if (
-    !Number.isFinite(
-      lat
-    ) ||
-    lat === 0
-  ) {
-
-    lat =
-      center.lat;
-  }
-
-  if (
-    !Number.isFinite(
-      lng
-    ) ||
-    lng === 0
-  ) {
-
-    lng =
-      center.lng;
-  }
-
-  return {
-    id:
-      crypto.randomUUID
-        ? crypto.randomUUID()
-        : `draft-${Date.now()}-${Math.random()}`,
-
-    title,
-
-    place,
-
-    type,
-
-    category,
-
-    comment,
-
-    timestampStart:
-      start,
-
-    timestampEnd:
-      end,
-
-    lat,
-
-    lng,
-
-    confidence:
-      1,
-
-    manual:
-      true
-  };
-}
-
-
-// =========================================================
-// AÑADIR / ACTUALIZAR DETALLE
-// =========================================================
-
-addDetailToDraft
-  ?.addEventListener(
-    "click",
-    () => {
-
-      const detail =
-        getDetailFromEditor();
-
-      if (
-        !detail.title
-      ) {
-
-        showToast(
-          "Escribe un nombre o título"
-        );
-
-        discoveryTitle
-          ?.focus();
-
-        return;
-      }
-
-      if (
-        !detail.place
-      ) {
-
-        showToast(
-          "Indica el lugar o zona"
-        );
-
-        discoveryPlace
-          ?.focus();
-
-        return;
-      }
-
-      if (
-        !detail.category
-      ) {
-
-        showToast(
-          "Selecciona una categoría"
-        );
-
-        return;
-      }
-
-      if (
-        editingDetailIndex !==
-        null
-      ) {
-
-        detail.id =
-          videoDraftDetails[
-            editingDetailIndex
-          ].id;
-
-        videoDraftDetails[
-          editingDetailIndex
-        ] =
-          detail;
-
-        showToast(
-          "✓ Detalle actualizado"
-        );
-
-      } else {
-
-        videoDraftDetails.push(
-          detail
-        );
-
-        showToast(
-          "＋ Detalle añadido"
-        );
-      }
-
-      editingDetailIndex =
-        null;
-
-      renderDetectedDetails();
-
-      renderDraftSummary();
-
-      closeManualDetailEditor();
-
-      if (
-        videoDraftDetails.length >
-        0
-      ) {
-
-        saveAllDiscoveriesButton
-          ?.classList
-          .add(
-            "visible"
-          );
-      }
-    }
-  );
-
-
-// =========================================================
-// EDITAR DETALLE
-// =========================================================
-
-function editDraftDetail(
-  index
-) {
-
-  const detail =
-    videoDraftDetails[
-      index
-    ];
-
-  if (!detail) {
-    return;
-  }
-
-  editingDetailIndex =
-    index;
-
-  manualDetailEditor
-    ?.classList
-    .add(
-      "open"
-    );
-
-  if (
-    detailType
-  ) {
-
-    detailType.value =
-      detail.type ||
-      "Lugar";
-  }
-
-  if (
-    discoveryTitle
-  ) {
-
-    discoveryTitle.value =
-      detail.title ||
-      "";
-  }
-
-  if (
-    discoveryPlace
-  ) {
-
-    discoveryPlace.value =
-      detail.place ||
-      "";
-  }
-
-  if (
-    discoveryCategory
-  ) {
-
-    discoveryCategory.value =
-      detail.category ||
-      "";
-  }
-
-  if (
-    detailTimestampStart
-  ) {
-
-    detailTimestampStart.value =
-      secondsToTimestamp(
-        detail.timestampStart ||
-        0
-      );
-  }
-
-  if (
-    detailTimestampEnd
-  ) {
-
-    detailTimestampEnd.value =
-      detail.timestampEnd ===
-        null ||
-      detail.timestampEnd ===
-        undefined
-        ? ""
-        : secondsToTimestamp(
-            detail.timestampEnd
-          );
-  }
-
-  if (
-    discoveryComment
-  ) {
-
-    discoveryComment.value =
-      detail.comment ||
-      "";
-  }
-
-  if (
-    discoveryLat
-  ) {
-
-    discoveryLat.value =
-      detail.lat ?? "";
-  }
-
-  if (
-    discoveryLng
-  ) {
-
-    discoveryLng.value =
-      detail.lng ?? "";
-  }
-
-  cancelDetailEdit
-    ?.classList
-    .remove(
-      "hidden"
-    );
-
-  if (
-    addDetailToDraft
-  ) {
-
-    addDetailToDraft.textContent =
-      "✓ Guardar cambios";
-  }
-}
-
-
-// =========================================================
-// ELIMINAR DETALLE
-// =========================================================
-
-function removeDraftDetail(
-  index
-) {
-
-  if (
-    !videoDraftDetails[
-      index
-    ]
-  ) {
-
-    return;
-  }
-
-  videoDraftDetails.splice(
-    index,
-    1
-  );
-
-  renderDetectedDetails();
-
-  renderDraftSummary();
-
-  if (
-    videoDraftDetails.length ===
-    0
-  ) {
-
-    saveAllDiscoveriesButton
-      ?.classList
-      .remove(
-        "visible"
-      );
-
-  } else {
-
-    saveAllDiscoveriesButton
-      ?.classList
-      .add(
-        "visible"
-      );
-  }
-
-  showToast(
-    "Detalle eliminado"
-  );
-}
-
-
-// =========================================================
-// RENDERIZAR TARJETAS
-// =========================================================
-
-function renderDetectedDetails() {
-
-  if (
-    !detectedDetailsList
-  ) {
-
-    return;
-  }
-
-  if (
-    videoDraftDetails.length ===
-    0
-  ) {
-
-    detectedDetailsList.innerHTML =
-      `
-        <div class="empty-state">
-
-          <span>
-            ✨
-          </span>
-
-          <strong>
-            Añade el primer detalle
-          </strong>
-
-          <p>
-            Puedes indicar lugares,
-            restaurantes, consejos,
-            precios o cualquier momento
-            útil del vídeo.
-          </p>
-
-        </div>
-      `;
-
-    detectedDetailsCount.textContent =
-      "0";
-
-    return;
-  }
-
-  detectedDetailsCount.textContent =
-    String(
-      videoDraftDetails.length
-    );
-
-  detectedDetailsList.innerHTML =
-    videoDraftDetails
-      .map(
-        (
-          detail,
-          index
-        ) => {
-
-          return `
-            <article
-              class="detected-detail-card"
-            >
-
-              <div
-                class="detected-detail-icon"
-              >
-                ${detailIcon(
-                  detail.type,
-                  detail.category
-                )}
-              </div>
-
-              <div
-                class="detected-detail-info"
-              >
-
-                <strong>
-                  ${escapeHTML(
-                    detail.title
-                  )}
-                </strong>
-
-                <div
-                  class="detected-detail-meta"
-                >
-
-                  <span>
-                    ${escapeHTML(
-                      detail.category
-                    )}
-                  </span>
-
-                  ${
-                    detail.place
-                      ? `
-                        <span>
-                          · ${escapeHTML(
-                            detail.place
-                          )}
-                        </span>
-                      `
-                      : ""
-                  }
-
-                  <span
-                    class="detail-time"
-                  >
-                    ▶ ${secondsToTimestamp(
-                      detail.timestampStart
-                    )}
-                  </span>
-
-                </div>
-
-              </div>
-
-              <div
-                class="detected-detail-actions"
-              >
-
-                <button
-                  type="button"
-                  data-edit-detail="${index}"
-                  aria-label="Editar detalle"
-                >
-                  ✏️
-                </button>
-
-                <button
-                  type="button"
-                  data-delete-detail="${index}"
-                  aria-label="Eliminar detalle"
-                >
-                  🗑️
-                </button>
-
-              </div>
-
-            </article>
-          `;
-        }
-      )
-      .join("");
-
-  detectedDetailsList
-    .querySelectorAll(
-      "[data-edit-detail]"
-    )
-    .forEach(
-      button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            openManualDetailEditor(
-              Number(
-                button.dataset
-                  .editDetail
-              )
-            );
-          }
-        );
-      }
-    );
-
-  detectedDetailsList
-    .querySelectorAll(
-      "[data-delete-detail]"
-    )
-    .forEach(
-      button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            removeDraftDetail(
-              Number(
-                button.dataset
-                  .deleteDetail
-              )
-            );
-          }
-        );
-      }
-    );
-}
-
-
-// =========================================================
-// RESUMEN DEL BORRADOR
-// =========================================================
-
-function renderDraftSummary() {
-
-  if (
-    !videoDraftSummary ||
-    !videoDraftDetailsList
-  ) {
-
-    return;
-  }
-
-  if (
-    videoDraftDetails.length ===
-    0
-  ) {
-
-    videoDraftSummary
-      .classList
-      .remove(
-        "active"
-      );
-
-    return;
-  }
-
-  videoDraftSummary
-    .classList
-    .add(
-      "active"
-    );
-
-  draftDetailsCount.textContent =
-    String(
-      videoDraftDetails.length
-    );
-
-  videoDraftDetailsList.innerHTML =
-    videoDraftDetails
-      .map(
-        detail => `
-          <div
-            class="detected-detail-card"
-          >
-
-            <div
-              class="detected-detail-icon"
-            >
-              ${detailIcon(
-                detail.type,
-                detail.category
-              )}
-            </div>
-
-            <div
-              class="detected-detail-info"
-            >
-
-              <strong>
-                ${escapeHTML(
-                  detail.title
-                )}
-              </strong>
-
-              <div
-                class="detected-detail-meta"
-              >
-
-                <span>
-                  ${escapeHTML(
-                    detail.place
-                  )}
-                </span>
-
-                <span
-                  class="detail-time"
-                >
-                  ${secondsToTimestamp(
-                    detail.timestampStart
-                  )}
-                </span>
-
-              </div>
-
-            </div>
-
-          </div>
-        `
-      )
-      .join("");
-}// =========================================================
-// BLOQUE 5 · GUARDAR TODO EN SUPABASE
-// Un vídeo → varios descubrimientos
-// =========================================================
-
-
-// =========================================================
-// OBTENER LA FUENTE DEL VÍDEO
-// =========================================================
-
-function getDraftVideoSource() {
-
-  const link =
-    String(
-      discoveryVideoLink?.value ||
-      ""
-    ).trim();
-
-  if (link) {
-
-    return {
-      type:
-        "url",
-
-      url:
-        link
-    };
-  }
-
-  if (
-    selectedVideoFile
-  ) {
-
-    return {
-      type:
-        "file",
-
-      file:
-        selectedVideoFile
-    };
-  }
-
-  return null;
-}
-
-
-// =========================================================
-// CREAR TÍTULO GENERAL DEL VÍDEO
-// =========================================================
-
-function getDraftVideoTitle() {
-
-  if (
-    videoDraftDetails.length ===
-    0
-  ) {
-
-    return "Vídeo de Mundo Infinito";
-  }
-
-  if (
-    videoDraftDetails.length ===
-    1
-  ) {
-
-    return videoDraftDetails[0]
-      .title ||
-      "Vídeo de Mundo Infinito";
-  }
-
-  const first =
-    videoDraftDetails[0];
-
-  const zone =
-    first.place ||
-    CONFIG.city;
-
-  return `Descubrimientos en ${zone}`;
-}
-
-
-// =========================================================
-// DESCRIPCIÓN GENERAL DEL VÍDEO
-// =========================================================
-
-function getDraftVideoDescription() {
-
-  if (
-    videoDraftDetails.length ===
-    0
-  ) {
-
-    return "";
-  }
-
-  const names =
-    videoDraftDetails
-      .slice(
-        0,
-        4
-      )
-      .map(
-        detail =>
-          detail.title
-      )
-      .filter(Boolean);
-
-  let description =
-    names.join(
-      " · "
-    );
-
-  if (
-    videoDraftDetails.length >
-    4
-  ) {
-
-    description +=
-      ` · +${videoDraftDetails.length - 4} detalles`;
-  }
-
-  return description;
-}
-
-
-// =========================================================
-// ACTUALIZAR DATOS EN MEMORIA
-// =========================================================
-
-function addPlaceToLocalState(
+function getDiscoveriesForPlace(
   place
 ) {
 
   if (!place) {
-    return;
+    return [];
   }
 
-  const index =
-    places.findIndex(
-      item =>
-        String(
-          item.id
-        ) ===
-        String(
-          place.id
-        ) ||
-        (
-          item.slug &&
-          place.slug &&
-          item.slug ===
-          place.slug
-        )
-    );
-
-  if (
-    index >= 0
-  ) {
-
-    places[index] = {
-      ...places[index],
-      ...place
-    };
-
-    return;
-  }
-
-  places.push(
-    place
-  );
-
-  addMarker(
-    place
+  return discoveries.filter(
+    discovery =>
+      discovery.placeId ===
+      place.id
   );
 }
 
+// =========================================================
+// VÍDEOS DE UN LUGAR
+// =========================================================
 
-function addVideoToLocalState(
-  video
+function getVideosForPlace(
+  place
 ) {
 
-  if (!video) {
-    return;
-  }
+  const placeNameNormalized =
+    normalize(
+      place.name
+    );
 
-  const index =
-    videos.findIndex(
-      item =>
-        String(
-          item.id
-        ) ===
-        String(
-          video.id
-        ) ||
-        (
-          video.sourceUrl &&
-          item.sourceUrl ===
-          video.sourceUrl
+  /*
+   * Primero obtenemos IDs de vídeos relacionados
+   * mediante la tabla discoveries.
+   */
+
+  const relatedVideoIds =
+    new Set(
+      getDiscoveriesForPlace(
+        place
+      )
+        .map(
+          discovery =>
+            discovery.videoId
         )
+        .filter(Boolean)
     );
 
-  if (
-    index >= 0
-  ) {
-
-    videos[index] = {
-      ...videos[index],
-      ...video
-    };
-
-    return;
-  }
-
-  videos.push(
-    video
-  );
-}
-
-
-function addDiscoveryToLocalState(
-  discovery
-) {
-
-  if (!discovery) {
-    return;
-  }
-
-  const exists =
-    discoveries.some(
-      item =>
-        String(
-          item.id
-        ) ===
-        String(
-          discovery.id
-        )
-    );
-
-  if (!exists) {
-
-    discoveries.push(
-      discovery
-    );
-  }
-}
-
-
-// =========================================================
-// GUARDAR BORRADOR EN LOCAL
-// Solo se usa si Supabase falla.
-// =========================================================
-
-function saveVideoDraftLocally({
-  videoURL,
-  details
-}) {
-
-  const stored =
-    loadJSON(
-      CONFIG.storage.discoveries,
-      []
-    );
-
-  const safeStored =
-    Array.isArray(
-      stored
-    )
-      ? stored
-      : [];
-
-  const localVideoId =
-    `local-video-${Date.now()}`;
-
-  details.forEach(
-    (
-      detail,
-      index
-    ) => {
-
-      safeStored.push({
-
-        id:
-          `local-${Date.now()}-${index}`,
-
-        videoId:
-          localVideoId,
-
-        title:
-          detail.title,
-
-        name:
-          detail.title,
-
-        place:
-          detail.place,
-
-        zone:
-          detail.place,
-
-        category:
-          detail.category,
-
-        type:
-          detail.type,
-
-        comment:
-          detail.comment,
-
-        description:
-          detail.comment,
-
-        timestampStart:
-          detail.timestampStart,
-
-        timestampEnd:
-          detail.timestampEnd,
-
-        link:
-          videoURL ||
-          "",
-
-        lat:
-          detail.lat,
-
-        lng:
-          detail.lng,
-
-        createdAt:
-          new Date()
-            .toISOString()
-      });
-    }
-  );
-
-  saveJSON(
-    CONFIG.storage.discoveries,
-    safeStored
-  );
-}
-
-
-// =========================================================
-// BOTÓN GUARDAR TODO
-// =========================================================
-
-discoveryForm
-  ?.addEventListener(
-    "submit",
-    async event => {
-
-      event.preventDefault();
-
-      if (
-        videoDraftDetails.length ===
-        0
-      ) {
-
-        showToast(
-          "Añade al menos un detalle"
-        );
-
-        openManualDetailEditor();
-
-        return;
-      }
-
-      const videoSource =
-        getDraftVideoSource();
-
-      if (
-        !videoSource
-      ) {
-
-        showToast(
-          "Añade primero un vídeo o Reel"
-        );
-
-        return;
-      }
+  return videos.filter(
+    video => {
 
       /*
-       * IMPORTANTE:
-       * En esta versión todavía no hemos
-       * conectado Supabase Storage.
-       *
-       * Un archivo seleccionado desde el ordenador
-       * tiene una URL temporal que solo funciona
-       * en este navegador.
+       * Nueva relación Supabase.
        */
 
       if (
-        videoSource.type ===
-        "file"
+        relatedVideoIds.has(
+          video.id
+        )
       ) {
 
-        showToast(
-          "La subida de archivos se conectará en el siguiente paso. Usa por ahora un enlace de vídeo."
-        );
-
-        return;
+        return true;
       }
 
-      const videoURL =
-        videoSource.url;
-
-      const button =
-        saveAllDiscoveriesButton;
-
-      const originalText =
-        button
-          ? button.innerHTML
-          : "";
-
-      if (button) {
-
-        button.disabled =
-          true;
-
-        button.innerHTML =
-          `
-            <span>
-              ⏳
-            </span>
-
-            Guardando…
-          `;
-      }
-
-      try {
-
-        // =================================================
-        // COMPROBAR SUPABASE
-        // =================================================
-
-        if (
-          !supabaseOnline ||
-          !supabaseClient
-        ) {
-
-          throw new Error(
-            "Supabase no está disponible"
-          );
-        }
-
-
-        // =================================================
-        // 1. CREAR EL VÍDEO UNA SOLA VEZ
-        // =================================================
-
-        const videoTitle =
-          getDraftVideoTitle();
-
-        const videoDescription =
-          getDraftVideoDescription();
-
-        const savedVideo =
-          await createOrGetSupabaseVideo({
-
-            title:
-              videoTitle,
-
-            description:
-              videoDescription,
-
-            url:
-              videoURL
-          });
-
-        if (!savedVideo) {
-
-          throw new Error(
-            "No se pudo crear el vídeo"
-          );
-        }
-
-        addVideoToLocalState(
-          savedVideo
-        );
-
-
-        // =================================================
-        // 2. RECORRER TODOS LOS DETALLES
-        // =================================================
-
-        let firstSavedPlace =
-          null;
-
-        const createdDiscoveries =
-          [];
-
-        for (
-          const detail
-          of videoDraftDetails
-        ) {
-
-          /*
-           * Creamos/reutilizamos el lugar.
-           *
-           * Incluso un consejo puede quedar
-           * geolocalizado en un lugar del mapa.
-           */
-
-          const savedPlace =
-            await createOrGetPlace(
-              detail
-            );
-
-          addPlaceToLocalState(
-            savedPlace
-          );
-
-          if (
-            !firstSavedPlace
-          ) {
-
-            firstSavedPlace =
-              savedPlace;
-          }
-
-
-          // ===============================================
-          // 3. CREAR DESCUBRIMIENTO CON TIMESTAMP
-          // ===============================================
-
-          const savedDiscovery =
-            await createSupabaseDiscovery({
-
-              detail,
-
-              placeId:
-                savedPlace.id,
-
-              videoId:
-                savedVideo.id
-            });
-
-          createdDiscoveries.push(
-            savedDiscovery
-          );
-
-          addDiscoveryToLocalState(
-            savedDiscovery
-          );
-        }
-
-
-        // =================================================
-        // 4. REFRESCAR MAPA
-        // =================================================
-
-        renderMarkers();
-
-
-        // =================================================
-        // 5. LIMPIAR FORMULARIO
-        // =================================================
-
-        const total =
-          createdDiscoveries.length;
-
-        discoveryForm.reset();
-
-        videoDraftDetails =
-          [];
-
-        editingDetailIndex =
-          null;
-
-        closeAddDiscovery();
-
-
-        // =================================================
-        // 6. CENTRAR EN EL PRIMER DESCUBRIMIENTO
-        // =================================================
-
-        if (
-          firstSavedPlace &&
-          Number.isFinite(
-            Number(
-              firstSavedPlace.lat
-            )
-          ) &&
-          Number.isFinite(
-            Number(
-              firstSavedPlace.lng
-            )
-          )
-        ) {
-
-          map.setView(
-            [
-              firstSavedPlace.lat,
-              firstSavedPlace.lng
-            ],
-            15
-          );
-
-          window.setTimeout(
-            () => {
-
-              openPlace(
-                firstSavedPlace.id
-              );
-
-            },
-            300
-          );
-        }
-
-
-        // =================================================
-        // 7. MENSAJE FINAL
-        // =================================================
-
-        showToast(
-          total === 1
-            ? "✓ 1 detalle guardado para todos"
-            : `✓ ${total} detalles guardados para todos`
-        );
-
-
-      } catch (error) {
-
-        console.error(
-          "Error guardando el vídeo:",
-          error
-        );
-
-        /*
-         * No perdemos el trabajo:
-         * guardamos una copia local.
-         */
-
-        saveVideoDraftLocally({
-
-          videoURL:
-            videoURL,
-
-          details:
-            videoDraftDetails
-        });
-
-        showToast(
-          "No hubo conexión. Se ha guardado una copia en este dispositivo."
-        );
-
-      } finally {
-
-        if (button) {
-
-          button.disabled =
-            false;
-
-          button.innerHTML =
-            originalText;
-        }
-      }
-    }
-  );
-
-
-// =========================================================
-// ACTUALIZAR CATEGORÍA SEGÚN TIPO
-// =========================================================
-
-detailType
-  ?.addEventListener(
-    "change",
-    () => {
+      /*
+       * Compatibilidad con videos.json antiguo.
+       */
 
       if (
-        !discoveryCategory
+        video.placeId &&
+        video.placeId ===
+        place.id
       ) {
 
-        return;
+        return true;
       }
 
-      const type =
-        detailType.value;
-
-      const suggestions = {
-
-        Lugar:
-          "Lugar",
-
-        Restaurante:
-          "Restaurante",
-
-        Playa:
-          "Playa",
-
-        Mirador:
-          "Mirador",
-
-        Consejo:
-          "Consejo",
-
-        Precio:
-          "Consejo",
-
-        Transporte:
-          "Transporte",
-
-        Aviso:
-          "Consejo",
-
-        Compras:
-          "Compras",
-
-        Evento:
-          "Vida nocturna",
-
-        Otro:
-          "Lugar"
-      };
-
-      const suggested =
-        suggestions[
-          type
-        ];
+      /*
+       * Compatibilidad por nombre.
+       */
 
       if (
-        suggested
+        video.place &&
+        normalize(
+          video.place
+        ) ===
+        placeNameNormalized
       ) {
 
-        discoveryCategory.value =
-          suggested;
-      }
-    }
-  );
-
-
-// =========================================================
-// NORMALIZAR TIMESTAMPS AL SALIR DEL CAMPO
-// =========================================================
-
-detailTimestampStart
-  ?.addEventListener(
-    "blur",
-    () => {
-
-      detailTimestampStart.value =
-        normalizeTimestampText(
-          detailTimestampStart.value
-        );
-    }
-  );
-
-
-detailTimestampEnd
-  ?.addEventListener(
-    "blur",
-    () => {
-
-      const value =
-        String(
-          detailTimestampEnd.value ||
-          ""
-        ).trim();
-
-      if (!value) {
-        return;
+        return true;
       }
 
-      detailTimestampEnd.value =
-        normalizeTimestampText(
-          value
-        );
+      return false;
     }
   );
-
+}
 
 // =========================================================
-// COMPROBAR FINAL > INICIO
+// TIMESTAMP DE UN VÍDEO PARA UN LUGAR
 // =========================================================
 
-detailTimestampEnd
-  ?.addEventListener(
-    "change",
-    () => {
+function getVideoTimestampForPlace(
+  videoId,
+  placeId
+) {
 
-      const start =
-        timestampToSeconds(
-          detailTimestampStart?.value
-        );
+  const discovery =
+    discoveries.find(
+      item =>
+        item.videoId ===
+          videoId &&
+        item.placeId ===
+          placeId
+    );
 
-      const end =
-        timestampToSeconds(
-          detailTimestampEnd?.value
-        );
+  if (!discovery) {
+    return 0;
+  }
 
-      if (
-        detailTimestampEnd.value &&
-        end < start
-      ) {
+  return Number(
+    discovery.timestampStart || 0
+  );
+}
 
-        showToast(
-          "El minuto final debe ser posterior al inicial"
-        );
-
-        detailTimestampEnd.value =
-          "";
-      }
-    }
-  );// =========================================================
-// BLOQUE 6 · FICHAS + VÍDEOS + TIMESTAMPS
+// =========================================================
+// FORMATEAR TIMESTAMP
+// Ejemplo: 65 segundos → 01:05
 // =========================================================
 
+function formatTimestamp(
+  seconds
+) {
+
+  const total =
+    Math.max(
+      0,
+      Math.floor(
+        Number(seconds) || 0
+      )
+    );
+
+  const minutes =
+    Math.floor(
+      total / 60
+    );
+
+  const remainingSeconds =
+    total % 60;
+
+  return (
+    String(minutes)
+      .padStart(
+        2,
+        "0"
+      ) +
+    ":" +
+    String(remainingSeconds)
+      .padStart(
+        2,
+        "0"
+      )
+  );
+}// =========================================================
+// APP.JS v0.5.0 · BLOQUE 3
+// Fichas + vídeos + timestamps + favoritos
+// =========================================================
 
 // =========================================================
 // ABRIR FICHA DE LUGAR
 // =========================================================
 
-function openPlace(
-  placeId
-) {
+function openPlace(placeId) {
 
   const place =
     getPlaceById(
@@ -4621,107 +1794,51 @@ function openPlace(
 
   closeContent();
 
-  if (
-    placeCoverIcon
-  ) {
+  placeCoverIcon.textContent =
+    categoryIcons[
+      place.category
+    ] || "📍";
 
-    placeCoverIcon.textContent =
-      categoryIcons[
-        place.category
-      ] ||
-      "📍";
-  }
+  placeCategory.textContent =
+    place.category;
 
-  if (
-    placeCategory
-  ) {
+  placeName.textContent =
+    place.name;
 
-    placeCategory.textContent =
-      place.category ||
-      "Lugar";
-  }
+  placeZone.textContent =
+    [
+      place.zone,
+      place.city
+    ]
+      .filter(Boolean)
+      .join(" · ");
 
-  if (
-    placeName
-  ) {
+  placeDescription.textContent =
+    place.description;
 
-    placeName.textContent =
-      place.name ||
-      "Lugar";
-  }
+  placeLocationText.textContent =
+    [
+      place.zone,
+      place.city,
+      place.country ||
+        CONFIG.country
+    ]
+      .filter(Boolean)
+      .join(", ");
 
-  if (
-    placeZone
-  ) {
+  placeTip.textContent =
+    categoryTips[
+      place.category
+    ] ||
+    "Consulta tus descubrimientos antes de visitar este lugar.";
 
-    placeZone.textContent =
-      [
-        place.zone,
-        place.city
-      ]
-        .filter(Boolean)
-        .join(
-          " · "
-        );
-  }
+  const mapsQuery =
+    encodeURIComponent(
+      `${place.name}, ${place.zone}, ${place.city}, ${place.country || CONFIG.country}`
+    );
 
-  if (
-    placeDescription
-  ) {
-
-    placeDescription.textContent =
-      place.description ||
-      "Descubrimiento guardado en Mundo Infinito.";
-  }
-
-  if (
-    placeLocationText
-  ) {
-
-    placeLocationText.textContent =
-      [
-        place.zone,
-        place.city,
-        place.country ||
-          CONFIG.country
-      ]
-        .filter(Boolean)
-        .join(
-          ", "
-        );
-  }
-
-  if (
-    placeTip
-  ) {
-
-    placeTip.textContent =
-      place.tip ||
-      "Consulta los vídeos relacionados para descubrir más detalles.";
-  }
-
-  if (
-    placeMapsButton
-  ) {
-
-    const mapsQuery =
-      encodeURIComponent(
-        [
-          place.name,
-          place.zone,
-          place.city,
-          place.country ||
-            CONFIG.country
-        ]
-          .filter(Boolean)
-          .join(
-            ", "
-          )
-      );
-
-    placeMapsButton.href =
-      `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
-  }
+  placeMapsButton.href =
+    `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
 
   renderPlaceVideos(
     place
@@ -4729,19 +1846,15 @@ function openPlace(
 
   updateSavedButton();
 
-  placePanel
-    ?.classList
-    .add(
-      "open"
-    );
+  placePanel.classList.add(
+    "open"
+  );
 
-  placePanel
-    ?.setAttribute(
-      "aria-hidden",
-      "false"
-    );
+  placePanel.setAttribute(
+    "aria-hidden",
+    "false"
+  );
 }
-
 
 // =========================================================
 // CERRAR FICHA
@@ -4749,362 +1862,195 @@ function openPlace(
 
 function closePlace() {
 
-  placePanel
-    ?.classList
-    .remove(
-      "open"
-    );
+  placePanel.classList.remove(
+    "open"
+  );
 
-  placePanel
-    ?.setAttribute(
-      "aria-hidden",
-      "true"
-    );
+  placePanel.setAttribute(
+    "aria-hidden",
+    "true"
+  );
 
   selectedPlace =
     null;
 }
 
-closePlacePanel
-  ?.addEventListener(
-    "click",
-    closePlace
-  );
-
+closePlacePanel.addEventListener(
+  "click",
+  closePlace
+);
 
 // =========================================================
-// FAVORITOS
-// =========================================================
-
-function updateSavedButton() {
-
-  if (
-    !selectedPlace ||
-    !savePlaceButton
-  ) {
-
-    return;
-  }
-
-  const saved =
-    isPlaceSaved(
-      selectedPlace.id
-    );
-
-  savePlaceButton
-    .classList
-    .toggle(
-      "saved",
-      saved
-    );
-
-  savePlaceButton.innerHTML =
-    saved
-      ? `
-          <span>
-            ♥
-          </span>
-
-          <b>
-            Guardado
-          </b>
-        `
-      : `
-          <span>
-            ♡
-          </span>
-
-          <b>
-            Guardar
-          </b>
-        `;
-}
-
-savePlaceButton
-  ?.addEventListener(
-    "click",
-    () => {
-
-      if (
-        !selectedPlace
-      ) {
-
-        return;
-      }
-
-      toggleSavedPlace(
-        selectedPlace.id
-      );
-
-      updateSavedButton();
-    }
-  );
-
-
-// =========================================================
-// RENDERIZAR VÍDEOS DE UN LUGAR
+// MOSTRAR VÍDEOS DEL LUGAR
 // =========================================================
 
 function renderPlaceVideos(
   place
 ) {
 
-  if (
-    !placeVideosList
-  ) {
-
-    return;
-  }
-
   const relatedVideos =
     getVideosForPlace(
       place
     );
 
-  if (
-    placeVideoCount
-  ) {
+  placeVideoCount.textContent =
+    relatedVideos.length;
 
-    placeVideoCount.textContent =
-      String(
-        relatedVideos.length
-      );
-  }
+  placeVideoActionText.textContent =
+    relatedVideos.length === 1
+      ? "1 vídeo"
+      : `${relatedVideos.length} vídeos`;
 
   if (
-    placeVideoActionText
+    relatedVideos.length === 0
   ) {
 
-    placeVideoActionText.textContent =
-      relatedVideos.length ===
-      1
-        ? "1 vídeo"
-        : `${relatedVideos.length} vídeos`;
-  }
+    placeVideosList.innerHTML = `
+      <div class="empty-state">
 
-  if (
-    relatedVideos.length ===
-    0
-  ) {
+        <span>🎥</span>
 
-    placeVideosList.innerHTML =
-      `
-        <div
-          class="empty-state"
-        >
+        <strong>
+          Todavía no hay vídeos
+        </strong>
 
-          <span>
-            🎥
-          </span>
+        <p>
+          Los vídeos relacionados con este lugar aparecerán aquí.
+        </p>
 
-          <strong>
-            Todavía no hay vídeos
-          </strong>
-
-          <p>
-            Cuando un vídeo mencione este lugar aparecerá aquí.
-          </p>
-
-        </div>
-      `;
+      </div>
+    `;
 
     return;
   }
 
   placeVideosList.innerHTML =
     relatedVideos
-      .map(
-        video => {
+      .map(video => {
 
-          const timestamp =
-            getVideoTimestampForPlace(
-              video.id,
-              place.id
-            );
+        const timestamp =
+          getVideoTimestampForPlace(
+            video.id,
+            place.id
+          );
 
-          const formattedTime =
-            secondsToTimestamp(
-              timestamp
-            );
+        const timestampHTML =
+          timestamp > 0
+            ? `
+              <span class="video-source">
+                ▶ ${formatTimestamp(timestamp)}
+              </span>
+            `
+            : `
+              <span class="video-source">
+                ${escapeHTML(video.type || "Vídeo")}
+              </span>
+            `;
 
-          const moments =
-            getVideoMoments(
-              video.id
-            );
+        return `
+          <button
+            class="video-card"
+            type="button"
+            data-video-id="${escapeHTML(video.id)}"
+            data-video-time="${timestamp}"
+          >
 
-          const numberOfMoments =
-            moments.length;
+            <div class="video-thumb"></div>
 
-          return `
-            <button
-              class="video-card"
-              type="button"
-              data-place-video="${escapeHTML(video.id)}"
-              data-place-time="${timestamp}"
-            >
+            <div class="video-info">
 
-              <div
-                class="video-thumb"
-              ></div>
+              <strong>
+                ${escapeHTML(video.title)}
+              </strong>
 
-              <div
-                class="video-info"
-              >
+              <p>
+                ${
+                  escapeHTML(
+                    video.description ||
+                    place.name
+                  )
+                }
+              </p>
 
-                <strong>
-                  ${escapeHTML(
-                    video.title
-                  )}
-                </strong>
+              ${timestampHTML}
 
-                <p>
-                  ${
-                    escapeHTML(
-                      video.description ||
-                      place.name
-                    )
-                  }
-                </p>
+            </div>
 
-                <div>
-                  ${
-                    timestamp > 0
-                      ? `
-                          <span
-                            class="video-source"
-                          >
-                            ▶ ${formattedTime}
-                          </span>
-                        `
-                      : `
-                          <span
-                            class="video-source"
-                          >
-                            ${escapeHTML(
-                              video.type ||
-                              "Vídeo"
-                            )}
-                          </span>
-                        `
-                  }
-
-                  ${
-                    numberOfMoments > 1
-                      ? `
-                          <span
-                            class="video-source"
-                          >
-                            ${numberOfMoments} detalles
-                          </span>
-                        `
-                      : ""
-                  }
-                </div>
-
-              </div>
-
-            </button>
-          `;
-        }
-      )
+          </button>
+        `;
+      })
       .join("");
 
   placeVideosList
     .querySelectorAll(
-      "[data-place-video]"
+      "[data-video-id]"
     )
-    .forEach(
-      button => {
+    .forEach(button => {
 
-        button.addEventListener(
-          "click",
-          () => {
+      button.addEventListener(
+        "click",
+        () => {
 
-            const videoId =
-              button.dataset
-                .placeVideo;
-
-            const timestamp =
-              Number(
-                button.dataset
-                  .placeTime ||
-                0
-              );
-
-            const video =
-              videos.find(
-                item =>
-                  String(
-                    item.id
-                  ) ===
-                  String(
-                    videoId
-                  )
-              );
-
-            if (!video) {
-
-              return;
-            }
-
-            openVideo(
-              video,
-              timestamp
+          const video =
+            videos.find(
+              item =>
+                item.id ===
+                button.dataset.videoId
             );
-          }
-        );
-      }
-    );
-}
 
+          const timestamp =
+            Number(
+              button.dataset.videoTime ||
+              0
+            );
+
+          openVideo(
+            video,
+            timestamp
+          );
+        }
+      );
+    });
+}
 
 // =========================================================
 // BOTÓN "VÍDEOS" DE LA FICHA
 // =========================================================
 
-placeVideosButton
-  ?.addEventListener(
-    "click",
-    () => {
+placeVideosButton.addEventListener(
+  "click",
+  () => {
 
-      if (
-        !selectedPlace
-      ) {
-
-        return;
-      }
-
-      const relatedVideos =
-        getVideosForPlace(
-          selectedPlace
-        );
-
-      if (
-        relatedVideos.length ===
-        0
-      ) {
-
-        showToast(
-          "Todavía no hay vídeos para este lugar"
-        );
-
-        return;
-      }
-
-      placeVideosList
-        ?.scrollIntoView({
-          behavior:
-            "smooth",
-
-          block:
-            "start"
-        });
+    if (!selectedPlace) {
+      return;
     }
-  );
 
+    const relatedVideos =
+      getVideosForPlace(
+        selectedPlace
+      );
+
+    if (
+      relatedVideos.length === 0
+    ) {
+
+      showToast(
+        "Todavía no hay vídeos para este lugar"
+      );
+
+      return;
+    }
+
+    placeVideosList.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+);
 
 // =========================================================
-// ABRIR VÍDEO DESDE UN TIMESTAMP
+// REPRODUCTOR DE VÍDEO
+// Permite comenzar en un segundo concreto
 // =========================================================
 
 function openVideo(
@@ -5124,28 +2070,20 @@ function openVideo(
     return;
   }
 
-  const url =
-    String(
-      video.url
-    );
+  /*
+   * Instagram, TikTok, YouTube, etc.
+   * se siguen abriendo fuera si no son un MP4 directo.
+   */
 
   const externalURL =
     /^https?:\/\//i.test(
-      url
+      video.url
     );
 
   const directVideo =
     /\.(mp4|webm|ogg)(\?.*)?$/i.test(
-      url
+      video.url
     );
-
-  /*
-   * Un Reel de Instagram, TikTok o YouTube
-   * no se puede controlar con currentTime
-   * desde nuestro <video>.
-   *
-   * Por ahora se abre en una nueva pestaña.
-   */
 
   if (
     externalURL &&
@@ -5153,7 +2091,7 @@ function openVideo(
   ) {
 
     window.open(
-      url,
+      video.url,
       "_blank",
       "noopener,noreferrer"
     );
@@ -5167,7 +2105,7 @@ function openVideo(
   ) {
 
     window.open(
-      url,
+      video.url,
       "_blank"
     );
 
@@ -5180,22 +2118,24 @@ function openVideo(
 
   videoModalPlace.textContent =
     video.place ||
-    CONFIG.country;
+    "Brasil";
 
   videoPlayer.src =
-    url;
+    video.url;
 
-  videoModal
-    .classList
-    .add(
-      "open"
-    );
+  videoModal.classList.add(
+    "open"
+  );
 
-  videoModal
-    .setAttribute(
-      "aria-hidden",
-      "false"
-    );
+  videoModal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+  /*
+   * Esperamos a que el navegador conozca
+   * la duración antes de saltar al timestamp.
+   */
 
   videoPlayer.onloadedmetadata =
     () => {
@@ -5203,9 +2143,7 @@ function openVideo(
       const safeStart =
         Math.max(
           0,
-          Number(
-            startAt
-          ) || 0
+          Number(startAt) || 0
         );
 
       if (
@@ -5220,25 +2158,18 @@ function openVideo(
             safeStart,
             Math.max(
               0,
-              videoPlayer.duration -
-                0.25
+              videoPlayer.duration - 0.2
             )
           );
       }
 
       videoPlayer
         .play()
-        .catch(
-          () => {
-            /*
-             * Algunos navegadores bloquean
-             * el autoplay.
-             */
-          }
-        );
+        .catch(() => {
+          // Algunos navegadores requieren pulsar Play.
+        });
     };
 }
-
 
 // =========================================================
 // CERRAR VÍDEO
@@ -5246,10 +2177,7 @@ function openVideo(
 
 function closeVideo() {
 
-  if (
-    !videoPlayer
-  ) {
-
+  if (!videoPlayer) {
     return;
   }
 
@@ -5264,27 +2192,31 @@ function closeVideo() {
 
   videoPlayer.load();
 
-  videoModal
-    ?.classList
-    .remove(
-      "open"
-    );
+  videoModal.classList.remove(
+    "open"
+  );
 
-  videoModal
-    ?.setAttribute(
-      "aria-hidden",
-      "true"
-    );
+  videoModal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
 }
 
-closeVideoModal
-  ?.addEventListener(
+if (
+  closeVideoModal
+) {
+
+  closeVideoModal.addEventListener(
     "click",
     closeVideo
   );
+}
 
-videoModal
-  ?.addEventListener(
+if (
+  videoModal
+) {
+
+  videoModal.addEventListener(
     "click",
     event => {
 
@@ -5297,93 +2229,114 @@ videoModal
       }
     }
   );
-
-
-// =========================================================
-// MOMENTOS DE UN VÍDEO
-// Generamos etiquetas tipo:
-// 00:14 Selarón
-// 00:38 Pão de Açúcar
-// =========================================================
-
-function renderVideoMomentsHTML(
-  video
-) {
-
-  const moments =
-    getVideoMoments(
-      video.id
-    );
-
-  if (
-    moments.length ===
-    0
-  ) {
-
-    return "";
-  }
-
-  return `
-    <div
-      class="video-moments"
-    >
-
-      ${
-        moments
-          .map(
-            moment => {
-
-              const place =
-                places.find(
-                  item =>
-                    String(
-                      item.id
-                    ) ===
-                    String(
-                      moment.placeId
-                    )
-                );
-
-              const label =
-                place?.name ||
-                moment.title ||
-                "Detalle";
-
-              return `
-                <button
-                  type="button"
-                  class="video-moment-chip"
-                  data-moment-time="${Number(
-                    moment.timestampStart ||
-                    0
-                  )}"
-                >
-                  <span>
-                    ▶
-                  </span>
-
-                  <b>
-                    ${secondsToTimestamp(
-                      moment.timestampStart
-                    )}
-                  </b>
-
-                  <small>
-                    ${escapeHTML(
-                      label
-                    )}
-                  </small>
-                </button>
-              `;
-            }
-          )
-          .join("")
-      }
-
-    </div>
-  `;
 }
 
+// =========================================================
+// FAVORITOS
+// Por ahora siguen siendo personales en el dispositivo.
+// =========================================================
+
+function getSavedPlaces() {
+
+  const saved =
+    loadJSON(
+      CONFIG.storage.savedPlaces,
+      []
+    );
+
+  return Array.isArray(saved)
+    ? saved
+    : [];
+}
+
+function isPlaceSaved(
+  placeId
+) {
+
+  return getSavedPlaces()
+    .includes(
+      placeId
+    );
+}
+
+function updateSavedButton() {
+
+  if (!selectedPlace) {
+    return;
+  }
+
+  const saved =
+    isPlaceSaved(
+      selectedPlace.id
+    );
+
+  savePlaceButton
+    .classList
+    .toggle(
+      "saved",
+      saved
+    );
+
+  savePlaceButton.innerHTML =
+    saved
+      ? `
+          <span>♥</span>
+          <b>Guardado</b>
+        `
+      : `
+          <span>♡</span>
+          <b>Guardar</b>
+        `;
+}
+
+savePlaceButton.addEventListener(
+  "click",
+  () => {
+
+    if (!selectedPlace) {
+      return;
+    }
+
+    const saved =
+      getSavedPlaces();
+
+    const index =
+      saved.indexOf(
+        selectedPlace.id
+      );
+
+    if (
+      index >= 0
+    ) {
+
+      saved.splice(
+        index,
+        1
+      );
+
+      showToast(
+        "Eliminado de Guardados"
+      );
+
+    } else {
+
+      saved.push(
+        selectedPlace.id
+      );
+
+      showToast(
+        "Guardado en Mundo Infinito"
+      );
+    }
+
+    saveJSON(
+      CONFIG.storage.savedPlaces,
+      saved
+    );
+
+    updateSavedButton();
+  }
+);
 
 // =========================================================
 // BUSCADOR
@@ -5394,25 +2347,13 @@ function searchPlaces(
 ) {
 
   const words =
-    String(
-      query ||
-      ""
-    )
-      .normalize("NFD")
-      .replace(
-        /[\u0300-\u036f]/g,
-        ""
-      )
-      .toLowerCase()
+    normalize(query)
       .trim()
-      .split(
-        /\s+/
-      )
+      .split(/\s+/)
       .filter(Boolean);
 
   if (
-    words.length ===
-    0
+    words.length === 0
   ) {
 
     return [];
@@ -5422,22 +2363,15 @@ function searchPlaces(
     place => {
 
       const searchable =
-        [
-          place.name,
-          place.zone,
-          place.city,
-          place.category,
-          place.description
-        ]
-          .join(
-            " "
-          )
-          .normalize("NFD")
-          .replace(
-            /[\u0300-\u036f]/g,
-            ""
-          )
-          .toLowerCase();
+        normalize(
+          [
+            place.name,
+            place.zone,
+            place.city,
+            place.category,
+            place.description
+          ].join(" ")
+        );
 
       return words.every(
         word =>
@@ -5449,9 +2383,8 @@ function searchPlaces(
   );
 }
 
-
 // =========================================================
-// RENDER RESULTADOS DEL BUSCADOR
+// MOSTRAR RESULTADOS DE BÚSQUEDA
 // =========================================================
 
 function renderSearchResults(
@@ -5459,68 +2392,51 @@ function renderSearchResults(
 ) {
 
   const query =
-    searchInput
-      ?.value
-      .trim() ||
-    "";
+    searchInput.value.trim();
 
   if (!query) {
 
     searchResults.innerHTML =
       "";
 
-    searchResults
-      .classList
-      .add(
-        "hidden"
-      );
+    searchResults.classList.add(
+      "hidden"
+    );
 
-    clearSearch
-      ?.classList
-      .add(
-        "hidden"
-      );
+    clearSearch.classList.add(
+      "hidden"
+    );
 
     return;
   }
 
-  clearSearch
-    ?.classList
-    .remove(
-      "hidden"
-    );
+  clearSearch.classList.remove(
+    "hidden"
+  );
 
   if (
-    results.length ===
-    0
+    results.length === 0
   ) {
 
-    searchResults.innerHTML =
-      `
-        <div
-          class="no-results"
-        >
+    searchResults.innerHTML = `
+      <div class="no-results">
 
-          <span>
-            🔍
-          </span>
+        <span>🔍</span>
 
-          <strong>
-            Sin resultados
-          </strong>
+        <strong>
+          Sin resultados
+        </strong>
 
-          <p>
-            Prueba con otra palabra.
-          </p>
+        <p>
+          Prueba con otra palabra.
+        </p>
 
-        </div>
-      `;
+      </div>
+    `;
 
-    searchResults
-      .classList
-      .remove(
-        "hidden"
-      );
+    searchResults.classList.remove(
+      "hidden"
+    );
 
     return;
   }
@@ -5536,39 +2452,34 @@ function renderSearchResults(
           <button
             class="search-result"
             type="button"
-            data-search-place="${escapeHTML(place.id)}"
+            data-place-id="${escapeHTML(place.id)}"
           >
 
-            <div
-              class="search-result-icon"
-            >
+            <div class="search-result-icon">
               ${
                 categoryIcons[
                   place.category
-                ] ||
-                "📍"
+                ] || "📍"
               }
             </div>
 
             <div>
 
               <strong>
-                ${escapeHTML(
-                  place.name
-                )}
+                ${escapeHTML(place.name)}
               </strong>
 
               <small>
-                ${escapeHTML(
-                  [
-                    place.zone,
-                    place.category
-                  ]
-                    .filter(Boolean)
-                    .join(
-                      " · "
-                    )
-                )}
+                ${
+                  escapeHTML(
+                    [
+                      place.zone,
+                      place.category
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
+                  )
+                }
               </small>
 
             </div>
@@ -5580,115 +2491,98 @@ function renderSearchResults(
 
   searchResults
     .querySelectorAll(
-      "[data-search-place]"
+      "[data-place-id]"
     )
-    .forEach(
-      button => {
+    .forEach(button => {
 
-        button.addEventListener(
-          "click",
-          () => {
+      button.addEventListener(
+        "click",
+        () => {
 
-            const place =
-              getPlaceById(
-                button.dataset
-                  .searchPlace
-              );
-
-            if (!place) {
-
-              return;
-            }
-
-            searchInput.value =
-              place.name;
-
-            searchResults
-              .classList
-              .add(
-                "hidden"
-              );
-
-            map.setView(
-              [
-                place.lat,
-                place.lng
-              ],
-              16
+          const place =
+            getPlaceById(
+              button.dataset.placeId
             );
 
-            window.setTimeout(
-              () => {
-
-                openPlace(
-                  place.id
-                );
-
-              },
-              220
-            );
+          if (!place) {
+            return;
           }
-        );
-      }
-    );
 
-  searchResults
-    .classList
-    .remove(
-      "hidden"
-    );
+          searchInput.value =
+            place.name;
+
+          searchResults.classList.add(
+            "hidden"
+          );
+
+          map.setView(
+            [
+              place.lat,
+              place.lng
+            ],
+            16
+          );
+
+          window.setTimeout(
+            () => {
+
+              openPlace(
+                place.id
+              );
+            },
+            250
+          );
+        }
+      );
+    });
+
+  searchResults.classList.remove(
+    "hidden"
+  );
 }
 
 function updateSearch() {
 
   renderSearchResults(
     searchPlaces(
-      searchInput
-        ?.value ||
-      ""
+      searchInput.value
     )
   );
 }
 
-searchInput
-  ?.addEventListener(
-    "input",
-    updateSearch
-  );
+searchInput.addEventListener(
+  "input",
+  updateSearch
+);
 
-clearSearch
-  ?.addEventListener(
-    "click",
-    () => {
+clearSearch.addEventListener(
+  "click",
+  () => {
 
-      searchInput.value =
-        "";
+    searchInput.value =
+      "";
 
-      searchResults.innerHTML =
-        "";
+    searchResults.innerHTML =
+      "";
 
-      searchResults
-        .classList
-        .add(
-          "hidden"
-        );
+    searchResults.classList.add(
+      "hidden"
+    );
 
-      clearSearch
-        .classList
-        .add(
-          "hidden"
-        );
+    clearSearch.classList.add(
+      "hidden"
+    );
 
-      searchInput.focus();
+    searchInput.focus();
 
-      closePlace();
+    closePlace();
 
-      map.setView(
-        CONFIG.center,
-        CONFIG.zoom
-      );
-    }
-  );
+    map.setView(
+      CONFIG.center,
+      CONFIG.zoom
+    );
+  }
+);
 
 document.addEventListener(
   "click",
@@ -5703,17 +2597,956 @@ document.addEventListener(
       )
     ) {
 
-      searchResults
-        ?.classList
-        .add(
-          "hidden"
+      searchResults.classList.add(
+        "hidden"
+      );
+    }
+  }
+); // =========================================================
+// APP.JS v0.5.0 · BLOQUE 4
+// ➕ compartido con Supabase
+// =========================================================
+
+// =========================================================
+// ABRIR / CERRAR FORMULARIO
+// =========================================================
+
+function openAddDiscovery() {
+
+  closePlace();
+  closeContent();
+
+  discoveryModal.classList.add(
+    "open"
+  );
+
+  discoveryModal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+  window.setTimeout(
+    () => {
+
+      const input =
+        document.getElementById(
+          "discoveryTitle"
         );
+
+      if (input) {
+        input.focus();
+      }
+
+    },
+    200
+  );
+}
+
+function closeAddDiscovery() {
+
+  discoveryModal.classList.remove(
+    "open"
+  );
+
+  discoveryModal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+}
+
+openDiscoveryModal.addEventListener(
+  "click",
+  openAddDiscovery
+);
+
+closeDiscoveryModal.addEventListener(
+  "click",
+  closeAddDiscovery
+);
+
+discoveryModal.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target ===
+      discoveryModal
+    ) {
+
+      closeAddDiscovery();
+    }
+  }
+);
+
+// =========================================================
+// USAR CENTRO DEL MAPA
+// =========================================================
+
+useMapCenter.addEventListener(
+  "click",
+  () => {
+
+    const center =
+      map.getCenter();
+
+    discoveryLat.value =
+      center.lat.toFixed(6);
+
+    discoveryLng.value =
+      center.lng.toFixed(6);
+
+    showToast(
+      "Coordenadas del mapa añadidas"
+    );
+  }
+);
+
+// =========================================================
+// BUSCAR SI EL LUGAR YA EXISTE EN SUPABASE
+// =========================================================
+
+async function findSupabasePlaceBySlug(
+  placeSlug
+) {
+
+  if (!supabaseClient) {
+    return null;
+  }
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("places")
+        .select("*")
+        .eq(
+          "slug",
+          placeSlug
+        )
+        .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data || null;
+
+  } catch (error) {
+
+    console.error(
+      "Error buscando el lugar:",
+      error
+    );
+
+    return null;
+  }
+}
+
+// =========================================================
+// CREAR O REUTILIZAR LUGAR
+// =========================================================
+
+async function createOrGetPlace({
+  name,
+  zone,
+  category,
+  description,
+  lat,
+  lng
+}) {
+
+  const placeSlug =
+    slug(name);
+
+  /*
+   * Primero comprobamos si ya existe.
+   */
+
+  const existing =
+    await findSupabasePlaceBySlug(
+      placeSlug
+    );
+
+  if (existing) {
+
+    return normalizePlace({
+      ...existing,
+      source:
+        "supabase"
+    });
+  }
+
+  /*
+   * Si no existe, lo creamos.
+   */
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("places")
+      .insert({
+        slug:
+          placeSlug,
+
+        name,
+
+        category,
+
+        zone,
+
+        city:
+          CONFIG.city,
+
+        country:
+          CONFIG.country,
+
+        description,
+
+        latitude:
+          lat,
+
+        longitude:
+          lng
+      })
+      .select()
+      .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return normalizePlace({
+    ...data,
+    source:
+      "supabase"
+  });
+}
+
+// =========================================================
+// CREAR VÍDEO EN SUPABASE
+// =========================================================
+
+async function createSupabaseVideo({
+  title,
+  description,
+  url
+}) {
+
+  if (!url) {
+    return null;
+  }
+
+  /*
+   * Si ya existe la misma URL, reutilizamos el vídeo.
+   */
+
+  const {
+    data: existingVideos,
+    error: searchError
+  } =
+    await supabaseClient
+      .from("videos")
+      .select("*")
+      .eq(
+        "source_url",
+        url
+      )
+      .limit(1);
+
+  if (searchError) {
+    throw searchError;
+  }
+
+  if (
+    Array.isArray(
+      existingVideos
+    ) &&
+    existingVideos.length > 0
+  ) {
+
+    return normalizeVideo({
+      ...existingVideos[0],
+      source:
+        "supabase"
+    });
+  }
+
+  const sourceType =
+    url.includes(
+      "instagram.com"
+    )
+      ? "Instagram"
+      : url.includes(
+          "tiktok.com"
+        )
+        ? "TikTok"
+        : url.includes(
+            "youtube.com"
+          ) ||
+          url.includes(
+            "youtu.be"
+          )
+          ? "YouTube"
+          : "Vídeo";
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("videos")
+      .insert({
+        title,
+
+        description,
+
+        /*
+         * Para enlaces externos usamos source_url.
+         * video_url quedará para MP4 alojados.
+         */
+
+        video_url:
+          null,
+
+        source_type:
+          sourceType,
+
+        source_url:
+          url,
+
+        transcript:
+          null,
+
+        duration_seconds:
+          null
+      })
+      .select()
+      .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return normalizeVideo({
+    ...data,
+    source:
+      "supabase"
+  });
+}
+
+// =========================================================
+// CREAR DESCUBRIMIENTO
+// =========================================================
+
+async function createSupabaseDiscovery({
+  title,
+  description,
+  category,
+  placeId,
+  videoId = null,
+  timestampStart = 0,
+  timestampEnd = null
+}) {
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("discoveries")
+      .insert({
+        video_id:
+          videoId,
+
+        place_id:
+          placeId,
+
+        title,
+
+        description,
+
+        category,
+
+        timestamp_start:
+          timestampStart,
+
+        timestamp_end:
+          timestampEnd,
+
+        /*
+         * Como todavía lo introduce una persona,
+         * lo consideramos aprobado.
+         *
+         * Cuando llegue la IA, las propuestas
+         * automáticas entrarán con approved=false.
+         */
+
+        confidence:
+          1,
+
+        approved:
+          true
+      })
+      .select()
+      .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return normalizeDiscovery(
+    data
+  );
+}
+
+// =========================================================
+// FALLBACK LOCAL
+// Si Supabase falla, no perdemos lo escrito.
+// =========================================================
+
+function saveDiscoveryLocally({
+  title,
+  placeText,
+  category,
+  link,
+  comment,
+  lat,
+  lng
+}) {
+
+  const localDiscoveries =
+    loadJSON(
+      CONFIG.storage.discoveries,
+      []
+    );
+
+  const localId =
+    `local-${slug(title)}-${Date.now()}`;
+
+  const localDiscovery = {
+
+    id:
+      localId,
+
+    title,
+
+    name:
+      title,
+
+    place:
+      placeText,
+
+    zone:
+      placeText,
+
+    category,
+
+    link,
+
+    comment,
+
+    description:
+      comment ||
+      "Descubrimiento añadido por un Explorador.",
+
+    lat,
+
+    lng,
+
+    createdAt:
+      new Date().toISOString()
+  };
+
+  localDiscoveries.push(
+    localDiscovery
+  );
+
+  saveJSON(
+    CONFIG.storage.discoveries,
+    localDiscoveries
+  );
+
+  return localDiscovery;
+}
+
+// =========================================================
+// FORMULARIO ➕
+// =========================================================
+
+discoveryForm.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+    const submitButton =
+      discoveryForm.querySelector(
+        'button[type="submit"]'
+      );
+
+    const originalButtonText =
+      submitButton
+        ? submitButton.textContent
+        : "";
+
+    if (submitButton) {
+
+      submitButton.disabled =
+        true;
+
+      submitButton.textContent =
+        "Guardando…";
+    }
+
+    const form =
+      new FormData(
+        discoveryForm
+      );
+
+    const title =
+      String(
+        form.get("title") ||
+        ""
+      ).trim();
+
+    const placeText =
+      String(
+        form.get("place") ||
+        ""
+      ).trim();
+
+    const category =
+      String(
+        form.get("category") ||
+        ""
+      ).trim();
+
+    const link =
+      String(
+        form.get("link") ||
+        ""
+      ).trim();
+
+    const comment =
+      String(
+        form.get("comment") ||
+        ""
+      ).trim();
+
+    const latValue =
+      Number(
+        form.get("lat")
+      );
+
+    const lngValue =
+      Number(
+        form.get("lng")
+      );
+
+    if (
+      !title ||
+      !placeText ||
+      !category
+    ) {
+
+      showToast(
+        "Completa nombre, lugar y categoría"
+      );
+
+      if (submitButton) {
+
+        submitButton.disabled =
+          false;
+
+        submitButton.textContent =
+          originalButtonText;
+      }
+
+      return;
+    }
+
+    const center =
+      map.getCenter();
+
+    const lat =
+      Number.isFinite(
+        latValue
+      ) &&
+      latValue !== 0
+        ? latValue
+        : center.lat;
+
+    const lng =
+      Number.isFinite(
+        lngValue
+      ) &&
+      lngValue !== 0
+        ? lngValue
+        : center.lng;
+
+    const description =
+      comment ||
+      "Descubrimiento añadido por un Explorador.";
+
+    try {
+
+      // ---------------------------------------------------
+      // MODO COMPARTIDO
+      // ---------------------------------------------------
+
+      if (
+        supabaseOnline &&
+        supabaseClient
+      ) {
+
+        /*
+         * 1. Creamos o reutilizamos el lugar.
+         */
+
+        const newPlace =
+          await createOrGetPlace({
+            name:
+              title,
+
+            zone:
+              placeText,
+
+            category,
+
+            description,
+
+            lat,
+
+            lng
+          });
+
+        /*
+         * 2. Si existe enlace, creamos/reutilizamos vídeo.
+         */
+
+        let newVideo =
+          null;
+
+        if (link) {
+
+          newVideo =
+            await createSupabaseVideo({
+              title,
+
+              description,
+
+              url:
+                link
+            });
+        }
+
+        /*
+         * 3. Creamos la relación descubrimiento.
+         */
+
+        const newDiscovery =
+          await createSupabaseDiscovery({
+            title,
+
+            description,
+
+            category,
+
+            placeId:
+              newPlace.id,
+
+            videoId:
+              newVideo
+                ? newVideo.id
+                : null,
+
+            timestampStart:
+              0
+          });
+
+        /*
+         * 4. Actualizamos la app sin necesidad
+         *    de recargar la página.
+         */
+
+        if (
+          !places.some(
+            item =>
+              item.id ===
+              newPlace.id
+          )
+        ) {
+
+          places.push(
+            newPlace
+          );
+
+          addMarker(
+            newPlace
+          );
+        }
+
+        if (
+          newVideo &&
+          !videos.some(
+            item =>
+              item.id ===
+              newVideo.id
+          )
+        ) {
+
+          videos.push(
+            newVideo
+          );
+        }
+
+        discoveries.push(
+          newDiscovery
+        );
+
+        discoveryForm.reset();
+
+        closeAddDiscovery();
+
+        map.setView(
+          [
+            newPlace.lat,
+            newPlace.lng
+          ],
+          15
+        );
+
+        window.setTimeout(
+          () => {
+
+            openPlace(
+              newPlace.id
+            );
+
+          },
+          250
+        );
+
+        showToast(
+          "✓ Guardado para todos"
+        );
+
+      } else {
+
+        // -------------------------------------------------
+        // MODO LOCAL DE EMERGENCIA
+        // -------------------------------------------------
+
+        const localDiscovery =
+          saveDiscoveryLocally({
+            title,
+
+            placeText,
+
+            category,
+
+            link,
+
+            comment,
+
+            lat,
+
+            lng
+          });
+
+        const localPlace =
+          normalizePlace({
+
+            id:
+              localDiscovery.id,
+
+            slug:
+              slug(title),
+
+            name:
+              title,
+
+            zone:
+              placeText,
+
+            category,
+
+            description,
+
+            lat,
+
+            lng,
+
+            source:
+              "local"
+          });
+
+        places.push(
+          localPlace
+        );
+
+        addMarker(
+          localPlace
+        );
+
+        if (link) {
+
+          videos.push(
+            normalizeVideo({
+
+              id:
+                `video-${localDiscovery.id}`,
+
+              placeId:
+                localPlace.id,
+
+              place:
+                localPlace.name,
+
+              title,
+
+              description,
+
+              type:
+                link.includes(
+                  "instagram"
+                )
+                  ? "Instagram"
+                  : "Vídeo",
+
+              url:
+                link,
+
+              source:
+                "local"
+            })
+          );
+        }
+
+        discoveryForm.reset();
+
+        closeAddDiscovery();
+
+        map.setView(
+          [
+            lat,
+            lng
+          ],
+          15
+        );
+
+        window.setTimeout(
+          () => {
+
+            openPlace(
+              localPlace.id
+            );
+
+          },
+          250
+        );
+
+        showToast(
+          "Guardado solo en este dispositivo"
+        );
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Error guardando el descubrimiento:",
+        error
+      );
+
+      /*
+       * Si Supabase responde con error,
+       * guardamos una copia local.
+       */
+
+      const localDiscovery =
+        saveDiscoveryLocally({
+          title,
+          placeText,
+          category,
+          link,
+          comment,
+          lat,
+          lng
+        });
+
+      const localPlace =
+        normalizePlace({
+
+          id:
+            localDiscovery.id,
+
+          slug:
+            slug(title),
+
+          name:
+            title,
+
+          zone:
+            placeText,
+
+          category,
+
+          description,
+
+          lat,
+
+          lng,
+
+          source:
+            "local"
+        });
+
+      if (
+        !places.some(
+          item =>
+            item.id ===
+            localPlace.id
+        )
+      ) {
+
+        places.push(
+          localPlace
+        );
+
+        addMarker(
+          localPlace
+        );
+      }
+
+      discoveryForm.reset();
+
+      closeAddDiscovery();
+
+      showToast(
+        "No hubo conexión: guardado localmente"
+      );
+
+    } finally {
+
+      if (submitButton) {
+
+        submitButton.disabled =
+          false;
+
+        submitButton.textContent =
+          originalButtonText;
+      }
     }
   }
 );// =========================================================
-// BLOQUE 7 · PANELES + MENÚ INFERIOR
+// APP.JS v0.5.0 · BLOQUE 5 FINAL
+// Paneles + carga inicial + Supabase + arranque
 // =========================================================
-
 
 // =========================================================
 // PANEL GENERAL
@@ -5726,68 +3559,47 @@ function openContent(
 
   closePlace();
 
-  if (
-    contentPanelTitle
-  ) {
+  contentPanelTitle.textContent =
+    title;
 
-    contentPanelTitle.textContent =
-      title;
-  }
+  contentPanelBody.innerHTML =
+    html;
 
-  if (
-    contentPanelBody
-  ) {
+  contentPanel.classList.add(
+    "open"
+  );
 
-    contentPanelBody.innerHTML =
-      html;
-  }
-
-  contentPanel
-    ?.classList
-    .add(
-      "open"
-    );
-
-  contentPanel
-    ?.setAttribute(
-      "aria-hidden",
-      "false"
-    );
+  contentPanel.setAttribute(
+    "aria-hidden",
+    "false"
+  );
 }
-
 
 function closeContent() {
 
-  contentPanel
-    ?.classList
-    .remove(
-      "open"
-    );
-
-  contentPanel
-    ?.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-}
-
-
-closeContentPanel
-  ?.addEventListener(
-    "click",
-    closeContent
+  contentPanel.classList.remove(
+    "open"
   );
 
+  contentPanel.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+}
+
+closeContentPanel.addEventListener(
+  "click",
+  closeContent
+);
 
 // =========================================================
-// PANEL · TODOS LOS VÍDEOS
+// PANEL TODOS LOS VÍDEOS
 // =========================================================
 
 function renderAllVideosPanel() {
 
   if (
-    videos.length ===
-    0
+    videos.length === 0
   ) {
 
     openContent(
@@ -5795,16 +3607,14 @@ function renderAllVideosPanel() {
       `
         <div class="empty-state">
 
-          <span>
-            🎥
-          </span>
+          <span>🎥</span>
 
           <strong>
             No hay vídeos todavía
           </strong>
 
           <p>
-            Los vídeos que guardéis aparecerán aquí.
+            Los vídeos guardados aparecerán aquí.
           </p>
 
         </div>
@@ -5814,93 +3624,40 @@ function renderAllVideosPanel() {
     return;
   }
 
-  /*
-   * Ordenamos los vídeos:
-   * los más recientes primero.
-   */
-
-  const orderedVideos =
-    [...videos]
-      .reverse();
-
   const html =
-    orderedVideos
+    videos
       .map(
-        video => {
+        video => `
+          <button
+            class="content-card"
+            type="button"
+            data-global-video="${escapeHTML(video.id)}"
+          >
 
-          const moments =
-            getVideoMoments(
-              video.id
-            );
+            <div class="content-card-icon">
+              🎥
+            </div>
 
-          const firstMoment =
-            moments[0];
+            <div class="content-card-text">
 
-          const firstPlace =
-            firstMoment
-              ? places.find(
-                  place =>
-                    String(
-                      place.id
-                    ) ===
-                    String(
-                      firstMoment.placeId
-                    )
-                )
-              : null;
+              <strong>
+                ${escapeHTML(video.title)}
+              </strong>
 
-          return `
-            <article
-              class="content-card"
-              data-video-card="${escapeHTML(video.id)}"
-            >
-
-              <div
-                class="content-card-icon"
-              >
-                🎥
-              </div>
-
-              <div
-                class="content-card-text"
-              >
-
-                <strong>
-                  ${escapeHTML(
-                    video.title
-                  )}
-                </strong>
-
-                <p>
-                  ${
-                    escapeHTML(
-                      firstPlace?.name ||
-                      video.type ||
-                      CONFIG.country
-                    )
-                  }
-                </p>
-
+              <p>
                 ${
-                  moments.length > 0
-                    ? `
-                        <p>
-                          ✨ ${moments.length}
-                          ${
-                            moments.length === 1
-                              ? "detalle"
-                              : "detalles"
-                          }
-                        </p>
-                      `
-                    : ""
+                  escapeHTML(
+                    video.place ||
+                    video.type ||
+                    "Brasil"
+                  )
                 }
+              </p>
 
-              </div>
+            </div>
 
-            </article>
-          `;
-        }
+          </button>
+        `
       )
       .join("");
 
@@ -5909,282 +3666,9 @@ function renderAllVideosPanel() {
     html
   );
 
-
-  // =======================================================
-  // CLIC EN CADA VÍDEO
-  // =======================================================
-
   contentPanelBody
-    ?.querySelectorAll(
-      "[data-video-card]"
-    )
-    .forEach(
-      card => {
-
-        card.addEventListener(
-          "click",
-          () => {
-
-            const video =
-              videos.find(
-                item =>
-                  String(
-                    item.id
-                  ) ===
-                  String(
-                    card.dataset
-                      .videoCard
-                  )
-              );
-
-            if (!video) {
-
-              return;
-            }
-
-            openVideoDetailsPanel(
-              video
-            );
-          }
-        );
-      }
-    );
-}
-
-
-// =========================================================
-// FICHA COMPLETA DE UN VÍDEO
-// Aquí se ven TODOS sus momentos.
-// =========================================================
-
-function openVideoDetailsPanel(
-  video
-) {
-
-  const moments =
-    getVideoMoments(
-      video.id
-    );
-
-  const momentsHTML =
-    moments.length ===
-    0
-      ? `
-          <div class="empty-state">
-
-            <span>
-              ✨
-            </span>
-
-            <strong>
-              Sin detalles todavía
-            </strong>
-
-            <p>
-              Este vídeo todavía no tiene momentos asociados.
-            </p>
-
-          </div>
-        `
-      : moments
-          .map(
-            moment => {
-
-              const place =
-                places.find(
-                  item =>
-                    String(
-                      item.id
-                    ) ===
-                    String(
-                      moment.placeId
-                    )
-                );
-
-              const time =
-                secondsToTimestamp(
-                  moment.timestampStart
-                );
-
-              return `
-                <button
-                  class="content-card"
-                  type="button"
-                  data-video-moment-time="${Number(
-                    moment.timestampStart ||
-                    0
-                  )}"
-                  data-video-moment-place="${escapeHTML(
-                    moment.placeId ||
-                    ""
-                  )}"
-                >
-
-                  <div
-                    class="content-card-icon"
-                  >
-                    ${
-                      categoryIcons[
-                        moment.category
-                      ] ||
-                      "📍"
-                    }
-                  </div>
-
-                  <div
-                    class="content-card-text"
-                  >
-
-                    <strong>
-                      ${escapeHTML(
-                        moment.title
-                      )}
-                    </strong>
-
-                    <p>
-                      ${escapeHTML(
-                        place?.name ||
-                        moment.category ||
-                        "Detalle"
-                      )}
-                    </p>
-
-                    <p>
-                      ▶ ${time}
-                    </p>
-
-                  </div>
-
-                </button>
-              `;
-            }
-          )
-          .join("");
-
-  openContent(
-    video.title ||
-    "Vídeo",
-    `
-      <div
-        style="
-          display:grid;
-          gap:14px;
-        "
-      >
-
-        <div
-          class="info-card"
-        >
-
-          <span>
-            🎥
-          </span>
-
-          <div>
-
-            <b>
-              ${escapeHTML(
-                video.type ||
-                "Vídeo"
-              )}
-            </b>
-
-            <p>
-              ${
-                escapeHTML(
-                  video.description ||
-                  "Vídeo guardado en Mundo Infinito."
-                )
-              }
-            </p>
-
-          </div>
-
-        </div>
-
-
-        ${
-          video.url
-            ? `
-                <button
-                  id="playFullVideoFromPanel"
-                  class="primary-btn"
-                  type="button"
-                >
-                  ▶ Ver vídeo
-                </button>
-              `
-            : ""
-        }
-
-
-        <section>
-
-          <div
-            class="section-head"
-          >
-
-            <div>
-
-              <span
-                class="eyebrow"
-              >
-                Exploración
-              </span>
-
-              <h3>
-                Momentos del vídeo
-              </h3>
-
-            </div>
-
-            <span
-              class="count-badge"
-            >
-              ${moments.length}
-            </span>
-
-          </div>
-
-
-          <div>
-            ${momentsHTML}
-          </div>
-
-        </section>
-
-      </div>
-    `
-  );
-
-
-  // =======================================================
-  // VER VÍDEO COMPLETO
-  // =======================================================
-
-  document
-    .getElementById(
-      "playFullVideoFromPanel"
-    )
-    ?.addEventListener(
-      "click",
-      () => {
-
-        openVideo(
-          video,
-          0
-        );
-      }
-    );
-
-
-  // =======================================================
-  // CLIC EN UN MOMENTO
-  // =======================================================
-
-  contentPanelBody
-    ?.querySelectorAll(
-      "[data-video-moment-time]"
+    .querySelectorAll(
+      "[data-global-video]"
     )
     .forEach(
       button => {
@@ -6193,32 +3677,28 @@ function openVideoDetailsPanel(
           "click",
           () => {
 
-            const time =
-              Number(
-                button.dataset
-                  .videoMomentTime ||
-                0
+            const video =
+              videos.find(
+                item =>
+                  item.id ===
+                  button.dataset.globalVideo
               );
 
-            /*
-             * Si el vídeo es reproducible
-             * dentro de Mundo Infinito,
-             * saltamos al momento.
-             */
+            if (video) {
 
-            openVideo(
-              video,
-              time
-            );
+              openVideo(
+                video,
+                0
+              );
+            }
           }
         );
       }
     );
 }
 
-
 // =========================================================
-// PANEL · GASTRONOMÍA
+// PANEL GASTRONOMÍA
 // =========================================================
 
 function renderFoodPanel() {
@@ -6235,8 +3715,7 @@ function renderFoodPanel() {
     );
 
   if (
-    foodPlaces.length ===
-    0
+    foodPlaces.length === 0
   ) {
 
     openContent(
@@ -6244,16 +3723,14 @@ function renderFoodPanel() {
       `
         <div class="empty-state">
 
-          <span>
-            🍴
-          </span>
+          <span>🍴</span>
 
           <strong>
-            Todavía no hay gastronomía
+            Todavía no hay restaurantes
           </strong>
 
           <p>
-            Restaurantes y recomendaciones aparecerán aquí.
+            Cuando añadáis restaurantes aparecerán aquí automáticamente.
           </p>
 
         </div>
@@ -6262,7 +3739,6 @@ function renderFoodPanel() {
 
     return;
   }
-
 
   const html =
     foodPlaces
@@ -6274,38 +3750,26 @@ function renderFoodPanel() {
             data-food-place="${escapeHTML(place.id)}"
           >
 
-            <div
-              class="content-card-icon"
-            >
+            <div class="content-card-icon">
               ${
                 categoryIcons[
                   place.category
-                ] ||
-                "🍴"
+                ] || "🍴"
               }
             </div>
 
-            <div
-              class="content-card-text"
-            >
+            <div class="content-card-text">
 
               <strong>
-                ${escapeHTML(
-                  place.name
-                )}
+                ${escapeHTML(place.name)}
               </strong>
 
               <p>
                 ${
                   escapeHTML(
-                    [
-                      place.zone,
-                      place.city
-                    ]
-                      .filter(Boolean)
-                      .join(
-                        " · "
-                      )
+                    place.zone ||
+                    place.city ||
+                    "Brasil"
                   )
                 }
               </p>
@@ -6317,15 +3781,13 @@ function renderFoodPanel() {
       )
       .join("");
 
-
   openContent(
     "Gastronomía",
     html
   );
 
-
   contentPanelBody
-    ?.querySelectorAll(
+    .querySelectorAll(
       "[data-food-place]"
     )
     .forEach(
@@ -6337,12 +3799,10 @@ function renderFoodPanel() {
 
             const place =
               getPlaceById(
-                button.dataset
-                  .foodPlace
+                button.dataset.foodPlace
               );
 
             if (!place) {
-
               return;
             }
 
@@ -6362,9 +3822,8 @@ function renderFoodPanel() {
                 openPlace(
                   place.id
                 );
-
               },
-              220
+              250
             );
           }
         );
@@ -6372,191 +3831,34 @@ function renderFoodPanel() {
     );
 }
 
-
 // =========================================================
-// PANEL · MI VIAJE
+// PANEL MI VIAJE
 // =========================================================
 
 function renderTripPanel() {
 
-  const savedIds =
-    getSavedPlaces();
-
-  const savedPlaces =
-    places.filter(
-      place =>
-        savedIds.includes(
-          String(
-            place.id
-          )
-        )
-    );
-
-
-  if (
-    savedPlaces.length ===
-    0
-  ) {
-
-    openContent(
-      "Mi viaje",
-      `
-        <div class="empty-state">
-
-          <span>
-            📅
-          </span>
-
-          <strong>
-            Tu viaje está vacío
-          </strong>
-
-          <p>
-            Guarda lugares y más adelante podremos organizarlos por días.
-          </p>
-
-        </div>
-      `
-    );
-
-    return;
-  }
-
-
-  const html =
-    `
-      <div
-        class="info-card"
-      >
-
-        <span>
-          ✨
-        </span>
-
-        <div>
-
-          <b>
-            ${savedPlaces.length}
-            ${
-              savedPlaces.length === 1
-                ? "lugar guardado"
-                : "lugares guardados"
-            }
-          </b>
-
-          <p>
-            Próximamente podrás ordenarlos por días y crear tu ruta.
-          </p>
-
-        </div>
-
-      </div>
-
-      ${
-        savedPlaces
-          .map(
-            place => `
-              <button
-                class="content-card"
-                type="button"
-                data-trip-place="${escapeHTML(place.id)}"
-              >
-
-                <div
-                  class="content-card-icon"
-                >
-                  ${
-                    categoryIcons[
-                      place.category
-                    ] ||
-                    "📍"
-                  }
-                </div>
-
-                <div
-                  class="content-card-text"
-                >
-
-                  <strong>
-                    ${escapeHTML(
-                      place.name
-                    )}
-                  </strong>
-
-                  <p>
-                    ${escapeHTML(
-                      place.zone ||
-                      place.category
-                    )}
-                  </p>
-
-                </div>
-
-              </button>
-            `
-          )
-          .join("")
-      }
-    `;
-
-
   openContent(
     "Mi viaje",
-    html
+    `
+      <div class="empty-state">
+
+        <span>📅</span>
+
+        <strong>
+          Planificador en preparación
+        </strong>
+
+        <p>
+          Aquí organizaremos los descubrimientos por días cuando avancemos con la siguiente fase.
+        </p>
+
+      </div>
+    `
   );
-
-
-  contentPanelBody
-    ?.querySelectorAll(
-      "[data-trip-place]"
-    )
-    .forEach(
-      button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            const place =
-              getPlaceById(
-                button.dataset
-                  .tripPlace
-              );
-
-            if (!place) {
-
-              return;
-            }
-
-            closeContent();
-
-            map.setView(
-              [
-                place.lat,
-                place.lng
-              ],
-              16
-            );
-
-            window.setTimeout(
-              () => {
-
-                openPlace(
-                  place.id
-                );
-
-              },
-              220
-            );
-          }
-        );
-      }
-    );
 }
 
-
 // =========================================================
-// PANEL · GUARDADOS
+// PANEL GUARDADOS
 // =========================================================
 
 function renderSavedPanel() {
@@ -6568,16 +3870,12 @@ function renderSavedPanel() {
     places.filter(
       place =>
         savedIds.includes(
-          String(
-            place.id
-          )
+          place.id
         )
     );
 
-
   if (
-    savedPlaces.length ===
-    0
+    savedPlaces.length === 0
   ) {
 
     openContent(
@@ -6585,16 +3883,14 @@ function renderSavedPanel() {
       `
         <div class="empty-state">
 
-          <span>
-            ❤️
-          </span>
+          <span>❤️</span>
 
           <strong>
-            No tienes guardados
+            Todavía no tienes lugares guardados
           </strong>
 
           <p>
-            Pulsa Guardar dentro de cualquier ficha del mapa.
+            Pulsa Guardar dentro de cualquier ficha.
           </p>
 
         </div>
@@ -6603,7 +3899,6 @@ function renderSavedPanel() {
 
     return;
   }
-
 
   const html =
     savedPlaces
@@ -6615,25 +3910,18 @@ function renderSavedPanel() {
             data-saved-place="${escapeHTML(place.id)}"
           >
 
-            <div
-              class="content-card-icon"
-            >
+            <div class="content-card-icon">
               ${
                 categoryIcons[
                   place.category
-                ] ||
-                "📍"
+                ] || "📍"
               }
             </div>
 
-            <div
-              class="content-card-text"
-            >
+            <div class="content-card-text">
 
               <strong>
-                ${escapeHTML(
-                  place.name
-                )}
+                ${escapeHTML(place.name)}
               </strong>
 
               <p>
@@ -6644,9 +3932,7 @@ function renderSavedPanel() {
                       place.category
                     ]
                       .filter(Boolean)
-                      .join(
-                        " · "
-                      )
+                      .join(" · ")
                   )
                 }
               </p>
@@ -6658,15 +3944,13 @@ function renderSavedPanel() {
       )
       .join("");
 
-
   openContent(
     "Guardados",
     html
   );
 
-
   contentPanelBody
-    ?.querySelectorAll(
+    .querySelectorAll(
       "[data-saved-place]"
     )
     .forEach(
@@ -6678,12 +3962,10 @@ function renderSavedPanel() {
 
             const place =
               getPlaceById(
-                button.dataset
-                  .savedPlace
+                button.dataset.savedPlace
               );
 
             if (!place) {
-
               return;
             }
 
@@ -6703,9 +3985,8 @@ function renderSavedPanel() {
                 openPlace(
                   place.id
                 );
-
               },
-              220
+              250
             );
           }
         );
@@ -6713,136 +3994,102 @@ function renderSavedPanel() {
     );
 }
 
-
 // =========================================================
 // MENÚ INFERIOR
 // =========================================================
 
 function setActiveNav(
-  selectedButton
+  activeButton
 ) {
 
-  navButtons
-    .forEach(
-      button => {
-
-        button.classList
-          .remove(
-            "active"
-          );
-      }
-    );
-
-  selectedButton
-    ?.classList
-    .add(
-      "active"
-    );
-}
-
-
-navButtons
-  .forEach(
+  navButtons.forEach(
     button => {
 
-      button.addEventListener(
-        "click",
-        () => {
-
-          setActiveNav(
-            button
-          );
-
-          const section =
-            button.dataset
-              .section;
-
-
-          // ===============================================
-          // EXPLORAR
-          // ===============================================
-
-          if (
-            section ===
-            "explorar"
-          ) {
-
-            closeContent();
-            closePlace();
-
-            map.setView(
-              CONFIG.center,
-              CONFIG.zoom
-            );
-
-            return;
-          }
-
-
-          // ===============================================
-          // VÍDEOS
-          // ===============================================
-
-          if (
-            section ===
-            "descubrimientos"
-          ) {
-
-            renderAllVideosPanel();
-
-            return;
-          }
-
-
-          // ===============================================
-          // COMIDA
-          // ===============================================
-
-          if (
-            section ===
-            "gastronomia"
-          ) {
-
-            renderFoodPanel();
-
-            return;
-          }
-
-
-          // ===============================================
-          // MI VIAJE
-          // ===============================================
-
-          if (
-            section ===
-            "viaje"
-          ) {
-
-            renderTripPanel();
-
-            return;
-          }
-
-
-          // ===============================================
-          // GUARDADOS
-          // ===============================================
-
-          if (
-            section ===
-            "guardados"
-          ) {
-
-            renderSavedPanel();
-          }
-        }
+      button.classList.remove(
+        "active"
       );
     }
   );
 
+  activeButton.classList.add(
+    "active"
+  );
+}
+
+navButtons.forEach(
+  button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        setActiveNav(
+          button
+        );
+
+        const section =
+          button.dataset.section;
+
+        if (
+          section ===
+          "explorar"
+        ) {
+
+          closeContent();
+          closePlace();
+
+          map.setView(
+            CONFIG.center,
+            CONFIG.zoom
+          );
+
+          return;
+        }
+
+        if (
+          section ===
+          "descubrimientos"
+        ) {
+
+          renderAllVideosPanel();
+
+          return;
+        }
+
+        if (
+          section ===
+          "gastronomia"
+        ) {
+
+          renderFoodPanel();
+
+          return;
+        }
+
+        if (
+          section ===
+          "viaje"
+        ) {
+
+          renderTripPanel();
+
+          return;
+        }
+
+        if (
+          section ===
+          "guardados"
+        ) {
+
+          renderSavedPanel();
+        }
+      }
+    );
+  }
+);
 
 // =========================================================
-// TECLA ESCAPE
+// CERRAR AL PULSAR ESCAPE
 // =========================================================
 
 document.addEventListener(
@@ -6864,9 +4111,8 @@ document.addEventListener(
   }
 );
 
-
 // =========================================================
-// CLIC EN EL MAPA
+// CLIC EN MAPA
 // =========================================================
 
 map.on(
@@ -6875,15 +4121,12 @@ map.on(
 
     closePlace();
     closeContent();
-  // =========================================================
-// BLOQUE 8 FINAL
-// CARGA + SUPABASE + TIEMPO REAL + ARRANQUE
-// =========================================================
-
+  }
+);
 
 // =========================================================
-// DATOS LOCALES ANTIGUOS
-// Compatibilidad con versiones anteriores.
+// DESCUBRIMIENTOS LOCALES ANTIGUOS
+// Compatibilidad con lo guardado antes de Supabase.
 // =========================================================
 
 function loadOldLocalPlaces() {
@@ -6977,7 +4220,6 @@ function loadOldLocalPlaces() {
     );
 }
 
-
 // =========================================================
 // VÍDEOS LOCALES ANTIGUOS
 // =========================================================
@@ -6999,282 +4241,63 @@ function loadOldLocalVideos() {
     return [];
   }
 
-  const result =
-    [];
-
-  const seen =
-    new Set();
-
-  oldDiscoveries
+  return oldDiscoveries
     .filter(
       item =>
         item.link
     )
-    .forEach(
-      item => {
-
-        const url =
-          String(
-            item.link
-          );
-
-        if (
-          seen.has(
-            url
-          )
-        ) {
-
-          return;
-        }
-
-        seen.add(
-          url
-        );
-
-        result.push(
-          normalizeVideo({
-
-            id:
-              item.videoId ||
-              `local-video-${slug(url)}-${Date.now()}`,
-
-            placeId:
-              item.id,
-
-            place:
-              item.name ||
-              item.title ||
-              "",
-
-            title:
-              item.title ||
-              item.name ||
-              "Vídeo",
-
-            description:
-              item.comment ||
-              item.description ||
-              "",
-
-            type:
-              url.includes(
-                "instagram"
-              )
-                ? "Instagram"
-                : url.includes(
-                    "tiktok"
-                  )
-                  ? "TikTok"
-                  : url.includes(
-                      "youtube"
-                    ) ||
-                    url.includes(
-                      "youtu.be"
-                    )
-                    ? "YouTube"
-                    : "Vídeo",
-
-            url,
-
-            sourceUrl:
-              url,
-
-            source:
-              "local"
-          })
-        );
-      }
-    );
-
-  return result;
-}
-
-
-// =========================================================
-// DESCUBRIMIENTOS LOCALES ANTIGUOS
-// =========================================================
-
-function loadOldLocalDiscoveries() {
-
-  const oldDiscoveries =
-    loadJSON(
-      CONFIG.storage.discoveries,
-      []
-    );
-
-  if (
-    !Array.isArray(
-      oldDiscoveries
-    )
-  ) {
-
-    return [];
-  }
-
-  return oldDiscoveries
     .map(
-      item => {
-
-        return normalizeDiscovery({
+      item =>
+        normalizeVideo({
 
           id:
+            `local-video-${item.id}`,
+
+          placeId:
             item.id,
+
+          place:
+            item.name ||
+            item.title ||
+            "",
 
           title:
             item.title ||
             item.name ||
-            "Descubrimiento",
+            "Vídeo",
 
           description:
             item.comment ||
             item.description ||
             "",
 
-          category:
-            item.category ||
-            "Lugar",
+          type:
+            String(
+              item.link
+            ).includes(
+              "instagram"
+            )
+              ? "Instagram"
+              : "Vídeo",
 
-          placeId:
-            item.id,
-
-          videoId:
-            item.videoId ||
-            null,
-
-          timestampStart:
-            item.timestampStart ||
-            0,
-
-          timestampEnd:
-            item.timestampEnd ??
-            null,
+          url:
+            item.link,
 
           source:
             "local"
-        });
-      }
+        })
     );
 }
 
-
 // =========================================================
-// COMBINAR VÍDEOS
-// Evitamos duplicarlos por URL.
-// =========================================================
-
-function mergeVideos(
-  ...groups
-) {
-
-  const result =
-    new Map();
-
-  groups
-    .flat()
-    .filter(Boolean)
-    .map(
-      normalizeVideo
-    )
-    .forEach(
-      video => {
-
-        const key =
-          video.sourceUrl ||
-          video.url ||
-          video.id;
-
-        if (
-          !result.has(
-            key
-          )
-        ) {
-
-          result.set(
-            key,
-            video
-          );
-
-          return;
-        }
-
-        const previous =
-          result.get(
-            key
-          );
-
-        if (
-          video.source ===
-          "supabase"
-        ) {
-
-          result.set(
-            key,
-            {
-              ...previous,
-              ...video
-            }
-          );
-        }
-      }
-    );
-
-  return Array.from(
-    result.values()
-  );
-}
-
-
-// =========================================================
-// COMBINAR DESCUBRIMIENTOS
-// =========================================================
-
-function mergeDiscoveries(
-  ...groups
-) {
-
-  const result =
-    new Map();
-
-  groups
-    .flat()
-    .filter(Boolean)
-    .map(
-      normalizeDiscovery
-    )
-    .forEach(
-      discovery => {
-
-        const key =
-          String(
-            discovery.id
-          );
-
-        result.set(
-          key,
-          discovery
-        );
-      }
-    );
-
-  return Array.from(
-    result.values()
-  );
-}
-
-
-// =========================================================
-// CARGAR TODA LA APP
+// CARGAR TODA LA INFORMACIÓN
 // =========================================================
 
 async function loadAppData() {
 
-  console.log(
-    "📦 Cargando Mundo Infinito…"
-  );
-
-  // =======================================================
-  // 1. JSON ESTÁTICOS
-  // =======================================================
+  /*
+   * 1. Datos estáticos actuales
+   */
 
   const [
     placesJSON,
@@ -7294,10 +4317,9 @@ async function loadAppData() {
 
     ]);
 
-
-  // =======================================================
-  // 2. DATOS LOCALES ANTIGUOS
-  // =======================================================
+  /*
+   * 2. Datos locales antiguos
+   */
 
   const oldLocalPlaces =
     loadOldLocalPlaces();
@@ -7305,29 +4327,15 @@ async function loadAppData() {
   const oldLocalVideos =
     loadOldLocalVideos();
 
-  const oldLocalDiscoveries =
-    loadOldLocalDiscoveries();
-
-
-  // =======================================================
-  // 3. COMPROBAR SUPABASE
-  // =======================================================
+  /*
+   * 3. Comprobamos Supabase
+   */
 
   await testSupabaseConnection();
 
-  let cloudPlaces =
-    [];
-
-  let cloudVideos =
-    [];
-
-  let cloudDiscoveries =
-    [];
-
-
-  // =======================================================
-  // 4. DATOS COMPARTIDOS
-  // =======================================================
+  let cloudPlaces = [];
+  let cloudVideos = [];
+  let cloudDiscoveries = [];
 
   if (
     supabaseOnline
@@ -7349,64 +4357,97 @@ async function loadAppData() {
       ]);
   }
 
-
-  // =======================================================
-  // 5. MEZCLAR LUGARES
-  // =======================================================
+  /*
+   * 4. Mezclamos lugares
+   */
 
   places =
     mergePlaces(
-      Array.isArray(
-        placesJSON
-      )
-        ? placesJSON
-        : [],
-
+      placesJSON,
       oldLocalPlaces,
-
       cloudPlaces
     );
 
+  /*
+   * 5. Mezclamos vídeos
+   */
 
-  // =======================================================
-  // 6. MEZCLAR VÍDEOS
-  // =======================================================
+  const videoMap =
+    new Map();
+
+  [
+    ...(Array.isArray(videosJSON)
+      ? videosJSON
+      : []),
+
+    ...oldLocalVideos,
+
+    ...cloudVideos
+
+  ]
+    .map(
+      normalizeVideo
+    )
+    .forEach(
+      video => {
+
+        const dedupeKey =
+          video.sourceUrl ||
+          video.url ||
+          video.id;
+
+        if (
+          !videoMap.has(
+            dedupeKey
+          )
+        ) {
+
+          videoMap.set(
+            dedupeKey,
+            video
+          );
+
+          return;
+        }
+
+        const existing =
+          videoMap.get(
+            dedupeKey
+          );
+
+        if (
+          video.source ===
+          "supabase"
+        ) {
+
+          videoMap.set(
+            dedupeKey,
+            {
+              ...existing,
+              ...video
+            }
+          );
+        }
+      }
+    );
 
   videos =
-    mergeVideos(
-      Array.isArray(
-        videosJSON
-      )
-        ? videosJSON
-        : [],
-
-      oldLocalVideos,
-
-      cloudVideos
+    Array.from(
+      videoMap.values()
     );
 
-
-  // =======================================================
-  // 7. DESCUBRIMIENTOS
-  // =======================================================
+  /*
+   * 6. Descubrimientos compartidos
+   */
 
   discoveries =
-    mergeDiscoveries(
-      oldLocalDiscoveries,
-      cloudDiscoveries
-    );
+    cloudDiscoveries;
 
-
-  // =======================================================
-  // 8. MAPA
-  // =======================================================
+  /*
+   * 7. Dibujamos
+   */
 
   renderMarkers();
-
-
-  // =======================================================
-  // 9. MENSAJES DE CONTROL
-  // =======================================================
 
   console.log(
     `📍 ${places.length} lugares cargados`
@@ -7417,13 +4458,86 @@ async function loadAppData() {
   );
 
   console.log(
-    `✨ ${discoveries.length} detalles cargados`
+    `✨ ${discoveries.length} descubrimientos compartidos`
   );
 }
 
+// =========================================================
+// ACTUALIZACIÓN EN TIEMPO REAL
+// Si otra persona añade un lugar, podemos refrescar
+// automáticamente la información.
+// =========================================================
+
+function startRealtimeUpdates() {
+
+  if (
+    !supabaseClient ||
+    !supabaseOnline
+  ) {
+
+    return;
+  }
+
+  supabaseClient
+    .channel(
+      "mundo-infinito-live"
+    )
+    .on(
+      "postgres_changes",
+      {
+        event:
+          "*",
+
+        schema:
+          "public",
+
+        table:
+          "places"
+      },
+      async () => {
+
+        await reloadSharedData();
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event:
+          "*",
+
+        schema:
+          "public",
+
+        table:
+          "videos"
+      },
+      async () => {
+
+        await reloadSharedData();
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event:
+          "*",
+
+        schema:
+          "public",
+
+        table:
+          "discoveries"
+      },
+      async () => {
+
+        await reloadSharedData();
+      }
+    )
+    .subscribe();
+}
 
 // =========================================================
-// RECARGAR DATOS COMPARTIDOS
+// RECARGAR SOLO DATOS COMPARTIDOS
 // =========================================================
 
 async function reloadSharedData() {
@@ -7453,10 +4567,9 @@ async function reloadSharedData() {
 
       ]);
 
-
-    // =====================================================
-    // ACTUALIZAR LUGARES
-    // =====================================================
+    /*
+     * Añadimos/actualizamos lugares
+     */
 
     cloudPlaces.forEach(
       cloudPlace => {
@@ -7464,18 +4577,10 @@ async function reloadSharedData() {
         const index =
           places.findIndex(
             place =>
-              String(
-                place.id
-              ) ===
-              String(
-                cloudPlace.id
-              ) ||
-              (
-                place.slug &&
-                cloudPlace.slug &&
-                place.slug ===
-                cloudPlace.slug
-              )
+              place.id ===
+              cloudPlace.id ||
+              place.slug ===
+              cloudPlace.slug
           );
 
         if (
@@ -7496,10 +4601,9 @@ async function reloadSharedData() {
       }
     );
 
-
-    // =====================================================
-    // ACTUALIZAR VÍDEOS
-    // =====================================================
+    /*
+     * Vídeos
+     */
 
     cloudVideos.forEach(
       cloudVideo => {
@@ -7507,12 +4611,8 @@ async function reloadSharedData() {
         const index =
           videos.findIndex(
             video =>
-              String(
-                video.id
-              ) ===
-              String(
-                cloudVideo.id
-              ) ||
+              video.id ===
+              cloudVideo.id ||
               (
                 cloudVideo.sourceUrl &&
                 video.sourceUrl ===
@@ -7538,35 +4638,15 @@ async function reloadSharedData() {
       }
     );
 
-
-    // =====================================================
-    // ACTUALIZAR DESCUBRIMIENTOS
-    // =====================================================
-
-    const localDiscoveries =
-      discoveries.filter(
-        item =>
-          item.source ===
-          "local"
-      );
-
     discoveries =
-      mergeDiscoveries(
-        localDiscoveries,
-        cloudDiscoveries
-      );
-
-
-    // =====================================================
-    // REDIBUJAR
-    // =====================================================
+      cloudDiscoveries;
 
     renderMarkers();
 
-
-    // =====================================================
-    // ACTUALIZAR FICHA ABIERTA
-    // =====================================================
+    /*
+     * Si tenemos una ficha abierta,
+     * actualizamos sus vídeos también.
+     */
 
     if (
       selectedPlace
@@ -7575,18 +4655,10 @@ async function reloadSharedData() {
       const refreshed =
         places.find(
           place =>
-            String(
-              place.id
-            ) ===
-            String(
-              selectedPlace.id
-            ) ||
-            (
-              place.slug &&
-              selectedPlace.slug &&
-              place.slug ===
+            place.id ===
+              selectedPlace.id ||
+            place.slug ===
               selectedPlace.slug
-            )
         );
 
       if (
@@ -7603,127 +4675,17 @@ async function reloadSharedData() {
     }
 
     console.log(
-      "🔄 Datos compartidos actualizados"
+      "🔄 Mundo Infinito actualizado"
     );
 
   } catch (error) {
 
     console.error(
-      "Error actualizando Mundo Infinito:",
+      "Error actualizando datos compartidos:",
       error
     );
   }
 }
-
-
-// =========================================================
-// TIEMPO REAL
-// =========================================================
-
-function startRealtimeUpdates() {
-
-  if (
-    !supabaseClient ||
-    !supabaseOnline
-  ) {
-
-    return;
-  }
-
-  try {
-
-    supabaseClient
-      .channel(
-        "mundo-infinito-v06"
-      )
-
-      // ===================================================
-      // LUGARES
-      // ===================================================
-
-      .on(
-        "postgres_changes",
-        {
-          event:
-            "*",
-
-          schema:
-            "public",
-
-          table:
-            "places"
-        },
-        async () => {
-
-          await reloadSharedData();
-        }
-      )
-
-
-      // ===================================================
-      // VÍDEOS
-      // ===================================================
-
-      .on(
-        "postgres_changes",
-        {
-          event:
-            "*",
-
-          schema:
-            "public",
-
-          table:
-            "videos"
-        },
-        async () => {
-
-          await reloadSharedData();
-        }
-      )
-
-
-      // ===================================================
-      // DETALLES
-      // ===================================================
-
-      .on(
-        "postgres_changes",
-        {
-          event:
-            "*",
-
-          schema:
-            "public",
-
-          table:
-            "discoveries"
-        },
-        async () => {
-
-          await reloadSharedData();
-        }
-      )
-
-      .subscribe(
-        status => {
-
-          console.log(
-            "📡 Tiempo real:",
-            status
-          );
-        }
-      );
-
-  } catch (error) {
-
-    console.warn(
-      "No se pudo activar tiempo real:",
-      error
-    );
-  }
-}
-
 
 // =========================================================
 // REDIMENSIONAR MAPA
@@ -7737,16 +4699,14 @@ window.addEventListener(
       () => {
 
         map.invalidateSize();
-
       },
       120
     );
   }
 );
 
-
 // =========================================================
-// ERRORES GENERALES
+// CONTROL GENERAL DE ERRORES
 // =========================================================
 
 window.addEventListener(
@@ -7761,58 +4721,34 @@ window.addEventListener(
   }
 );
 
-
 // =========================================================
-// PROMESAS RECHAZADAS
-// =========================================================
-
-window.addEventListener(
-  "unhandledrejection",
-  event => {
-
-    console.error(
-      "Mundo Infinito · Promise:",
-      event.reason
-    );
-  }
-);
-
-
-// =========================================================
-// INICIALIZAR
+// INICIALIZACIÓN
 // =========================================================
 
 async function init() {
 
   console.log(
-    "🌍 Iniciando Mundo Infinito v0.6.0"
+    "🌍 Iniciando Mundo Infinito v0.5.0"
   );
 
-
-  // =======================================================
-  // 1. SUPABASE
-  // =======================================================
+  /*
+   * Primero creamos el cliente Supabase.
+   */
 
   initializeSupabase();
 
-
-  // =======================================================
-  // 2. DATOS
-  // =======================================================
+  /*
+   * Después cargamos toda la información.
+   */
 
   await loadAppData();
 
-
-  // =======================================================
-  // 3. AJUSTAR MAPA
-  // =======================================================
-
   map.invalidateSize();
 
-
-  // =======================================================
-  // 4. TIEMPO REAL
-  // =======================================================
+  /*
+   * Activamos sincronización en tiempo real
+   * solamente si la conexión funciona.
+   */
 
   if (
     supabaseOnline
@@ -7830,17 +4766,7 @@ async function init() {
       "🟠 Mundo Infinito funcionando en modo local"
     );
   }
-
-
-  // =======================================================
-  // 5. LISTO
-  // =======================================================
-
-  console.log(
-    "✨ Mundo Infinito v0.6 listo"
-  );
 }
-
 
 // =========================================================
 // ARRANCAR
@@ -7848,8 +4774,6 @@ async function init() {
 
 init();
 
-
 // =========================================================
-// FIN · MUNDO INFINITO v0.6.0
+// FIN · MUNDO INFINITO v0.5.0
 // =========================================================
-);
