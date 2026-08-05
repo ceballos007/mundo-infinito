@@ -29,7 +29,53 @@
 
   <script src="app.js" defer></script>
 </head>
+  <!-- REPRODUCTOR DE VÍDEO -->
 
+  <div
+    id="videoModal"
+    class="video-modal"
+    aria-hidden="true"
+  >
+    <div class="video-modal-card">
+
+      <button
+        id="closeVideoModal"
+        class="video-close"
+        type="button"
+        aria-label="Cerrar vídeo"
+      >
+        ×
+      </button>
+
+      <div class="video-modal-header">
+        <span class="eyebrow">
+          Mundo Infinito
+        </span>
+
+        <h2 id="videoModalTitle">
+          Vídeo
+        </h2>
+
+        <p id="videoModalPlace">
+          Brasil
+        </p>
+      </div>
+
+      <div class="video-player-wrap">
+
+        <video
+          id="videoPlayer"
+          controls
+          playsinline
+          preload="metadata"
+        >
+          Tu navegador no puede reproducir este vídeo.
+        </video>
+
+      </div>
+
+    </div>
+  </div>
 <body>
 
   <div class="app-shell">
