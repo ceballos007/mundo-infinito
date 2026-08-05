@@ -851,3 +851,367 @@ border-radius:20px;
 background:#111;
 
 }
+/* =====================================================
+   BETA 0.3
+   FICHA PREMIUM DEL LUGAR
+===================================================== */
+
+.place-panel {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    z-index: 4000;
+
+    width: min(100%, 620px);
+    max-height: 88vh;
+
+    overflow-y: auto;
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: none;
+    border-radius: 28px 28px 0 0;
+
+    background: #111820;
+    color: white;
+
+    box-shadow: 0 -25px 80px rgba(0, 0, 0, 0.55);
+
+    transform: translate(-50%, 110%);
+
+    transition:
+        transform 0.38s cubic-bezier(.22, .8, .3, 1),
+        visibility 0.38s;
+
+    visibility: hidden;
+}
+
+.place-panel.visible {
+    transform: translate(-50%, 0);
+    visibility: visible;
+}
+
+.place-panel-handle {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    z-index: 3;
+
+    width: 48px;
+    height: 5px;
+
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.55);
+
+    transform: translateX(-50%);
+}
+
+.place-panel-close {
+    position: absolute;
+    top: 20px;
+    right: 18px;
+    z-index: 4;
+
+    width: 40px;
+    height: 40px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: rgba(10, 20, 24, 0.8);
+    color: white;
+
+    font-size: 27px;
+    line-height: 1;
+
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+}
+
+.place-cover {
+    position: relative;
+
+    min-height: 235px;
+
+    overflow: hidden;
+
+    border-radius: 27px 27px 0 0;
+
+    background:
+        radial-gradient(
+            circle at 20% 20%,
+            rgba(25, 195, 125, 0.55),
+            transparent 35%
+        ),
+        linear-gradient(
+            135deg,
+            #183d33,
+            #0b252b 50%,
+            #07171c
+        );
+}
+
+.place-cover-icon {
+    position: absolute;
+    top: 49%;
+    left: 50%;
+
+    font-size: 88px;
+
+    filter: drop-shadow(0 16px 20px rgba(0, 0, 0, 0.35));
+
+    transform: translate(-50%, -50%);
+}
+
+.place-cover-gradient {
+    position: absolute;
+    inset: 0;
+
+    background: linear-gradient(
+        to top,
+        rgba(7, 15, 20, 0.98),
+        transparent 68%
+    );
+}
+
+.place-cover-title {
+    position: absolute;
+    left: 22px;
+    right: 68px;
+    bottom: 18px;
+    z-index: 2;
+}
+
+.place-category {
+    display: inline-block;
+
+    margin-bottom: 7px;
+    padding: 5px 9px;
+
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+
+    background: rgba(25, 195, 125, 0.22);
+    color: #8ef0c3;
+
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.place-cover-title h2 {
+    margin: 0;
+
+    font-size: 27px;
+    line-height: 1.1;
+}
+
+.place-cover-title p {
+    margin-top: 7px;
+
+    color: #cad6d8;
+    font-size: 13px;
+}
+
+.place-panel-content {
+    padding: 19px 21px 30px;
+}
+
+.place-rating {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-bottom: 14px;
+}
+
+.place-rating span {
+    color: #f4b942;
+    letter-spacing: 2px;
+}
+
+.place-rating strong {
+    color: #cad6d8;
+    font-size: 12px;
+}
+
+.place-description {
+    margin: 0 0 20px;
+
+    color: #cad6d8;
+
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.place-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 9px;
+
+    margin-bottom: 22px;
+}
+
+.place-actions button,
+.place-actions a {
+    min-height: 74px;
+
+    padding: 10px 6px;
+
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 15px;
+
+    background: #1a252e;
+    color: white;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    text-decoration: none;
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.place-actions button:hover,
+.place-actions a:hover {
+    border-color: rgba(25, 195, 125, 0.55);
+    background: rgba(25, 195, 125, 0.13);
+
+    transform: translateY(-2px);
+}
+
+.place-actions span {
+    font-size: 22px;
+}
+
+.place-actions strong {
+    font-size: 11px;
+}
+
+.place-actions .saved {
+    background: rgba(25, 195, 125, 0.2);
+    color: #83efbd;
+}
+
+.place-information {
+    display: grid;
+    gap: 10px;
+}
+
+.place-information > div {
+    padding: 13px;
+
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+
+    background: #172129;
+
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.information-icon {
+    flex: 0 0 auto;
+
+    width: 38px;
+    height: 38px;
+
+    border-radius: 12px;
+
+    background: rgba(25, 195, 125, 0.14);
+
+    display: grid;
+    place-items: center;
+}
+
+.place-information strong {
+    font-size: 12px;
+}
+
+.place-information p {
+    margin: 4px 0 0;
+
+    color: #aebdc1;
+
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.place-video-link {
+    margin-top: 13px;
+    padding: 13px;
+
+    border-radius: 14px;
+
+    background: var(--green);
+    color: white;
+
+    display: block;
+
+    text-align: center;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media (min-width: 900px) {
+    .place-panel {
+        left: auto;
+        right: 24px;
+        bottom: 24px;
+
+        width: 420px;
+        max-height: calc(100vh - 48px);
+
+        border-radius: 25px;
+
+        transform: translateX(115%);
+    }
+
+    .place-panel.visible {
+        transform: translateX(0);
+    }
+
+    .place-cover {
+        border-radius: 24px 24px 0 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .place-cover {
+        min-height: 205px;
+    }
+
+    .place-cover-icon {
+        font-size: 72px;
+    }
+
+    .place-cover-title h2 {
+        font-size: 23px;
+    }
+
+    .place-panel-content {
+        padding: 16px 16px 25px;
+    }
+
+    .place-actions {
+        gap: 6px;
+    }
+
+    .place-actions button,
+    .place-actions a {
+        min-height: 68px;
+    }
+}
