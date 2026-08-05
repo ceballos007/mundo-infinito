@@ -1,30 +1,189 @@
 [
   {
-    "id": 1,
-    "place": "Cristo Redentor",
-    "title": "Mejor hora para subir",
-    "type": "instagram",
-    "url": "https://instagram.com/"
+    "id": "rio-planes-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Planes imperdibles en Río de Janeiro",
+    "description": "Recopilación de planes y lugares para descubrir en Río de Janeiro.",
+    "category": "Guía",
+    "type": "Video descargado",
+    "filename": "Planes imperdibles en Rio de Janeiro.mp4",
+    "url": ""
   },
   {
-    "id": 2,
-    "place": "Cristo Redentor",
-    "title": "Vistas desde el tren",
-    "type": "instagram",
-    "url": "https://instagram.com/"
+    "id": "rio-itinerario-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Itinerario de viaje por Río de Janeiro",
+    "description": "Ideas para organizar una ruta por Río, incluyendo Copacabana y otros puntos de la ciudad.",
+    "category": "Itinerario",
+    "type": "Video descargado",
+    "filename": "Itinerario Rio de Janeiro.mp4",
+    "url": ""
   },
   {
-    "id": 3,
-    "place": "Copacabana",
-    "title": "Paseo marítimo",
-    "type": "instagram",
-    "url": "https://instagram.com/"
+    "id": "rio-bares-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Calles con ambiente de bares en Río",
+    "description": "Selección de calles con ambiente para tomar algo o comer.",
+    "category": "Vida nocturna",
+    "type": "Video descargado",
+    "filename": "Calles de bares Rio.mp4",
+    "url": ""
   },
   {
-    "id": 4,
-    "place": "Ipanema",
-    "title": "Atardecer",
-    "type": "instagram",
-    "url": "https://instagram.com/"
+    "id": "rio-errores-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Errores que conviene evitar en Río",
+    "description": "Consejos generales para evitar errores frecuentes durante el viaje.",
+    "category": "Consejo",
+    "type": "Video descargado",
+    "filename": "Errores viaje Rio.mp4",
+    "url": ""
+  },
+  {
+    "id": "rio-dia2-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Segundo día en Río: Selarón, Pão de Açúcar e Ipanema",
+    "description": "Ruta de un día que incluye varios de los lugares principales de Río.",
+    "category": "Itinerario",
+    "type": "Video descargado",
+    "filename": "Dia 2 Rio Selaron Pan de Azucar Ipanema.mp4",
+    "url": ""
+  },
+  {
+    "id": "galeao-uber-01",
+    "placeId": "galeao",
+    "place": "Aeropuerto de Galeão",
+    "title": "Cómo pedir Uber en el aeropuerto de Río",
+    "description": "Información práctica sobre cómo localizar el punto de recogida de Uber al llegar a Galeão.",
+    "category": "Transporte",
+    "type": "Video descargado",
+    "filename": "Uber aeropuerto Galeao.mp4",
+    "url": ""
+  },
+  {
+    "id": "rio-lunes-noche-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Qué hacer un lunes por la noche en Río",
+    "description": "Idea de ocio nocturno para disfrutar Río incluso un lunes.",
+    "category": "Vida nocturna",
+    "type": "Video descargado",
+    "filename": "Monday night Rio.mp4",
+    "url": ""
+  },
+  {
+    "id": "brasil-itinerario10-01",
+    "placeId": "",
+    "place": "Brasil",
+    "title": "Itinerario de 10 días por Brasil",
+    "description": "Propuesta de ruta para organizar diez días de viaje por Brasil.",
+    "category": "Itinerario",
+    "type": "Video descargado",
+    "filename": "Itinerario 10 dias Brasil.mp4",
+    "url": ""
+  },
+  {
+    "id": "rio-inspiracion-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Inspiración: Río de Janeiro",
+    "description": "Vídeo visual de la ciudad para guardar ideas y lugares.",
+    "category": "Inspiración",
+    "type": "Video descargado",
+    "filename": "I love Rio Brasil.mp4",
+    "url": ""
+  },
+  {
+    "id": "rio-carnaval-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Carnaval de Río de Janeiro",
+    "description": "Experiencia e inspiración para vivir el Carnaval de Río.",
+    "category": "Evento",
+    "type": "Video descargado",
+    "filename": "Carnaval Rio.mp4",
+    "url": ""
+  },
+  {
+    "id": "belmonte-leblon-01",
+    "placeId": "",
+    "place": "Leblon",
+    "title": "Boteco Belmonte y lugares para salir en Río",
+    "description": "Lista de lugares para salir viernes y sábado por la noche, incluyendo Boteco Belmonte en Leblon.",
+    "category": "Vida nocturna",
+    "type": "Video descargado",
+    "filename": "Boteco Belmonte Leblon.mp4",
+    "url": ""
+  },
+  {
+    "id": "rio-solteros-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Plan de ocio para solteros en Río",
+    "description": "Descubrimiento relacionado con ambiente social y ocio en Río.",
+    "category": "Vida nocturna",
+    "type": "Video descargado",
+    "filename": "Amigos solteros Rio.mp4",
+    "url": ""
+  },
+  {
+    "id": "rio-gratis-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Lugares gratuitos en Río de Janeiro",
+    "description": "Lista de opciones y lugares que se pueden visitar gratis en Río.",
+    "category": "Gratis",
+    "type": "Video descargado",
+    "filename": "Lugares gratis Rio.mp4",
+    "url": ""
+  },
+  {
+    "id": "saara-compras-01",
+    "placeId": "saara",
+    "place": "SAARA",
+    "title": "Compras baratas en SAARA",
+    "description": "Guía de la zona comercial SAARA, en el centro de Río de Janeiro.",
+    "category": "Compras",
+    "type": "Video descargado",
+    "filename": "SAARA compras Rio.mp4",
+    "url": ""
+  },
+  {
+    "id": "lopes-mendes-01",
+    "placeId": "",
+    "place": "Praia de Lopes Mendes",
+    "title": "Cómo llegar a Praia de Lopes Mendes",
+    "description": "Vídeo sobre Praia de Lopes Mendes y la posibilidad de llegar en barco.",
+    "category": "Playa",
+    "type": "Video descargado",
+    "filename": "Praia de Lopes Mendes.mp4",
+    "url": ""
+  },
+  {
+    "id": "rio-guia-01",
+    "placeId": "",
+    "place": "Río de Janeiro",
+    "title": "Guía de viaje por Río de Janeiro",
+    "description": "Guía general para descubrir la ciudad carioca.",
+    "category": "Guía",
+    "type": "Video descargado",
+    "filename": "Guia Rio de Janeiro.mp4",
+    "url": ""
+  },
+  {
+    "id": "arnaldo-quintela-01",
+    "placeId": "arnaldo-quintela",
+    "place": "Rua Arnaldo Quintela",
+    "title": "Arnaldo Quintela: ambiente nocturno",
+    "description": "Información sobre horarios, ambiente y mejores horas para salir por Arnaldo Quintela, en Botafogo.",
+    "category": "Vida nocturna",
+    "type": "Video descargado",
+    "filename": "Arnaldo Quintela Botafogo.mp4",
+    "url": ""
   }
 ]
