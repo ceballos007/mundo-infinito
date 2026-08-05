@@ -2232,3 +2232,1308 @@ button:disabled {
     max-height: 68dvh;
   }
 }
+/* =========================================================
+   MUNDO INFINITO · v0.6.0
+   EXPLORADOR DE DETALLES DE VÍDEO
+   ========================================================= */
+
+
+/* =========================================================
+   MODAL PRINCIPAL v0.6
+   ========================================================= */
+
+.discovery-v06 {
+  padding: 18px;
+}
+
+.discovery-v06-card {
+  width: min(100%, 620px);
+  max-height: 92dvh;
+
+  padding: 0;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  border-radius: 30px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fbfcfb 100%
+    );
+}
+
+
+/* =========================================================
+   CABECERA
+   ========================================================= */
+
+.discovery-modal-header {
+  padding:
+    30px
+    30px
+    20px;
+
+  border-bottom:
+    1px solid var(--line);
+}
+
+.discovery-modal-header h2 {
+  margin:
+    5px
+    50px
+    7px
+    0;
+
+  font-size: 28px;
+  line-height: 1.05;
+  letter-spacing: -1px;
+}
+
+.discovery-modal-header p {
+  max-width: 440px;
+
+  margin: 0;
+
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+
+/* =========================================================
+   FORMULARIO v0.6
+   ========================================================= */
+
+.discovery-v06 #discoveryForm {
+  display: block;
+}
+
+.discovery-step,
+.manual-detail-editor,
+.exploration-results,
+.video-draft-summary {
+
+  padding:
+    24px
+    30px;
+}
+
+
+/* =========================================================
+   TÍTULOS DE PASO
+   ========================================================= */
+
+.discovery-step-title {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  margin-bottom: 20px;
+}
+
+.discovery-step-number {
+  display: grid;
+  flex: 0 0 39px;
+
+  width: 39px;
+  height: 39px;
+
+  place-items: center;
+
+  border-radius: 13px;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      145deg,
+      var(--brand),
+      #12a77e
+    );
+
+  box-shadow:
+    0 8px 20px
+    rgba(13, 107, 85, 0.18);
+
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.discovery-step-title h3 {
+  margin: 2px 0 0;
+
+  font-size: 19px;
+  letter-spacing: -0.5px;
+}
+
+
+/* =========================================================
+   PASO 1 · VÍDEO
+   ========================================================= */
+
+#videoSourceStep {
+  padding-top: 26px;
+}
+
+
+/* Campo enlace */
+
+#discoveryVideoLink {
+  min-height: 54px;
+
+  padding:
+    0
+    16px !important;
+
+  border-radius:
+    16px !important;
+
+  font-size:
+    13px !important;
+}
+
+
+/* Separador "o" */
+
+.source-divider {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin:
+    18px
+    0;
+}
+
+.source-divider::before {
+  content: "";
+
+  position: absolute;
+
+  right: 0;
+  left: 0;
+
+  height: 1px;
+
+  background:
+    var(--line);
+}
+
+.source-divider span {
+  position: relative;
+  z-index: 2;
+
+  padding:
+    0
+    12px;
+
+  color:
+    var(--muted);
+
+  background:
+    white;
+
+  font-size:
+    10px;
+  font-weight:
+    700;
+}
+
+
+/* =========================================================
+   SUBIDA DE VÍDEO
+   ========================================================= */
+
+.video-upload-area {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  min-height: 155px;
+
+  padding: 22px;
+
+  border:
+    1.5px dashed
+    rgba(13, 107, 85, 0.25);
+
+  border-radius:
+    21px;
+
+  color:
+    var(--ink);
+
+  background:
+    linear-gradient(
+      145deg,
+      #f5fbf8,
+      #f9fbfa
+    );
+
+  text-align: center;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.video-upload-area:hover {
+  border-color:
+    rgba(13, 107, 85, 0.45);
+
+  background:
+    var(--brand-soft);
+
+  box-shadow:
+    var(--shadow-sm);
+
+  transform:
+    translateY(-2px);
+}
+
+.video-upload-icon {
+  display: grid;
+
+  width: 53px;
+  height: 53px;
+
+  margin-bottom: 11px;
+
+  place-items: center;
+
+  border-radius: 17px;
+
+  background:
+    white;
+
+  box-shadow:
+    0 8px 24px
+    rgba(13, 107, 85, 0.11);
+
+  font-size:
+    25px;
+}
+
+.video-upload-area strong {
+  margin-bottom:
+    5px;
+
+  font-size:
+    14px;
+}
+
+.video-upload-area small {
+  color:
+    var(--muted);
+
+  font-size:
+    10px;
+  font-weight:
+    500;
+}
+
+
+/* =========================================================
+   PREVISUALIZACIÓN
+   ========================================================= */
+
+.discovery-video-preview {
+  margin-top:
+    17px;
+
+  overflow:
+    hidden;
+
+  border-radius:
+    20px;
+
+  background:
+    #08100e;
+
+  box-shadow:
+    var(--shadow-sm);
+}
+
+#discoveryPreviewPlayer {
+  display:
+    block;
+
+  width:
+    100%;
+
+  max-height:
+    330px;
+
+  background:
+    black;
+}
+
+
+/* =========================================================
+   EXPLORANDO DETALLES
+   ========================================================= */
+
+.video-exploration {
+  margin:
+    0;
+
+  padding:
+    42px
+    30px;
+
+  border-top:
+    1px solid var(--line);
+
+  text-align:
+    center;
+
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(13, 107, 85, 0.10),
+      transparent 55%
+    );
+}
+
+.exploration-orbit {
+  position:
+    relative;
+
+  display:
+    grid;
+
+  width:
+    82px;
+  height:
+    82px;
+
+  margin:
+    0
+    auto
+    20px;
+
+  place-items:
+    center;
+
+  border-radius:
+    50%;
+
+  color:
+    white;
+
+  background:
+    linear-gradient(
+      145deg,
+      var(--brand),
+      #14a77f
+    );
+
+  box-shadow:
+    0 18px 45px
+    rgba(13, 107, 85, 0.24);
+}
+
+.exploration-orbit::before {
+  content: "";
+
+  position:
+    absolute;
+
+  inset:
+    -8px;
+
+  border:
+    2px solid
+    rgba(13, 107, 85, 0.13);
+
+  border-top-color:
+    var(--brand);
+
+  border-radius:
+    50%;
+
+  animation:
+    explorationSpin
+    1.4s
+    linear
+    infinite;
+}
+
+.exploration-orbit span {
+  font-size:
+    33px;
+}
+
+@keyframes explorationSpin {
+
+  to {
+    transform:
+      rotate(360deg);
+  }
+}
+
+.exploration-copy h3 {
+  margin:
+    5px
+    0
+    8px;
+
+  font-size:
+    24px;
+
+  letter-spacing:
+    -0.8px;
+}
+
+.exploration-copy p {
+  margin:
+    0
+    auto;
+
+  max-width:
+    360px;
+
+  font-size:
+    12px;
+
+  line-height:
+    1.5;
+}
+
+
+/* Barra de progreso */
+
+.exploration-progress {
+  width:
+    min(100%, 360px);
+
+  height:
+    7px;
+
+  margin:
+    24px
+    auto
+    18px;
+
+  overflow:
+    hidden;
+
+  border-radius:
+    999px;
+
+  background:
+    #e8efec;
+}
+
+.exploration-progress-bar {
+  width:
+    12%;
+
+  height:
+    100%;
+
+  border-radius:
+    inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--brand),
+      #23bd8e
+    );
+
+  transition:
+    width 0.5s ease;
+}
+
+
+/* Pasos de exploración */
+
+.exploration-steps {
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  justify-content:
+    center;
+
+  gap:
+    7px;
+
+  max-width:
+    460px;
+
+  margin:
+    0
+    auto;
+}
+
+.exploration-steps span {
+  padding:
+    7px
+    10px;
+
+  border:
+    1px solid var(--line);
+
+  border-radius:
+    999px;
+
+  color:
+    #65736e;
+
+  background:
+    white;
+
+  font-size:
+    9px;
+
+  font-weight:
+    700;
+}
+
+
+/* =========================================================
+   RESULTADOS
+   ========================================================= */
+
+.exploration-results {
+  border-top:
+    1px solid var(--line);
+}
+
+.results-summary {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    15px;
+
+  margin-bottom:
+    17px;
+}
+
+.results-summary h3 {
+  margin:
+    3px
+    0
+    0;
+
+  font-size:
+    20px;
+
+  letter-spacing:
+    -0.6px;
+}
+
+.results-success {
+  display:
+    grid;
+
+  flex:
+    0 0
+    43px;
+
+  width:
+    43px;
+  height:
+    43px;
+
+  place-items:
+    center;
+
+  border-radius:
+    14px;
+
+  background:
+    #f2f8f5;
+
+  font-size:
+    21px;
+}
+
+
+/* =========================================================
+   TARJETAS DE DETALLES
+   ========================================================= */
+
+.detected-details-list {
+  display:
+    grid;
+
+  gap:
+    10px;
+}
+
+.detected-detail-card {
+  position:
+    relative;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    45px 1fr auto;
+
+  align-items:
+    center;
+
+  gap:
+    12px;
+
+  padding:
+    13px;
+
+  border:
+    1px solid var(--line);
+
+  border-radius:
+    18px;
+
+  background:
+    white;
+
+  box-shadow:
+    0 5px 18px
+    rgba(17, 42, 34, 0.04);
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.detected-detail-card:hover {
+  border-color:
+    rgba(13, 107, 85, 0.19);
+
+  box-shadow:
+    var(--shadow-sm);
+
+  transform:
+    translateY(-1px);
+}
+
+.detected-detail-icon {
+  display:
+    grid;
+
+  width:
+    45px;
+  height:
+    45px;
+
+  place-items:
+    center;
+
+  border-radius:
+    14px;
+
+  background:
+    var(--brand-soft);
+
+  font-size:
+    20px;
+}
+
+.detected-detail-info {
+  min-width:
+    0;
+}
+
+.detected-detail-info strong {
+  display:
+    block;
+
+  margin-bottom:
+    4px;
+
+  overflow:
+    hidden;
+
+  font-size:
+    12px;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+.detected-detail-meta {
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    5px;
+
+  color:
+    var(--muted);
+
+  font-size:
+    9px;
+}
+
+
+/* Timestamp */
+
+.detail-time {
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  padding:
+    5px
+    8px;
+
+  border-radius:
+    999px;
+
+  color:
+    var(--brand);
+
+  background:
+    var(--brand-soft);
+
+  font-size:
+    9px;
+
+  font-weight:
+    800;
+}
+
+
+/* Botones editar/eliminar */
+
+.detected-detail-actions {
+  display:
+    flex;
+
+  gap:
+    4px;
+}
+
+.detected-detail-actions button {
+  display:
+    grid;
+
+  width:
+    31px;
+  height:
+    31px;
+
+  padding:
+    0;
+
+  place-items:
+    center;
+
+  border:
+    0;
+
+  border-radius:
+    10px;
+
+  background:
+    var(--surface-soft);
+
+  font-size:
+    13px;
+}
+
+.detected-detail-actions button:hover {
+  background:
+    var(--brand-soft);
+}
+
+
+/* =========================================================
+   AÑADIR DETALLE
+   ========================================================= */
+
+.add-detail-button {
+  width:
+    100%;
+
+  margin-top:
+    14px;
+
+  padding:
+    12px;
+
+  border-style:
+    dashed;
+}
+
+
+/* =========================================================
+   EDITOR MANUAL
+   ========================================================= */
+
+/*
+   IMPORTANTE:
+   Al abrir el ➕ NO queremos enseñar
+   todo el formulario de golpe.
+*/
+
+.manual-detail-editor {
+  display:
+    none;
+
+  border-top:
+    1px solid var(--line);
+
+  background:
+    #fbfcfb;
+}
+
+.manual-detail-editor.open {
+  display:
+    block;
+
+  animation:
+    detailEditorIn
+    0.25s
+    ease
+    both;
+}
+
+@keyframes detailEditorIn {
+
+  from {
+    opacity:
+      0;
+
+    transform:
+      translateY(8px);
+  }
+
+  to {
+    opacity:
+      1;
+
+    transform:
+      translateY(0);
+  }
+}
+
+
+/* =========================================================
+   TIMESTAMP EDITOR
+   ========================================================= */
+
+.timestamp-editor {
+  margin:
+    3px
+    0;
+
+  padding:
+    15px;
+
+  border:
+    1px solid
+    rgba(13, 107, 85, 0.11);
+
+  border-radius:
+    18px;
+
+  background:
+    #f3f8f6;
+}
+
+.timestamp-editor-title {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  margin-bottom:
+    13px;
+}
+
+.timestamp-editor-title > span {
+  display:
+    grid;
+
+  width:
+    36px;
+  height:
+    36px;
+
+  place-items:
+    center;
+
+  border-radius:
+    12px;
+
+  background:
+    white;
+
+  font-size:
+    17px;
+}
+
+.timestamp-editor-title b {
+  display:
+    block;
+
+  margin-bottom:
+    2px;
+
+  font-size:
+    11px;
+}
+
+.timestamp-editor-title small {
+  display:
+    block;
+
+  color:
+    var(--muted);
+
+  font-size:
+    9px;
+}
+
+.timestamp-grid {
+  display:
+    grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap:
+    9px;
+
+  margin-bottom:
+    10px;
+}
+
+.optional {
+  margin-left:
+    4px;
+
+  color:
+    var(--muted);
+
+  font-size:
+    8px;
+
+  font-weight:
+    500;
+}
+
+
+/* =========================================================
+   ACCIONES DEL EDITOR
+   ========================================================= */
+
+.detail-editor-actions {
+  display:
+    flex;
+
+  justify-content:
+    flex-end;
+
+  gap:
+    8px;
+
+  margin-top:
+    5px;
+}
+
+.detail-editor-actions .secondary-btn {
+  min-height:
+    39px;
+
+  padding:
+    9px
+    13px;
+}
+
+
+/* =========================================================
+   BORRADOR FINAL
+   ========================================================= */
+
+.video-draft-summary {
+  border-top:
+    1px solid var(--line);
+
+  background:
+    #f8faf9;
+}
+
+
+/* =========================================================
+   GUARDAR TODO
+   ========================================================= */
+
+.save-all-discoveries {
+  display:
+    none;
+
+  width:
+    calc(100% - 60px);
+
+  margin:
+    5px
+    30px
+    30px;
+
+  min-height:
+    52px;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    8px;
+
+  border-radius:
+    17px;
+
+  font-size:
+    13px;
+}
+
+.save-all-discoveries.visible {
+  display:
+    flex;
+}
+
+
+/* =========================================================
+   ESTADO INICIAL
+   ========================================================= */
+
+/*
+   Al abrir ➕ únicamente se ve:
+   - cabecera
+   - enlace
+   - selección de vídeo
+
+   Todo lo demás se irá mostrando desde app.js.
+*/
+
+#videoExplorationStatus,
+#explorationResults,
+#videoDraftSummary {
+
+  display:
+    none;
+}
+
+#videoExplorationStatus.active {
+  display:
+    block;
+}
+
+#explorationResults.active {
+  display:
+    block;
+}
+
+#videoDraftSummary.active {
+  display:
+    block;
+}
+
+
+/* =========================================================
+   MODO EXPLORANDO
+   ========================================================= */
+
+.discovery-v06-card.is-exploring
+#videoSourceStep {
+
+  display:
+    none;
+}
+
+.discovery-v06-card.is-exploring
+#videoExplorationStatus {
+
+  display:
+    block;
+}
+
+
+/* =========================================================
+   MODO RESULTADOS
+   ========================================================= */
+
+.discovery-v06-card.has-results
+#videoSourceStep {
+
+  display:
+    none;
+}
+
+.discovery-v06-card.has-results
+#explorationResults {
+
+  display:
+    block;
+}
+
+
+/* =========================================================
+   MÓVIL
+   ========================================================= */
+
+@media
+(max-width: 820px) {
+
+  .discovery-v06 {
+    padding:
+      0;
+
+    align-items:
+      flex-end;
+  }
+
+  .discovery-v06-card {
+    width:
+      100%;
+
+    max-height:
+      94dvh;
+
+    border-radius:
+      28px
+      28px
+      0
+      0;
+  }
+
+  .discovery-modal-header {
+    padding:
+      27px
+      18px
+      17px;
+  }
+
+  .discovery-modal-header h2 {
+    font-size:
+      24px;
+  }
+
+  .discovery-step,
+  .manual-detail-editor,
+  .exploration-results,
+  .video-draft-summary {
+
+    padding:
+      21px
+      18px;
+  }
+
+  .video-exploration {
+    padding:
+      42px
+      20px;
+  }
+
+  .exploration-copy h3 {
+    font-size:
+      22px;
+  }
+
+  .save-all-discoveries {
+    width:
+      calc(100% - 36px);
+
+    margin:
+      4px
+      18px
+      calc(
+        22px +
+        env(safe-area-inset-bottom)
+      );
+  }
+}
+
+
+/* =========================================================
+   MÓVIL PEQUEÑO
+   ========================================================= */
+
+@media
+(max-width: 430px) {
+
+  .video-upload-area {
+    min-height:
+      135px;
+  }
+
+  .timestamp-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .detected-detail-card {
+    grid-template-columns:
+      42px
+      1fr;
+
+    gap:
+      10px;
+  }
+
+  .detected-detail-actions {
+    grid-column:
+      2;
+
+    justify-content:
+      flex-start;
+  }
+
+  .exploration-steps {
+    align-items:
+      stretch;
+
+    flex-direction:
+      column;
+  }
+
+  .exploration-steps span {
+    text-align:
+      left;
+  }
+}
+
+
+/* =========================================================
+   FIN · MUNDO INFINITO v0.6
+   ========================================================= */
