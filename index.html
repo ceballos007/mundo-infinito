@@ -1,34 +1,17 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="theme-color"
-    content="#0d1117"
-  >
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071b16">
 
   <title>Mundo Infinito by Eric</title>
 
-  <link
-    rel="preconnect"
-    href="https://fonts.googleapis.com"
-  >
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin
-  >
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
     rel="stylesheet"
   >
 
@@ -37,69 +20,53 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   >
 
-  <link
-    rel="stylesheet"
-    href="styles.css"
-  >
+  <link rel="stylesheet" href="styles.css">
 
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     defer
   ></script>
 
-  <script
-    src="app.js"
-    defer
-  ></script>
+  <script src="app.js" defer></script>
 </head>
 
 <body>
 
-  <div class="app">
+  <div class="app-shell">
 
-    <header class="main-header">
+    <header class="topbar">
 
-      <div class="logo">
+      <div class="brand-row">
 
-        <div class="logo-title">
+        <div class="brand-mark">
+          ∞
+        </div>
 
-          <span class="logo-icon">
-            🌍
-          </span>
-
-          <div>
-            <h1>Mundo Infinito</h1>
-            <p>by Eric</p>
-          </div>
-
+        <div>
+          <h1>Mundo Infinito</h1>
+          <p>by Eric · Brasil</p>
         </div>
 
       </div>
 
       <div class="welcome">
-        <h2>Bienvenido, Explorador.</h2>
-
-        <p>
-          Descubre y organiza tu viaje por Brasil.
-        </p>
+        Bienvenido, Explorador.
       </div>
 
-      <div class="search">
+      <div class="search-wrap">
 
-        <span class="search-icon">
-          🔍
-        </span>
+        <span>⌕</span>
 
         <input
           id="searchInput"
           type="search"
-          placeholder="Buscar lugares, playas, comida..."
+          placeholder="Buscar lugares, playas, comida…"
           autocomplete="off"
         >
 
         <button
           id="clearSearch"
-          class="clear-search"
+          class="icon-btn hidden"
           type="button"
           aria-label="Borrar búsqueda"
         >
@@ -110,149 +77,152 @@
 
       <div
         id="searchResults"
-        class="search-results"
+        class="search-results hidden"
       ></div>
 
     </header>
 
     <main
       id="map"
-      aria-label="Mapa de Mundo Infinito"
+      aria-label="Mapa de Brasil"
     ></main>
 
     <button
       id="openDiscoveryModal"
-      class="addButton"
+      class="fab"
       type="button"
       aria-label="Añadir descubrimiento"
     >
       +
     </button>
 
-    <nav class="bottom-nav">
+    <nav
+      class="bottom-nav"
+      aria-label="Navegación principal"
+    >
 
       <button
         class="nav-button active"
-        type="button"
         data-section="explorar"
+        type="button"
       >
-        <span class="nav-icon">🗺️</span>
-        <span>Explorar</span>
+        <span>🗺️</span>
+        <small>Explorar</small>
       </button>
 
       <button
         class="nav-button"
-        type="button"
         data-section="descubrimientos"
+        type="button"
       >
-        <span class="nav-icon">🎥</span>
-        <span>Descubrimientos</span>
+        <span>🎥</span>
+        <small>Vídeos</small>
       </button>
 
       <button
         class="nav-button"
-        type="button"
         data-section="gastronomia"
+        type="button"
       >
-        <span class="nav-icon">🍴</span>
-        <span>Gastronomía</span>
+        <span>🍴</span>
+        <small>Comida</small>
       </button>
 
       <button
         class="nav-button"
-        type="button"
         data-section="viaje"
+        type="button"
       >
-        <span class="nav-icon">📅</span>
-        <span>Mi viaje</span>
+        <span>📅</span>
+        <small>Mi viaje</small>
       </button>
 
       <button
         class="nav-button"
-        type="button"
         data-section="guardados"
+        type="button"
       >
-        <span class="nav-icon">❤️</span>
-        <span>Guardados</span>
+        <span>❤️</span>
+        <small>Guardados</small>
       </button>
 
     </nav>
 
   </div>
 
-  <!-- FICHA PREMIUM DEL LUGAR -->
+  <!-- FICHA DE LUGAR -->
 
   <aside
     id="placePanel"
-    class="place-panel"
+    class="sheet place-sheet"
     aria-hidden="true"
   >
 
-    <div class="place-panel-handle"></div>
+    <div class="sheet-handle"></div>
 
     <button
       id="closePlacePanel"
-      class="place-panel-close"
+      class="sheet-close"
       type="button"
-      aria-label="Cerrar ficha"
+      aria-label="Cerrar"
     >
       ×
     </button>
 
-    <div class="place-cover">
+    <div class="place-hero">
 
       <div
         id="placeCoverIcon"
-        class="place-cover-icon"
+        class="place-icon"
       >
         📍
       </div>
 
-      <div class="place-cover-gradient"></div>
+      <div class="hero-shade"></div>
 
-      <div class="place-cover-title">
+      <div class="place-title">
 
         <span
           id="placeCategory"
-          class="place-category"
+          class="pill"
         >
           Lugar
         </span>
 
         <h2 id="placeName">
-          Cristo Redentor
+          Lugar
         </h2>
 
         <p id="placeZone">
-          Cosme Velho · Río de Janeiro
+          Río de Janeiro
         </p>
 
       </div>
 
     </div>
 
-    <div class="place-panel-content">
+    <div class="sheet-body">
 
-      <div class="place-rating">
-        <span>★★★★★</span>
-        <strong>Recomendado</strong>
+      <div class="rating">
+        ★★★★★
+        <span>Recomendado</span>
       </div>
 
       <p
         id="placeDescription"
-        class="place-description"
-      >
-        Información del lugar.
-      </p>
+        class="muted"
+      ></p>
 
-      <div class="place-actions">
+      <div class="action-grid">
 
         <button
           id="placeVideosButton"
           type="button"
         >
           <span>🎥</span>
-          <strong>Vídeos</strong>
+          <b id="placeVideoActionText">
+            Vídeos
+          </b>
         </button>
 
         <button
@@ -260,7 +230,7 @@
           type="button"
         >
           <span>♡</span>
-          <strong>Guardar</strong>
+          <b>Guardar</b>
         </button>
 
         <a
@@ -270,57 +240,39 @@
           rel="noopener noreferrer"
         >
           <span>🧭</span>
-          <strong>Cómo llegar</strong>
+          <b>Cómo llegar</b>
         </a>
 
       </div>
 
-      <div class="place-information">
+      <div class="info-card">
+
+        <span>📍</span>
 
         <div>
-
-          <span class="information-icon">
-            📍
-          </span>
-
-          <div>
-            <strong>Ubicación</strong>
-
-            <p id="placeLocationText">
-              Río de Janeiro, Brasil
-            </p>
-          </div>
-
+          <b>Ubicación</b>
+          <p id="placeLocationText"></p>
         </div>
+
+      </div>
+
+      <div class="info-card">
+
+        <span>💡</span>
 
         <div>
-
-          <span class="information-icon">
-            💡
-          </span>
-
-          <div>
-            <strong>
-              Consejo del Explorador
-            </strong>
-
-            <p id="placeTip">
-              Consulta los vídeos relacionados antes de la visita.
-            </p>
-          </div>
-
+          <b>Consejo del Explorador</b>
+          <p id="placeTip"></p>
         </div>
 
-      </div>      </div>
+      </div>
 
-      <!-- VÍDEOS RELACIONADOS -->
+      <section class="video-section">
 
-      <section class="place-videos-section">
-
-        <div class="section-heading">
+        <div class="section-head">
 
           <div>
-            <span class="section-eyebrow">
+            <span class="eyebrow">
               Descubrimientos
             </span>
 
@@ -331,33 +283,17 @@
 
           <span
             id="placeVideoCount"
-            class="video-count"
+            class="count-badge"
           >
-            0 vídeos
+            0
           </span>
 
         </div>
 
         <div
           id="placeVideosList"
-          class="place-videos-list"
-        >
-
-          <div class="empty-videos">
-
-            <span>🎥</span>
-
-            <strong>
-              Todavía no hay vídeos
-            </strong>
-
-            <p>
-              Pulsa el botón + para añadir el primer descubrimiento.
-            </p>
-
-          </div>
-
-        </div>
+          class="video-list"
+        ></div>
 
       </section>
 
@@ -365,11 +301,11 @@
 
   </aside>
 
-  <!-- MODAL PARA AÑADIR UN DESCUBRIMIENTO -->
+  <!-- AÑADIR DESCUBRIMIENTO -->
 
   <div
     id="discoveryModal"
-    class="modal-overlay"
+    class="modal-backdrop"
     aria-hidden="true"
   >
 
@@ -377,183 +313,123 @@
       class="modal-card"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="discoveryModalTitle"
+      aria-labelledby="modalTitle"
     >
 
-      <div class="modal-handle"></div>
+      <div class="sheet-handle"></div>
 
-      <div class="modal-header">
+      <button
+        id="closeDiscoveryModal"
+        class="sheet-close"
+        type="button"
+        aria-label="Cerrar"
+      >
+        ×
+      </button>
 
-        <div>
+      <span class="eyebrow">
+        Mundo Infinito
+      </span>
 
-          <span class="modal-eyebrow">
-            Mundo Infinito
-          </span>
+      <h2 id="modalTitle">
+        Añadir descubrimiento
+      </h2>
 
-          <h2 id="discoveryModalTitle">
-            Añadir descubrimiento
-          </h2>
-
-          <p>
-            Comparte un lugar, un Reel o un consejo con tus amigos.
-          </p>
-
-        </div>
-
-        <button
-          id="closeDiscoveryModal"
-          class="close-modal"
-          type="button"
-          aria-label="Cerrar formulario"
-        >
-          ×
-        </button>
-
-      </div>
+      <p class="muted">
+        Guarda un lugar o un Reel en menos de un minuto.
+      </p>
 
       <form id="discoveryForm">
 
-        <label for="discoveryTitle">
-          Nombre del descubrimiento
+        <label>
+          Nombre
+
+          <input
+            name="title"
+            id="discoveryTitle"
+            required
+            placeholder="Ej.: Mirador Dona Marta"
+          >
         </label>
 
-        <input
-          id="discoveryTitle"
-          name="title"
-          type="text"
-          placeholder="Ejemplo: Mirador Dona Marta"
-          required
-        >
+        <label>
+          Lugar o zona
 
-        <label for="discoveryPlace">
-          Barrio, zona o lugar relacionado
+          <input
+            name="place"
+            required
+            placeholder="Ej.: Santa Teresa"
+          >
         </label>
 
-        <input
-          id="discoveryPlace"
-          name="place"
-          type="text"
-          placeholder="Ejemplo: Santa Teresa"
-          required
-        >
-
-        <label for="discoveryCategory">
+        <label>
           Categoría
+
+          <select
+            name="category"
+            required
+          >
+
+            <option value="">
+              Selecciona…
+            </option>
+
+            <option>Lugar</option>
+            <option>Mirador</option>
+            <option>Playa</option>
+            <option>Parque</option>
+            <option>Cultura</option>
+            <option>Restaurante</option>
+            <option>Gastronomía</option>
+            <option>Compras</option>
+            <option>Vida nocturna</option>
+            <option>Transporte</option>
+            <option>Consejo</option>
+
+          </select>
+
         </label>
 
-        <select
-          id="discoveryCategory"
-          name="category"
-          required
-        >
-
-          <option value="">
-            Selecciona una categoría
-          </option>
-
-          <option value="Lugar">
-            📍 Lugar
-          </option>
-
-          <option value="Mirador">
-            🌄 Mirador
-          </option>
-
-          <option value="Playa">
-            🏖️ Playa
-          </option>
-
-          <option value="Parque">
-            🌿 Parque
-          </option>
-
-          <option value="Cultura">
-            🎨 Cultura
-          </option>
-
-          <option value="Restaurante">
-            🍴 Restaurante
-          </option>
-
-          <option value="Gastronomía">
-            🥘 Gastronomía
-          </option>
-
-          <option value="Compras">
-            🛍️ Compras
-          </option>
-
-          <option value="Vida nocturna">
-            🍹 Vida nocturna
-          </option>
-
-          <option value="Transporte">
-            ✈️ Transporte
-          </option>
-
-          <option value="Consejo">
-            💡 Consejo
-          </option>
-
-        </select>
-
-        <label for="discoveryLink">
+        <label>
           Enlace del Reel o vídeo
-          <span class="optional">
-            (opcional)
-          </span>
+
+          <input
+            name="link"
+            type="url"
+            placeholder="https://www.instagram.com/reel/…"
+          >
         </label>
 
-        <input
-          id="discoveryLink"
-          name="link"
-          type="url"
-          placeholder="https://www.instagram.com/reel/..."
-        >
-
-        <label for="discoveryComment">
+        <label>
           Comentario
-          <span class="optional">
-            (opcional)
-          </span>
+
+          <textarea
+            name="comment"
+            rows="3"
+            placeholder="Horario, precio o consejo útil…"
+          ></textarea>
         </label>
 
-        <textarea
-          id="discoveryComment"
-          name="comment"
-          rows="3"
-          placeholder="Horario, precio, recomendación o cualquier detalle útil..."
-        ></textarea>
+        <div class="coords-head">
 
-        <div class="coordinates-heading">
-
-          <div>
-            <strong>
-              Ubicación en el mapa
-            </strong>
-
-            <p>
-              Puedes introducir las coordenadas o usar el centro actual del mapa.
-            </p>
-          </div>
+          <b>
+            Ubicación
+          </b>
 
           <button
             id="useMapCenter"
-            class="use-map-center"
             type="button"
+            class="secondary-btn"
           >
-            Usar centro
+            Usar centro del mapa
           </button>
 
         </div>
 
-        <div class="coordinates-row">
+        <div class="coords-grid">
 
-          <div>
-
-            <label for="discoveryLat">
-              Latitud
-            </label>
+          <label>
+            Latitud
 
             <input
               id="discoveryLat"
@@ -562,14 +438,10 @@
               step="any"
               placeholder="-22.9068"
             >
+          </label>
 
-          </div>
-
-          <div>
-
-            <label for="discoveryLng">
-              Longitud
-            </label>
+          <label>
+            Longitud
 
             <input
               id="discoveryLng"
@@ -578,16 +450,14 @@
               step="any"
               placeholder="-43.1729"
             >
-
-          </div>
+          </label>
 
         </div>
 
         <button
-          class="save-discovery"
+          class="primary-btn"
           type="submit"
         >
-          <span>＋</span>
           Guardar descubrimiento
         </button>
 
@@ -597,7 +467,7 @@
 
   </div>
 
-  <!-- PANEL DE SECCIONES DEL MENÚ -->
+  <!-- PANELES DEL MENÚ -->
 
   <section
     id="contentPanel"
@@ -605,28 +475,22 @@
     aria-hidden="true"
   >
 
-    <div class="content-panel-header">
+    <div class="content-head">
 
       <div>
-
-        <span
-          id="contentPanelEyebrow"
-          class="section-eyebrow"
-        >
+        <span class="eyebrow">
           Mundo Infinito
         </span>
 
         <h2 id="contentPanelTitle">
           Descubrimientos
         </h2>
-
       </div>
 
       <button
         id="closeContentPanel"
-        class="close-content-panel"
+        class="sheet-close"
         type="button"
-        aria-label="Cerrar sección"
       >
         ×
       </button>
@@ -635,47 +499,19 @@
 
     <div
       id="contentPanelBody"
-      class="content-panel-body"
+      class="content-body"
     ></div>
 
   </section>
 
-  <!-- MENSAJE DE CONFIRMACIÓN -->
+  <!-- MENSAJES -->
 
   <div
-    id="successToast"
-    class="success-toast"
+    id="toast"
+    class="toast"
     role="status"
     aria-live="polite"
-  >
-    <span>✓</span>
-
-    <p id="successToastText">
-      Descubrimiento añadido
-    </p>
-  </div>
-
-  <!-- MENSAJE DE ERROR -->
-
-  <div
-    id="errorToast"
-    class="error-toast"
-    role="alert"
-    aria-live="assertive"
-  >
-    <span>!</span>
-
-    <p id="errorToastText">
-      No se pudo completar la acción
-    </p>
-  </div>
-
-  <noscript>
-    <div class="noscript-message">
-      Mundo Infinito necesita JavaScript para mostrar el mapa.
-    </div>
-  </noscript>
+  ></div>
 
 </body>
-
 </html>
