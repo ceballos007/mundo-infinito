@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "place": "Cristo Redentor",
+    "title": "Mejor hora para subir",
+    "type": "instagram",
+    "url": "https://instagram.com/"
+  },
+  {
+    "id": 2,
+    "place": "Cristo Redentor",
+    "title": "Vistas desde el tren",
+    "type": "instagram",
+    "url": "https://instagram.com/"
+  },
+  {
+    "id": 3,
+    "place": "Copacabana",
+    "title": "Paseo marítimo",
+    "type": "instagram",
+    "url": "https://instagram.com/"
+  },
+  {
+    "id": 4,
+    "place": "Ipanema",
+    "title": "Atardecer",
+    "type": "instagram",
+    "url": "https://instagram.com/"
+  }
+]
