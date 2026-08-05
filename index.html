@@ -1,14 +1,31 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#071b16">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#071b16"
+  >
 
   <title>Mundo Infinito by Eric</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  >
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
 
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
@@ -20,63 +37,18 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   >
 
-  <link rel="stylesheet" href="styles.css">
-
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    defer
-  ></script>
-
-  <script src="app.js" defer></script>
-</head>
-  <!-- REPRODUCTOR DE VÍDEO -->
-
-  <div
-    id="videoModal"
-    class="video-modal"
-    aria-hidden="true"
+  <link
+    rel="stylesheet"
+    href="styles.css"
   >
-    <div class="video-modal-card">
+</head>
 
-      <button
-        id="closeVideoModal"
-        class="video-close"
-        type="button"
-        aria-label="Cerrar vídeo"
-      >
-        ×
-      </button>
 
-      <div class="video-modal-header">
-        <span class="eyebrow">
-          Mundo Infinito
-        </span>
-
-        <h2 id="videoModalTitle">
-          Vídeo
-        </h2>
-
-        <p id="videoModalPlace">
-          Brasil
-        </p>
-      </div>
-
-      <div class="video-player-wrap">
-
-        <video
-          id="videoPlayer"
-          controls
-          playsinline
-          preload="metadata"
-        >
-          Tu navegador no puede reproducir este vídeo.
-        </video>
-
-      </div>
-
-    </div>
-  </div>
 <body>
+
+  <!-- =====================================================
+       APP
+       ===================================================== -->
 
   <div class="app-shell">
 
@@ -95,9 +67,13 @@
 
       </div>
 
+
       <div class="welcome">
         Bienvenido, Explorador.
       </div>
+
+
+      <!-- BUSCADOR -->
 
       <div class="search-wrap">
 
@@ -121,6 +97,7 @@
 
       </div>
 
+
       <div
         id="searchResults"
         class="search-results hidden"
@@ -128,10 +105,16 @@
 
     </header>
 
+
+    <!-- MAPA -->
+
     <main
       id="map"
       aria-label="Mapa de Brasil"
     ></main>
+
+
+    <!-- BOTÓN + -->
 
     <button
       id="openDiscoveryModal"
@@ -141,6 +124,9 @@
     >
       +
     </button>
+
+
+    <!-- NAVEGACIÓN -->
 
     <nav
       class="bottom-nav"
@@ -156,6 +142,7 @@
         <small>Explorar</small>
       </button>
 
+
       <button
         class="nav-button"
         data-section="descubrimientos"
@@ -164,6 +151,7 @@
         <span>🎥</span>
         <small>Vídeos</small>
       </button>
+
 
       <button
         class="nav-button"
@@ -174,6 +162,7 @@
         <small>Comida</small>
       </button>
 
+
       <button
         class="nav-button"
         data-section="viaje"
@@ -182,6 +171,7 @@
         <span>📅</span>
         <small>Mi viaje</small>
       </button>
+
 
       <button
         class="nav-button"
@@ -196,7 +186,10 @@
 
   </div>
 
-  <!-- FICHA DE LUGAR -->
+
+  <!-- =====================================================
+       FICHA DE LUGAR
+       ===================================================== -->
 
   <aside
     id="placePanel"
@@ -205,6 +198,7 @@
   >
 
     <div class="sheet-handle"></div>
+
 
     <button
       id="closePlacePanel"
@@ -215,6 +209,7 @@
       ×
     </button>
 
+
     <div class="place-hero">
 
       <div
@@ -224,7 +219,9 @@
         📍
       </div>
 
+
       <div class="hero-shade"></div>
+
 
       <div class="place-title">
 
@@ -235,9 +232,11 @@
           Lugar
         </span>
 
+
         <h2 id="placeName">
           Lugar
         </h2>
+
 
         <p id="placeZone">
           Río de Janeiro
@@ -247,6 +246,7 @@
 
     </div>
 
+
     <div class="sheet-body">
 
       <div class="rating">
@@ -254,10 +254,14 @@
         <span>Recomendado</span>
       </div>
 
+
       <p
         id="placeDescription"
         class="muted"
       ></p>
+
+
+      <!-- ACCIONES -->
 
       <div class="action-grid">
 
@@ -266,10 +270,12 @@
           type="button"
         >
           <span>🎥</span>
+
           <b id="placeVideoActionText">
             Vídeos
           </b>
         </button>
+
 
         <button
           id="savePlaceButton"
@@ -278,6 +284,7 @@
           <span>♡</span>
           <b>Guardar</b>
         </button>
+
 
         <a
           id="placeMapsButton"
@@ -291,6 +298,9 @@
 
       </div>
 
+
+      <!-- UBICACIÓN -->
+
       <div class="info-card">
 
         <span>📍</span>
@@ -301,6 +311,9 @@
         </div>
 
       </div>
+
+
+      <!-- CONSEJO -->
 
       <div class="info-card">
 
@@ -313,11 +326,15 @@
 
       </div>
 
+
+      <!-- VÍDEOS RELACIONADOS -->
+
       <section class="video-section">
 
         <div class="section-head">
 
           <div>
+
             <span class="eyebrow">
               Descubrimientos
             </span>
@@ -325,7 +342,9 @@
             <h3>
               Vídeos relacionados
             </h3>
+
           </div>
+
 
           <span
             id="placeVideoCount"
@@ -335,6 +354,7 @@
           </span>
 
         </div>
+
 
         <div
           id="placeVideosList"
@@ -347,7 +367,10 @@
 
   </aside>
 
-  <!-- AÑADIR DESCUBRIMIENTO -->
+
+  <!-- =====================================================
+       AÑADIR DESCUBRIMIENTO
+       ===================================================== -->
 
   <div
     id="discoveryModal"
@@ -364,6 +387,7 @@
 
       <div class="sheet-handle"></div>
 
+
       <button
         id="closeDiscoveryModal"
         class="sheet-close"
@@ -373,21 +397,29 @@
         ×
       </button>
 
+
       <span class="eyebrow">
         Mundo Infinito
       </span>
+
 
       <h2 id="modalTitle">
         Añadir descubrimiento
       </h2>
 
+
       <p class="muted">
-        Guarda un lugar o un Reel en menos de un minuto.
+        Guarda un lugar, consejo o vídeo para compartirlo con los demás Exploradores.
       </p>
+
 
       <form id="discoveryForm">
 
+
+        <!-- NOMBRE -->
+
         <label>
+
           Nombre
 
           <input
@@ -396,9 +428,14 @@
             required
             placeholder="Ej.: Mirador Dona Marta"
           >
+
         </label>
 
+
+        <!-- LUGAR -->
+
         <label>
+
           Lugar o zona
 
           <input
@@ -406,9 +443,14 @@
             required
             placeholder="Ej.: Santa Teresa"
           >
+
         </label>
 
+
+        <!-- CATEGORÍA -->
+
         <label>
+
           Categoría
 
           <select
@@ -436,7 +478,11 @@
 
         </label>
 
+
+        <!-- VÍDEO -->
+
         <label>
+
           Enlace del Reel o vídeo
 
           <input
@@ -444,9 +490,14 @@
             type="url"
             placeholder="https://www.instagram.com/reel/…"
           >
+
         </label>
 
+
+        <!-- COMENTARIO -->
+
         <label>
+
           Comentario
 
           <textarea
@@ -454,13 +505,18 @@
             rows="3"
             placeholder="Horario, precio o consejo útil…"
           ></textarea>
+
         </label>
+
+
+        <!-- UBICACIÓN -->
 
         <div class="coords-head">
 
           <b>
             Ubicación
           </b>
+
 
           <button
             id="useMapCenter"
@@ -472,9 +528,11 @@
 
         </div>
 
+
         <div class="coords-grid">
 
           <label>
+
             Latitud
 
             <input
@@ -484,9 +542,12 @@
               step="any"
               placeholder="-22.9068"
             >
+
           </label>
 
+
           <label>
+
             Longitud
 
             <input
@@ -496,9 +557,13 @@
               step="any"
               placeholder="-43.1729"
             >
+
           </label>
 
         </div>
+
+
+        <!-- GUARDAR -->
 
         <button
           class="primary-btn"
@@ -513,7 +578,10 @@
 
   </div>
 
-  <!-- PANELES DEL MENÚ -->
+
+  <!-- =====================================================
+       PANEL DEL MENÚ
+       ===================================================== -->
 
   <section
     id="contentPanel"
@@ -524,6 +592,7 @@
     <div class="content-head">
 
       <div>
+
         <span class="eyebrow">
           Mundo Infinito
         </span>
@@ -531,17 +600,21 @@
         <h2 id="contentPanelTitle">
           Descubrimientos
         </h2>
+
       </div>
+
 
       <button
         id="closeContentPanel"
         class="sheet-close"
         type="button"
+        aria-label="Cerrar"
       >
         ×
       </button>
 
     </div>
+
 
     <div
       id="contentPanelBody"
@@ -550,7 +623,69 @@
 
   </section>
 
-  <!-- MENSAJES -->
+
+  <!-- =====================================================
+       REPRODUCTOR DE VÍDEO
+       ===================================================== -->
+
+  <div
+    id="videoModal"
+    class="video-modal"
+    aria-hidden="true"
+  >
+
+    <div class="video-modal-card">
+
+      <button
+        id="closeVideoModal"
+        class="video-close"
+        type="button"
+        aria-label="Cerrar vídeo"
+      >
+        ×
+      </button>
+
+
+      <div class="video-modal-header">
+
+        <span class="eyebrow">
+          Mundo Infinito
+        </span>
+
+
+        <h2 id="videoModalTitle">
+          Vídeo
+        </h2>
+
+
+        <p id="videoModalPlace">
+          Brasil
+        </p>
+
+      </div>
+
+
+      <div class="video-player-wrap">
+
+        <video
+          id="videoPlayer"
+          controls
+          playsinline
+          preload="metadata"
+        >
+          Tu navegador no puede reproducir este vídeo.
+        </video>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       MENSAJES
+       ===================================================== -->
 
   <div
     id="toast"
@@ -559,5 +694,39 @@
     aria-live="polite"
   ></div>
 
+
+  <!-- =====================================================
+       LIBRERÍAS
+       IMPORTANTE: EL ORDEN NO SE CAMBIA
+       ===================================================== -->
+
+  <!-- Leaflet / mapa -->
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
+
+
+  <!-- Supabase -->
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+
+  <!-- Configuración pública de Mundo Infinito -->
+
+  <script
+    src="supabase-config.js"
+  ></script>
+
+
+  <!-- Aplicación -->
+
+  <script
+    src="app.js"
+  ></script>
+
 </body>
+
 </html>
