@@ -1,0 +1,34 @@
+[
+  {
+    "id": "cristo-redentor",
+    "name": "Cristo Redentor",
+    "city": "Río de Janeiro",
+    "category": "Lugar",
+    "image": "",
+    "rating": 5
+  },
+  {
+    "id": "copacabana",
+    "name": "Copacabana",
+    "city": "Río de Janeiro",
+    "category": "Playa",
+    "image": "",
+    "rating": 5
+  },
+  {
+    "id": "ipanema",
+    "name": "Ipanema",
+    "city": "Río de Janeiro",
+    "category": "Playa",
+    "image": "",
+    "rating": 5
+  },
+  {
+    "id": "pao-de-acucar",
+    "name": "Pão de Açúcar",
+    "city": "Río de Janeiro",
+    "category": "Mirador",
+    "image": "",
+    "rating": 5
+  }
+]
