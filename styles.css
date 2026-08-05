@@ -2100,4 +2100,135 @@ button:disabled {
 
 /* =========================================================
    FIN styles.css · MUNDO INFINITO v0.4.0
+   ========================================================= *//* =========================================================
+   REPRODUCTOR DE VÍDEO
    ========================================================= */
+
+.video-modal {
+  position: fixed;
+  inset: 0;
+
+  z-index: 4000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  visibility: hidden;
+  opacity: 0;
+
+  background: rgba(3, 13, 10, 0.82);
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  transition:
+    opacity 0.25s ease,
+    visibility 0.25s ease;
+}
+
+.video-modal.open {
+  visibility: visible;
+  opacity: 1;
+}
+
+.video-modal-card {
+  position: relative;
+
+  width: min(100%, 520px);
+  max-height: 92dvh;
+
+  overflow-y: auto;
+
+  padding: 22px;
+
+  border-radius: 26px;
+
+  background: #0d1714;
+  color: white;
+
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.45);
+}
+
+.video-close {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+
+  z-index: 5;
+
+  width: 38px;
+  height: 38px;
+
+  border: 0;
+  border-radius: 50%;
+
+  color: white;
+
+  background:
+    rgba(255, 255, 255, 0.12);
+
+  font-size: 25px;
+}
+
+.video-modal-header {
+  padding-right: 48px;
+  margin-bottom: 16px;
+}
+
+.video-modal-header h2 {
+  margin: 4px 0 5px;
+
+  font-size: 22px;
+  letter-spacing: -0.6px;
+}
+
+.video-modal-header p {
+  margin: 0;
+
+  color: rgba(255, 255, 255, 0.65);
+
+  font-size: 12px;
+}
+
+.video-player-wrap {
+  overflow: hidden;
+
+  border-radius: 20px;
+
+  background: black;
+}
+
+#videoPlayer {
+  display: block;
+
+  width: 100%;
+  max-height: 72dvh;
+
+  background: black;
+}
+
+@media (max-width: 600px) {
+  .video-modal {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .video-modal-card {
+    width: 100%;
+
+    border-radius: 26px 26px 0 0;
+
+    padding:
+      18px
+      15px
+      calc(18px + env(safe-area-inset-bottom));
+  }
+
+  #videoPlayer {
+    max-height: 68dvh;
+  }
+}
