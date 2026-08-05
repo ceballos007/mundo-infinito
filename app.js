@@ -1,1054 +1,2198 @@
-// =====================================================
-// MUNDO INFINITO by Eric
-// Beta 0.3
-// =====================================================
+// =========================================================
+// MUNDO INFINITO · v0.4.0
+// Mapa + datos + vídeos + favoritos + buscador
+// =========================================================
 
 "use strict";
 
-// -----------------------------------------------------
-// DATOS INICIALES
-// -----------------------------------------------------
+// =========================================================
+// CONFIGURACIÓN
+// =========================================================
 
-const lugaresIniciales = [
-    {
-        id: "cristo-redentor",
-        nombre: "Cristo Redentor",
-        zona: "Cosme Velho",
-        categoria: "Lugar",
-        descripcion:
-            "Uno de los principales iconos de Río de Janeiro.",
-        lat: -22.9519,
-        lng: -43.2105,
-        link: ""
-    },
-    {
-        id: "pao-de-acucar",
-        nombre: "Pão de Açúcar",
-        zona: "Urca",
-        categoria: "Mirador",
-        descripcion:
-            "Teleférico y vistas panorámicas de la bahía.",
-        lat: -22.9493,
-        lng: -43.1546,
-        link: ""
-    },
-    {
-        id: "copacabana",
-        nombre: "Praia de Copacabana",
-        zona: "Copacabana",
-        categoria: "Playa",
-        descripcion:
-            "Playa urbana y paseo marítimo de Río.",
-        lat: -22.9711,
-        lng: -43.1822,
-        link: ""
-    },
-    {
-        id: "ipanema",
-        nombre: "Praia de Ipanema",
-        zona: "Ipanema",
-        categoria: "Playa",
-        descripcion:
-            "Playa famosa por su ambiente y sus atardeceres.",
-        lat: -22.9868,
-        lng: -43.2047,
-        link: ""
-    },
-    {
-        id: "selaron",
-        nombre: "Escadaria Selarón",
-        zona: "Lapa / Santa Teresa",
-        categoria: "Cultura",
-        descripcion:
-            "Escalera artística cubierta de azulejos.",
-        lat: -22.9153,
-        lng: -43.179,
-        link: ""
-    },
-    {
-        id: "parque-lage",
-        nombre: "Parque Lage",
-        zona: "Jardim Botânico",
-        categoria: "Parque",
-        descripcion:
-            "Parque histórico situado a los pies del Corcovado.",
-        lat: -22.9608,
-        lng: -43.2116,
-        link: ""
-    },
-    {
-        id: "saara",
-        nombre: "SAARA",
-        zona: "Centro",
-        categoria: "Compras",
-        descripcion:
-            "Zona comercial popular con tiendas y compras económicas.",
-        lat: -22.9028,
-        lng: -43.1815,
-        link: ""
-    },
-    {
-        id: "pedra-do-sal",
-        nombre: "Pedra do Sal",
-        zona: "Saúde",
-        categoria: "Vida nocturna",
-        descripcion:
-            "Lugar histórico relacionado con la samba.",
-        lat: -22.8976,
-        lng: -43.1852,
-        link: ""
-    },
-    {
-        id: "arnaldo-quintela",
-        nombre: "Rua Arnaldo Quintela",
-        zona: "Botafogo",
-        categoria: "Vida nocturna",
-        descripcion:
-            "Zona de bares con mucho ambiente nocturno.",
-        lat: -22.9537,
-        lng: -43.1866,
-        link: ""
-    },
-    {
-        id: "galeao",
-        nombre: "Aeropuerto de Galeão",
-        zona: "Ilha do Governador",
-        categoria: "Transporte",
-        descripcion:
-            "Aeropuerto internacional de Río de Janeiro.",
-        lat: -22.809,
-        lng: -43.2506,
-        link: ""
-    }
+const CONFIG = {
+  city: "Río de Janeiro",
+  country: "Brasil",
+  center: [-22.94, -43.22],
+  zoom: 11,
+
+  storage: {
+    discoveries: "mundoInfinitoDescubrimientos",
+    savedPlaces: "mundoInfinitoLugaresGuardados"
+  }
+};
+
+// =========================================================
+// DATOS BASE
+// =========================================================
+
+// Estos lugares mantienen el mapa funcionando aunque
+// places.json todavía tenga pocos datos.
+
+const defaultPlaces = [
+  {
+    id: "cristo-redentor",
+    name: "Cristo Redentor",
+    zone: "Cosme Velho",
+    city: "Río de Janeiro",
+    category: "Lugar",
+    description:
+      "Uno de los iconos más reconocibles de Río de Janeiro.",
+    lat: -22.9519,
+    lng: -43.2105,
+    rating: 5,
+    image: ""
+  },
+
+  {
+    id: "pao-de-acucar",
+    name: "Pão de Açúcar",
+    zone: "Urca",
+    city: "Río de Janeiro",
+    category: "Mirador",
+    description:
+      "Teleférico y vistas panorámicas sobre la bahía de Guanabara.",
+    lat: -22.9493,
+    lng: -43.1546,
+    rating: 5,
+    image: ""
+  },
+
+  {
+    id: "copacabana",
+    name: "Copacabana",
+    zone: "Copacabana",
+    city: "Río de Janeiro",
+    category: "Playa",
+    description:
+      "Una de las playas urbanas más famosas del mundo.",
+    lat: -22.9711,
+    lng: -43.1822,
+    rating: 5,
+    image: ""
+  },
+
+  {
+    id: "ipanema",
+    name: "Ipanema",
+    zone: "Ipanema",
+    city: "Río de Janeiro",
+    category: "Playa",
+    description:
+      "Playa conocida por su ambiente y sus atardeceres.",
+    lat: -22.9868,
+    lng: -43.2047,
+    rating: 5,
+    image: ""
+  },
+
+  {
+    id: "selaron",
+    name: "Escadaria Selarón",
+    zone: "Lapa / Santa Teresa",
+    city: "Río de Janeiro",
+    category: "Cultura",
+    description:
+      "Escalera artística cubierta por azulejos de todo el mundo.",
+    lat: -22.9153,
+    lng: -43.179,
+    rating: 5,
+    image: ""
+  },
+
+  {
+    id: "parque-lage",
+    name: "Parque Lage",
+    zone: "Jardim Botânico",
+    city: "Río de Janeiro",
+    category: "Parque",
+    description:
+      "Parque histórico situado a los pies del Corcovado.",
+    lat: -22.9608,
+    lng: -43.2116,
+    rating: 5,
+    image: ""
+  },
+
+  {
+    id: "saara",
+    name: "SAARA",
+    zone: "Centro",
+    city: "Río de Janeiro",
+    category: "Compras",
+    description:
+      "Zona comercial popular con multitud de tiendas.",
+    lat: -22.9028,
+    lng: -43.1815,
+    rating: 4,
+    image: ""
+  },
+
+  {
+    id: "pedra-do-sal",
+    name: "Pedra do Sal",
+    zone: "Saúde",
+    city: "Río de Janeiro",
+    category: "Vida nocturna",
+    description:
+      "Lugar histórico estrechamente ligado a la samba carioca.",
+    lat: -22.8976,
+    lng: -43.1852,
+    rating: 5,
+    image: ""
+  },
+
+  {
+    id: "arnaldo-quintela",
+    name: "Rua Arnaldo Quintela",
+    zone: "Botafogo",
+    city: "Río de Janeiro",
+    category: "Vida nocturna",
+    description:
+      "Calle de Botafogo conocida por su concentración de bares.",
+    lat: -22.9537,
+    lng: -43.1866,
+    rating: 4,
+    image: ""
+  },
+
+  {
+    id: "galeao",
+    name: "Aeropuerto de Galeão",
+    zone: "Ilha do Governador",
+    city: "Río de Janeiro",
+    category: "Transporte",
+    description:
+      "Principal aeropuerto internacional de Río de Janeiro.",
+    lat: -22.809,
+    lng: -43.2506,
+    rating: 4,
+    image: ""
+  }
 ];
 
-// -----------------------------------------------------
-// ALMACENAMIENTO LOCAL
-// -----------------------------------------------------
+// =========================================================
+// VARIABLES DE LA APLICACIÓN
+// =========================================================
 
-const STORAGE_KEY =
-    "mundoInfinitoDescubrimientos";
+let places = [];
+let videos = [];
 
-const SAVED_PLACES_KEY =
-    "mundoInfinitoLugaresGuardados";
+let userDiscoveries = loadJSON(
+  CONFIG.storage.discoveries,
+  []
+);
 
-function cargarDescubrimientosGuardados() {
-    try {
-        const datos =
-            localStorage.getItem(STORAGE_KEY);
+let selectedPlace = null;
 
-        if (!datos) {
-            return [];
-        }
+const markers = new Map();
 
-        const descubrimientos =
-            JSON.parse(datos);
+// =========================================================
+// ELEMENTOS HTML
+// =========================================================
 
-        return Array.isArray(descubrimientos)
-            ? descubrimientos
-            : [];
-    } catch (error) {
-        console.error(
-            "No se pudieron cargar los descubrimientos:",
-            error
-        );
+const searchInput =
+  document.getElementById("searchInput");
 
-        return [];
+const clearSearch =
+  document.getElementById("clearSearch");
+
+const searchResults =
+  document.getElementById("searchResults");
+
+const openDiscoveryModal =
+  document.getElementById("openDiscoveryModal");
+
+const discoveryModal =
+  document.getElementById("discoveryModal");
+
+const closeDiscoveryModal =
+  document.getElementById("closeDiscoveryModal");
+
+const discoveryForm =
+  document.getElementById("discoveryForm");
+
+const useMapCenter =
+  document.getElementById("useMapCenter");
+
+const discoveryLat =
+  document.getElementById("discoveryLat");
+
+const discoveryLng =
+  document.getElementById("discoveryLng");
+
+const placePanel =
+  document.getElementById("placePanel");
+
+const closePlacePanel =
+  document.getElementById("closePlacePanel");
+
+const placeCoverIcon =
+  document.getElementById("placeCoverIcon");
+
+const placeCategory =
+  document.getElementById("placeCategory");
+
+const placeName =
+  document.getElementById("placeName");
+
+const placeZone =
+  document.getElementById("placeZone");
+
+const placeDescription =
+  document.getElementById("placeDescription");
+
+const placeLocationText =
+  document.getElementById("placeLocationText");
+
+const placeTip =
+  document.getElementById("placeTip");
+
+const placeVideosButton =
+  document.getElementById("placeVideosButton");
+
+const placeVideoActionText =
+  document.getElementById("placeVideoActionText");
+
+const placeVideoCount =
+  document.getElementById("placeVideoCount");
+
+const placeVideosList =
+  document.getElementById("placeVideosList");
+
+const savePlaceButton =
+  document.getElementById("savePlaceButton");
+
+const placeMapsButton =
+  document.getElementById("placeMapsButton");
+
+const contentPanel =
+  document.getElementById("contentPanel");
+
+const contentPanelTitle =
+  document.getElementById("contentPanelTitle");
+
+const contentPanelBody =
+  document.getElementById("contentPanelBody");
+
+const closeContentPanel =
+  document.getElementById("closeContentPanel");
+
+const toast =
+  document.getElementById("toast");
+
+const navButtons =
+  document.querySelectorAll(".nav-button");
+
+// =========================================================
+// UTILIDADES
+// =========================================================
+
+function loadJSON(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+
+    if (!value) {
+      return fallback;
     }
-}
 
-function guardarDescubrimientos() {
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(descubrimientosGuardados)
+    return JSON.parse(value);
+  } catch (error) {
+    console.error(
+      `No se pudo leer ${key}:`,
+      error
     );
+
+    return fallback;
+  }
 }
 
-function cargarLugaresGuardados() {
-    try {
-        const datos =
-            localStorage.getItem(SAVED_PLACES_KEY);
-
-        if (!datos) {
-            return [];
-        }
-
-        const guardados =
-            JSON.parse(datos);
-
-        return Array.isArray(guardados)
-            ? guardados
-            : [];
-    } catch (error) {
-        console.error(
-            "No se pudieron cargar los guardados:",
-            error
-        );
-
-        return [];
-    }
+function saveJSON(key, value) {
+  try {
+    localStorage.setItem(
+      key,
+      JSON.stringify(value)
+    );
+  } catch (error) {
+    console.error(
+      `No se pudo guardar ${key}:`,
+      error
+    );
+  }
 }
 
-let descubrimientosGuardados =
-    cargarDescubrimientosGuardados();
+function normalize(text) {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
-let lugares = [
-    ...lugaresIniciales,
-    ...descubrimientosGuardados
-];
+function slug(text) {
+  return normalize(text)
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
-// -----------------------------------------------------
+function showToast(message) {
+  toast.textContent = message;
+
+  toast.classList.add("show");
+
+  window.clearTimeout(
+    showToast.timeout
+  );
+
+  showToast.timeout =
+    window.setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2400);
+}
+
+function escapeHTML(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+// =========================================================
+// CATEGORÍAS
+// =========================================================
+
+const categoryIcons = {
+  Lugar: "📍",
+  Mirador: "🌄",
+  Playa: "🏖️",
+  Cultura: "🎨",
+  Parque: "🌿",
+  Compras: "🛍️",
+  "Vida nocturna": "🍹",
+  Transporte: "✈️",
+  Restaurante: "🍴",
+  Gastronomía: "🥘",
+  Consejo: "💡"
+};
+
+const categoryTips = {
+  Lugar:
+    "Comprueba horarios y entradas antes de ir.",
+
+  Mirador:
+    "El amanecer o el atardecer suelen ofrecer las mejores vistas.",
+
+  Playa:
+    "Lleva protección solar, agua y vigila tus pertenencias.",
+
+  Cultura:
+    "Ir temprano suele permitir disfrutarlo con más tranquilidad.",
+
+  Parque:
+    "Lleva agua y calzado cómodo.",
+
+  Compras:
+    "Compara precios antes de comprar y lleva algo de efectivo.",
+
+  "Vida nocturna":
+    "Planifica el transporte de vuelta antes de salir.",
+
+  Transporte:
+    "Confirma el punto exacto de recogida antes de desplazarte.",
+
+  Restaurante:
+    "Comprueba horarios y si es necesario reservar.",
+
+  Gastronomía:
+    "Pregunta por la especialidad de la casa.",
+
+  Consejo:
+    "Guárdalo para consultarlo durante el viaje."
+};
+
+// =========================================================
 // MAPA
-// -----------------------------------------------------
+// =========================================================
 
-const map = L.map("map", {
+const map = L.map(
+  "map",
+  {
     zoomControl: false
-}).setView(
-    [-22.94, -43.22],
-    11
+  }
+).setView(
+  CONFIG.center,
+  CONFIG.zoom
 );
 
 L.control.zoom({
-    position: "bottomleft"
+  position: "bottomleft"
 }).addTo(map);
 
 L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-        attribution: "&copy; OpenStreetMap",
-        maxZoom: 19
-    }
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
+    attribution: "&copy; OpenStreetMap",
+    maxZoom: 19
+  }
 ).addTo(map);
 
-const greenIcon = L.icon({
-    iconUrl:
-        "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
+// =========================================================
+// ICONOS DEL MAPA
+// =========================================================
 
-    shadowUrl:
-        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-});
-
-const markerMap = new Map();
-
-// -----------------------------------------------------
-// ELEMENTOS DE LA PÁGINA
-// -----------------------------------------------------
-
-const modal =
-    document.getElementById("discoveryModal");
-
-const openModalButton =
-    document.getElementById(
-        "openDiscoveryModal"
-    );
-
-const closeModalButton =
-    document.getElementById(
-        "closeDiscoveryModal"
-    );
-
-const discoveryForm =
-    document.getElementById(
-        "discoveryForm"
-    );
-
-const successToast =
-    document.getElementById(
-        "successToast"
-    );
-
-const searchInput =
-    document.getElementById(
-        "searchInput"
-    );
-
-const clearSearch =
-    document.getElementById(
-        "clearSearch"
-    );
-
-const searchResults =
-    document.getElementById(
-        "searchResults"
-    );
-
-const placePanel =
-    document.getElementById(
-        "placePanel"
-    );
-
-const closePlacePanel =
-    document.getElementById(
-        "closePlacePanel"
-    );
-
-const placeCoverIcon =
-    document.getElementById(
-        "placeCoverIcon"
-    );
-
-const placeCategory =
-    document.getElementById(
-        "placeCategory"
-    );
-
-const placeName =
-    document.getElementById(
-        "placeName"
-    );
-
-const placeZone =
-    document.getElementById(
-        "placeZone"
-    );
-
-const placeDescription =
-    document.getElementById(
-        "placeDescription"
-    );
-
-const placeLocationText =
-    document.getElementById(
-        "placeLocationText"
-    );
-
-const placeTip =
-    document.getElementById(
-        "placeTip"
-    );
-
-const placeMapsButton =
-    document.getElementById(
-        "placeMapsButton"
-    );
-
-const placeVideoLink =
-    document.getElementById(
-        "placeVideoLink"
-    );
-
-const placeVideosButton =
-    document.getElementById(
-        "placeVideosButton"
-    );
-
-const savePlaceButton =
-    document.getElementById(
-        "savePlaceButton"
-    );
-
-const navButtons =
-    document.querySelectorAll(
-        ".nav-button"
-    ); // -----------------------------------------------------
-// UTILIDADES
-// -----------------------------------------------------
-
-function crearId(texto) {
-    return String(texto || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "");
+function markerClass(category) {
+  return normalize(category)
+    .replace(/\s+/g, "-");
 }
 
-function normalizar(texto) {
-    return String(texto || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-}
+function createMarkerIcon(place) {
+  const icon =
+    categoryIcons[place.category] || "📍";
 
-// -----------------------------------------------------
-// CATEGORÍAS
-// -----------------------------------------------------
+  return L.divIcon({
+    className: "",
 
-const iconosCategorias = {
-    Lugar: "📍",
-    Mirador: "🌄",
-    Playa: "🏖️",
-    Cultura: "🎨",
-    Parque: "🌿",
-    Compras: "🛍️",
-    "Vida nocturna": "🍹",
-    Transporte: "✈️",
-    Restaurante: "🍴",
-    Gastronomía: "🥘",
-    Consejo: "💡"
-};
+    html: `
+      <div
+        class="custom-marker ${markerClass(place.category)}"
+      >
+        <span>${icon}</span>
+      </div>
+    `,
 
-const consejosCategorias = {
-    Lugar:
-        "Comprueba los horarios y reserva entrada si es necesario.",
+    iconSize: [38, 38],
+    iconAnchor: [19, 38]
+  });
+}// =========================================================
+// APP.JS · PARTE 2 DE 4
+// Carga de datos + marcadores + selección de lugares
+// =========================================================
 
-    Mirador:
-        "El amanecer o el atardecer suelen ofrecer las mejores vistas.",
+// =========================================================
+// CARGA DE DATOS EXTERNOS
+// =========================================================
 
-    Playa:
-        "Lleva protección solar, agua y vigila tus pertenencias.",
-
-    Cultura:
-        "Intenta acudir temprano para disfrutar del lugar con tranquilidad.",
-
-    Parque:
-        "Lleva agua y calzado cómodo.",
-
-    Compras:
-        "Compara precios y lleva algo de efectivo.",
-
-    "Vida nocturna":
-        "Comprueba el transporte de vuelta antes de salir.",
-
-    Transporte:
-        "Confirma siempre el punto exacto de recogida.",
-
-    Restaurante:
-        "Consulta el horario y comprueba si es necesario reservar.",
-
-    Gastronomía:
-        "Pregunta por la especialidad de la casa.",
-
-    Consejo:
-        "Guarda este descubrimiento para consultarlo durante el viaje."
-};
-
-// -----------------------------------------------------
-// MARCADORES
-// -----------------------------------------------------
-
-function añadirMarcador(lugar) {
-    const marker = L.marker(
-        [lugar.lat, lugar.lng],
-        {
-            icon: greenIcon,
-            title: lugar.nombre
-        }
-    ).addTo(map);
-
-    marker.on("click", () => {
-        abrirFichaLugar(lugar);
+async function fetchJSON(path, fallback = []) {
+  try {
+    const response = await fetch(path, {
+      cache: "no-store"
     });
 
-    markerMap.set(lugar.id, marker);
-}
-
-lugares.forEach(lugar => {
-    añadirMarcador(lugar);
-});
-
-// -----------------------------------------------------
-// FICHA PREMIUM DEL LUGAR
-// -----------------------------------------------------
-
-let lugarSeleccionado = null;
-
-function actualizarBotonGuardado(guardado) {
-    if (guardado) {
-        savePlaceButton.classList.add("saved");
-
-        savePlaceButton.innerHTML = `
-            <span>♥</span>
-            <strong>Guardado</strong>
-        `;
-    } else {
-        savePlaceButton.classList.remove("saved");
-
-        savePlaceButton.innerHTML = `
-            <span>♡</span>
-            <strong>Guardar</strong>
-        `;
-    }
-}
-
-function abrirFichaLugar(lugar) {
-    lugarSeleccionado = lugar;
-
-    placeCoverIcon.textContent =
-        iconosCategorias[lugar.categoria] || "📍";
-
-    placeCategory.textContent =
-        lugar.categoria || "Lugar";
-
-    placeName.textContent =
-        lugar.nombre;
-
-    placeZone.textContent =
-        `${lugar.zona} · Río de Janeiro`;
-
-    placeDescription.textContent =
-        lugar.descripcion ||
-        "Descubrimiento añadido por un Explorador.";
-
-    placeLocationText.textContent =
-        `${lugar.zona}, Río de Janeiro, Brasil`;
-
-    placeTip.textContent =
-        consejosCategorias[lugar.categoria] ||
-        "Consulta la información antes de visitar este lugar.";
-
-    const mapsQuery = encodeURIComponent(
-        `${lugar.nombre}, ${lugar.zona}, Río de Janeiro, Brasil`
-    );
-
-    placeMapsButton.href =
-        `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
-
-    if (lugar.link) {
-        placeVideoLink.href = lugar.link;
-        placeVideoLink.classList.remove("hidden");
-        placeVideosButton.disabled = false;
-    } else {
-        placeVideoLink.href = "#";
-        placeVideoLink.classList.add("hidden");
-        placeVideosButton.disabled = true;
+    if (!response.ok) {
+      throw new Error(
+        `Error ${response.status} cargando ${path}`
+      );
     }
 
-    const guardados = cargarLugaresGuardados();
+    const data = await response.json();
 
-    actualizarBotonGuardado(
-        guardados.includes(lugar.id)
+    return Array.isArray(data)
+      ? data
+      : fallback;
+  } catch (error) {
+    console.warn(
+      `No se pudo cargar ${path}.`,
+      error
     );
 
-    placePanel.classList.add("visible");
-    placePanel.setAttribute(
-        "aria-hidden",
-        "false"
-    );
+    return fallback;
+  }
 }
 
-function cerrarFichaLugar() {
-    placePanel.classList.remove("visible");
+// =========================================================
+// NORMALIZAR DATOS DE PLACES.JSON
+// =========================================================
 
-    placePanel.setAttribute(
-        "aria-hidden",
-        "true"
-    );
+function normalizePlace(place) {
+  return {
+    id:
+      place.id ||
+      slug(place.name || place.nombre),
 
-    lugarSeleccionado = null;
+    name:
+      place.name ||
+      place.nombre ||
+      "Lugar",
+
+    zone:
+      place.zone ||
+      place.zona ||
+      place.neighborhood ||
+      "",
+
+    city:
+      place.city ||
+      CONFIG.city,
+
+    category:
+      place.category ||
+      place.categoria ||
+      "Lugar",
+
+    description:
+      place.description ||
+      place.descripcion ||
+      "Descubrimiento guardado en Mundo Infinito.",
+
+    lat:
+      Number(
+        place.lat ??
+        place.latitude
+      ),
+
+    lng:
+      Number(
+        place.lng ??
+        place.longitude
+      ),
+
+    rating:
+      Number(place.rating || 5),
+
+    image:
+      place.image || ""
+  };
 }
 
-closePlacePanel.addEventListener(
+// =========================================================
+// NORMALIZAR DATOS DE VIDEOS.JSON
+// =========================================================
+
+function normalizeVideo(video) {
+  return {
+    id:
+      video.id ||
+      `video-${Date.now()}-${Math.random()}`,
+
+    placeId:
+      video.placeId ||
+      video.place_id ||
+      "",
+
+    place:
+      video.place ||
+      video.lugar ||
+      "",
+
+    title:
+      video.title ||
+      video.titulo ||
+      "Vídeo",
+
+    description:
+      video.description ||
+      video.descripcion ||
+      "",
+
+    type:
+      video.type ||
+      video.tipo ||
+      "instagram",
+
+    url:
+      video.url ||
+      video.link ||
+      video.enlace ||
+      ""
+  };
+}
+
+// =========================================================
+// COMBINAR LUGARES BASE + JSON
+// =========================================================
+
+function mergePlaces(externalPlaces) {
+  const combined = new Map();
+
+  defaultPlaces.forEach(place => {
+    combined.set(
+      place.id,
+      normalizePlace(place)
+    );
+  });
+
+  externalPlaces
+    .map(normalizePlace)
+    .forEach(place => {
+      const existing =
+        combined.get(place.id);
+
+      combined.set(
+        place.id,
+        {
+          ...existing,
+          ...place
+        }
+      );
+    });
+
+  return Array.from(
+    combined.values()
+  ).filter(place =>
+    Number.isFinite(place.lat) &&
+    Number.isFinite(place.lng)
+  );
+}
+
+// =========================================================
+// DESCUBRIMIENTOS LOCALES
+// =========================================================
+
+function localDiscoveriesAsPlaces() {
+  return userDiscoveries
+    .filter(item =>
+      Number.isFinite(Number(item.lat)) &&
+      Number.isFinite(Number(item.lng))
+    )
+    .map(item => ({
+      id:
+        item.id ||
+        `local-${slug(item.name || item.title)}`,
+
+      name:
+        item.name ||
+        item.title ||
+        "Descubrimiento",
+
+      zone:
+        item.zone ||
+        item.place ||
+        "Río de Janeiro",
+
+      city:
+        CONFIG.city,
+
+      category:
+        item.category ||
+        "Lugar",
+
+      description:
+        item.description ||
+        item.comment ||
+        "Descubrimiento añadido por un Explorador.",
+
+      lat:
+        Number(item.lat),
+
+      lng:
+        Number(item.lng),
+
+      rating: 5,
+
+      image: "",
+
+      link:
+        item.link || ""
+    }));
+}
+
+// =========================================================
+// AÑADIR MARCADOR
+// =========================================================
+
+function addMarker(place) {
+  if (
+    !Number.isFinite(place.lat) ||
+    !Number.isFinite(place.lng)
+  ) {
+    return;
+  }
+
+  if (markers.has(place.id)) {
+    return;
+  }
+
+  const marker = L.marker(
+    [place.lat, place.lng],
+    {
+      icon: createMarkerIcon(place),
+      title: place.name
+    }
+  ).addTo(map);
+
+  marker.on(
     "click",
-    cerrarFichaLugar
-);
+    () => {
+      openPlace(place.id);
+    }
+  );
+
+  markers.set(
+    place.id,
+    marker
+  );
+}
+
+// =========================================================
+// RENDERIZAR TODOS LOS MARCADORES
+// =========================================================
+
+function renderMarkers() {
+  markers.forEach(marker => {
+    marker.remove();
+  });
+
+  markers.clear();
+
+  places.forEach(place => {
+    addMarker(place);
+  });
+}
+
+// =========================================================
+// OBTENER UN LUGAR
+// =========================================================
+
+function getPlaceById(placeId) {
+  return places.find(
+    place => place.id === placeId
+  );
+}
+
+// =========================================================
+// VÍDEOS DE UN LUGAR
+// =========================================================
+
+function getVideosForPlace(place) {
+  const placeName =
+    normalize(place.name);
+
+  return videos.filter(video => {
+    if (
+      video.placeId &&
+      video.placeId === place.id
+    ) {
+      return true;
+    }
+
+    if (
+      video.place &&
+      normalize(video.place) === placeName
+    ) {
+      return true;
+    }
+
+    return false;
+  });
+}
+
+// =========================================================
+// ABRIR FICHA DE LUGAR
+// =========================================================
+
+function openPlace(placeId) {
+  const place =
+    getPlaceById(placeId);
+
+  if (!place) {
+    return;
+  }
+
+  selectedPlace = place;
+
+  closeContent();
+
+  const icon =
+    categoryIcons[place.category] ||
+    "📍";
+
+  placeCoverIcon.textContent =
+    icon;
+
+  placeCategory.textContent =
+    place.category;
+
+  placeName.textContent =
+    place.name;
+
+  placeZone.textContent =
+    [
+      place.zone,
+      place.city
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+  placeDescription.textContent =
+    place.description;
+
+  placeLocationText.textContent =
+    [
+      place.zone,
+      place.city,
+      CONFIG.country
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+  placeTip.textContent =
+    categoryTips[place.category] ||
+    "Consulta tus descubrimientos antes de visitar este lugar.";
+
+  const mapsQuery =
+    encodeURIComponent(
+      `${place.name}, ${place.zone}, ${place.city}, ${CONFIG.country}`
+    );
+
+  placeMapsButton.href =
+    `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+
+  renderPlaceVideos(place);
+
+  updateSavedButton();
+
+  placePanel.classList.add("open");
+
+  placePanel.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+}
+
+// =========================================================
+// CERRAR FICHA
+// =========================================================
+
+function closePlace() {
+  placePanel.classList.remove(
+    "open"
+  );
+
+  placePanel.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+  selectedPlace = null;
+}
+
+// =========================================================
+// RENDERIZAR VÍDEOS DE UN LUGAR
+// =========================================================
+
+function renderPlaceVideos(place) {
+  const relatedVideos =
+    getVideosForPlace(place);
+
+  placeVideoCount.textContent =
+    relatedVideos.length;
+
+  placeVideoActionText.textContent =
+    relatedVideos.length === 1
+      ? "1 vídeo"
+      : `${relatedVideos.length} vídeos`;
+
+  if (
+    relatedVideos.length === 0
+  ) {
+    placeVideosList.innerHTML = `
+      <div class="empty-state">
+        <span>🎥</span>
+
+        <strong>
+          Todavía no hay vídeos
+        </strong>
+
+        <p>
+          Añade un Reel relacionado con este lugar usando el botón +.
+        </p>
+      </div>
+    `;
+
+    return;
+  }
+
+  placeVideosList.innerHTML =
+    relatedVideos
+      .map(video => {
+
+        const source =
+          escapeHTML(
+            video.type ||
+            "vídeo"
+          );
+
+        return `
+          <a
+            class="video-card"
+            href="${escapeHTML(video.url)}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+
+            <div class="video-thumb"></div>
+
+            <div class="video-info">
+
+              <strong>
+                ${escapeHTML(video.title)}
+              </strong>
+
+              <p>
+                ${
+                  escapeHTML(
+                    video.description ||
+                    place.name
+                  )
+                }
+              </p>
+
+              <span class="video-source">
+                ${source}
+              </span>
+
+            </div>
+
+          </a>
+        `;
+      })
+      .join("");
+}
+
+// =========================================================
+// BOTÓN VÍDEOS DE LA FICHA
+// =========================================================
 
 placeVideosButton.addEventListener(
-    "click",
-    () => {
-        if (
-            lugarSeleccionado &&
-            lugarSeleccionado.link
-        ) {
-            window.open(
-                lugarSeleccionado.link,
-                "_blank",
-                "noopener"
-            );
-        }
+  "click",
+  () => {
+    if (!selectedPlace) {
+      return;
     }
+
+    const relatedVideos =
+      getVideosForPlace(
+        selectedPlace
+      );
+
+    if (
+      relatedVideos.length === 0
+    ) {
+      showToast(
+        "Todavía no hay vídeos para este lugar"
+      );
+
+      return;
+    }
+
+    placeVideosList
+      .scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+  }
 );
+
+// =========================================================
+// CERRAR FICHA
+// =========================================================
+
+closePlacePanel.addEventListener(
+  "click",
+  closePlace
+);
+
+// =========================================================
+// GUARDADOS
+// =========================================================
+
+function getSavedPlaces() {
+  const saved =
+    loadJSON(
+      CONFIG.storage.savedPlaces,
+      []
+    );
+
+  return Array.isArray(saved)
+    ? saved
+    : [];
+}
+
+function isPlaceSaved(placeId) {
+  return getSavedPlaces()
+    .includes(placeId);
+}
+
+function updateSavedButton() {
+  if (!selectedPlace) {
+    return;
+  }
+
+  const saved =
+    isPlaceSaved(
+      selectedPlace.id
+    );
+
+  savePlaceButton
+    .classList
+    .toggle(
+      "saved",
+      saved
+    );
+
+  savePlaceButton.innerHTML =
+    saved
+      ? `
+        <span>♥</span>
+        <b>Guardado</b>
+      `
+      : `
+        <span>♡</span>
+        <b>Guardar</b>
+      `;
+}
+
+// =========================================================
+// GUARDAR / QUITAR FAVORITO
+// =========================================================
 
 savePlaceButton.addEventListener(
-    "click",
-    () => {
-        if (!lugarSeleccionado) {
-            return;
-        }
-
-        const guardados =
-            cargarLugaresGuardados();
-
-        const posicion =
-            guardados.indexOf(
-                lugarSeleccionado.id
-            );
-
-        if (posicion >= 0) {
-            guardados.splice(posicion, 1);
-            actualizarBotonGuardado(false);
-        } else {
-            guardados.push(
-                lugarSeleccionado.id
-            );
-
-            actualizarBotonGuardado(true);
-        }
-
-        localStorage.setItem(
-            SAVED_PLACES_KEY,
-            JSON.stringify(guardados)
-        );
+  "click",
+  () => {
+    if (!selectedPlace) {
+      return;
     }
-);
 
-// -----------------------------------------------------
-// MODAL AÑADIR DESCUBRIMIENTO
-// -----------------------------------------------------
+    const saved =
+      getSavedPlaces();
 
-function abrirModal() {
-    cerrarFichaLugar();
+    const index =
+      saved.indexOf(
+        selectedPlace.id
+      );
 
-    modal.classList.add("visible");
+    if (index >= 0) {
+      saved.splice(
+        index,
+        1
+      );
 
-    modal.setAttribute(
-        "aria-hidden",
-        "false"
+      showToast(
+        "Eliminado de Guardados"
+      );
+    } else {
+      saved.push(
+        selectedPlace.id
+      );
+
+      showToast(
+        "Guardado en Mundo Infinito"
+      );
+    }
+
+    saveJSON(
+      CONFIG.storage.savedPlaces,
+      saved
     );
 
-    document.body.style.overflow =
-        "hidden";
+    updateSavedButton();
+  }
+);// =========================================================
+// APP.JS · PARTE 3 DE 4
+// Buscador + modal + crear descubrimientos
+// =========================================================
 
-    window.setTimeout(() => {
-        const titleInput =
-            document.getElementById(
-                "discoveryTitle"
-            );
-
-        if (titleInput) {
-            titleInput.focus();
-        }
-    }, 250);
-}
-
-function cerrarModal() {
-    modal.classList.remove("visible");
-
-    modal.setAttribute(
-        "aria-hidden",
-        "true"
-    );
-
-    document.body.style.overflow = "";
-}
-
-openModalButton.addEventListener(
-    "click",
-    abrirModal
-);
-
-closeModalButton.addEventListener(
-    "click",
-    cerrarModal
-);
-
-modal.addEventListener(
-    "click",
-    event => {
-        if (event.target === modal) {
-            cerrarModal();
-        }
-    }
-);
-
-document.addEventListener(
-    "keydown",
-    event => {
-        if (event.key !== "Escape") {
-            return;
-        }
-
-        if (
-            modal.classList.contains(
-                "visible"
-            )
-        ) {
-            cerrarModal();
-        }
-
-        if (
-            placePanel.classList.contains(
-                "visible"
-            )
-        ) {
-            cerrarFichaLugar();
-        }
-    }
-);// -----------------------------------------------------
-// MENSAJE DE CONFIRMACIÓN
-// -----------------------------------------------------
-
-function mostrarConfirmacion() {
-    successToast.classList.add("visible");
-
-    window.setTimeout(() => {
-        successToast.classList.remove("visible");
-    }, 2600);
-}
-
-// -----------------------------------------------------
-// GUARDAR UN NUEVO DESCUBRIMIENTO
-// -----------------------------------------------------
-
-discoveryForm.addEventListener(
-    "submit",
-    event => {
-        event.preventDefault();
-
-        const formData =
-            new FormData(discoveryForm);
-
-        const nombre = String(
-            formData.get("title") || ""
-        ).trim();
-
-        const zona = String(
-            formData.get("place") || ""
-        ).trim();
-
-        const categoria = String(
-            formData.get("category") || ""
-        ).trim();
-
-        const link = String(
-            formData.get("link") || ""
-        ).trim();
-
-        const comentario = String(
-            formData.get("comment") || ""
-        ).trim();
-
-        const latIntroducida = Number(
-            formData.get("lat")
-        );
-
-        const lngIntroducida = Number(
-            formData.get("lng")
-        );
-
-        if (
-            !nombre ||
-            !zona ||
-            !categoria
-        ) {
-            alert(
-                "Completa el nombre, la zona y la categoría."
-            );
-
-            return;
-        }
-
-        const centroMapa =
-            map.getCenter();
-
-        const lat =
-            Number.isFinite(latIntroducida) &&
-            latIntroducida !== 0
-                ? latIntroducida
-                : centroMapa.lat;
-
-        const lng =
-            Number.isFinite(lngIntroducida) &&
-            lngIntroducida !== 0
-                ? lngIntroducida
-                : centroMapa.lng;
-
-        const nuevoDescubrimiento = {
-            id:
-                `${crearId(nombre)}-${Date.now()}`,
-
-            nombre,
-            zona,
-            categoria,
-
-            descripcion:
-                comentario ||
-                "Descubrimiento añadido por un Explorador.",
-
-            link,
-            lat,
-            lng,
-
-            creadoEn:
-                new Date().toISOString()
-        };
-
-        descubrimientosGuardados.push(
-            nuevoDescubrimiento
-        );
-
-        lugares.push(
-            nuevoDescubrimiento
-        );
-
-        guardarDescubrimientos();
-
-        añadirMarcador(
-            nuevoDescubrimiento
-        );
-
-        discoveryForm.reset();
-
-        cerrarModal();
-
-        mostrarConfirmacion();
-
-        map.setView(
-            [lat, lng],
-            15
-        );
-
-        window.setTimeout(() => {
-            abrirFichaLugar(
-                nuevoDescubrimiento
-            );
-        }, 400);
-
-        actualizarResultadosBusqueda();
-    }
-);
-
-// -----------------------------------------------------
+// =========================================================
 // BUSCADOR
-// -----------------------------------------------------
+// =========================================================
 
-function encontrarResultados(consulta) {
-    const palabras =
-        normalizar(consulta)
-            .trim()
-            .split(/\s+/)
-            .filter(Boolean);
+function searchPlaces(query) {
+  const words =
+    normalize(query)
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
 
-    if (palabras.length === 0) {
-        return [];
-    }
+  if (words.length === 0) {
+    return [];
+  }
 
-    return lugares.filter(lugar => {
-        const contenido =
-            normalizar(
-                [
-                    lugar.nombre,
-                    lugar.zona,
-                    lugar.categoria,
-                    lugar.descripcion
-                ].join(" ")
-            );
+  return places.filter(place => {
+    const searchable =
+      normalize(
+        [
+          place.name,
+          place.zone,
+          place.city,
+          place.category,
+          place.description
+        ].join(" ")
+      );
 
-        return palabras.every(
-            palabra =>
-                contenido.includes(palabra)
-        );
-    });
-}
-
-function abrirLugar(lugar) {
-    searchInput.value =
-        lugar.nombre;
-
-    clearSearch.style.display =
-        "block";
-
-    searchResults.style.display =
-        "none";
-
-    map.setView(
-        [lugar.lat, lugar.lng],
-        16
+    return words.every(
+      word =>
+        searchable.includes(word)
     );
-
-    window.setTimeout(() => {
-        abrirFichaLugar(lugar);
-    }, 300);
+  });
 }
 
-function renderizarResultados(
-    resultados
-) {
+function renderSearchResults(results) {
+  const query =
+    searchInput.value.trim();
+
+  if (!query) {
     searchResults.innerHTML = "";
+    searchResults.classList.add("hidden");
 
-    const consulta =
-        searchInput.value.trim();
+    clearSearch.classList.add("hidden");
 
-    if (!consulta) {
-        searchResults.style.display =
-            "none";
+    return;
+  }
 
-        return;
-    }
+  clearSearch.classList.remove("hidden");
 
-    if (resultados.length === 0) {
-        searchResults.innerHTML = `
-            <div class="search-result">
-                <div>
-                    <strong>
-                        Sin resultados
-                    </strong>
+  if (results.length === 0) {
+    searchResults.innerHTML = `
+      <div class="no-results">
+        <span>🔍</span>
+        <strong>Sin resultados</strong>
+        <p>
+          Prueba con otra palabra.
+        </p>
+      </div>
+    `;
 
-                    <small>
-                        Prueba con otra palabra.
-                    </small>
-                </div>
-            </div>
-        `;
+    searchResults.classList.remove("hidden");
 
-        searchResults.style.display =
-            "block";
+    return;
+  }
 
-        return;
-    }
+  searchResults.innerHTML =
+    results
+      .slice(0, 8)
+      .map(place => `
+        <button
+          class="search-result"
+          type="button"
+          data-place-id="${escapeHTML(place.id)}"
+        >
+          <div class="search-result-icon">
+            ${
+              categoryIcons[place.category] ||
+              "📍"
+            }
+          </div>
 
-    resultados
-        .slice(0, 8)
-        .forEach(lugar => {
-            const button =
-                document.createElement(
-                    "button"
-                );
+          <div>
+            <strong>
+              ${escapeHTML(place.name)}
+            </strong>
 
-            button.type = "button";
+            <small>
+              ${
+                escapeHTML(
+                  [
+                    place.zone,
+                    place.category
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                )
+              }
+            </small>
+          </div>
+        </button>
+      `)
+      .join("");
 
-            button.className =
-                "search-result";
+  searchResults
+    .querySelectorAll(
+      "[data-place-id]"
+    )
+    .forEach(button => {
+      button.addEventListener(
+        "click",
+        () => {
+          const placeId =
+            button.dataset.placeId;
 
-            button.innerHTML = `
-                <div>
-                    <strong>
-                        ${lugar.nombre}
-                    </strong>
+          const place =
+            getPlaceById(placeId);
 
-                    <small>
-                        ${lugar.zona}
-                    </small>
-                </div>
+          if (!place) {
+            return;
+          }
 
-                <span class="result-category">
-                    ${lugar.categoria}
-                </span>
-            `;
+          searchInput.value =
+            place.name;
 
-            button.addEventListener(
-                "click",
-                () => abrirLugar(lugar)
-            );
+          searchResults.classList.add(
+            "hidden"
+          );
 
-            searchResults.appendChild(
-                button
-            );
-        });
+          map.setView(
+            [place.lat, place.lng],
+            16
+          );
 
-    searchResults.style.display =
-        "block";
+          window.setTimeout(
+            () => {
+              openPlace(place.id);
+            },
+            250
+          );
+        }
+      );
+    });
+
+  searchResults.classList.remove("hidden");
 }
 
-function actualizarResultadosBusqueda() {
-    const resultados =
-        encontrarResultados(
-            searchInput.value
-        );
-
-    renderizarResultados(
-        resultados
-    );
+function updateSearch() {
+  renderSearchResults(
+    searchPlaces(
+      searchInput.value
+    )
+  );
 }
 
 searchInput.addEventListener(
-    "input",
-    () => {
-        clearSearch.style.display =
-            searchInput.value
-                ? "block"
-                : "none";
-
-        actualizarResultadosBusqueda();
-    }
+  "input",
+  updateSearch
 );
 
 clearSearch.addEventListener(
-    "click",
-    () => {
-        searchInput.value = "";
+  "click",
+  () => {
+    searchInput.value = "";
 
-        clearSearch.style.display =
-            "none";
+    searchResults.innerHTML = "";
 
-        searchResults.style.display =
-            "none";
+    searchResults.classList.add(
+      "hidden"
+    );
 
-        cerrarFichaLugar();
+    clearSearch.classList.add(
+      "hidden"
+    );
 
-        searchInput.focus();
+    searchInput.focus();
 
-        map.setView(
-            [-22.94, -43.22],
-            11
-        );
-    }
+    closePlace();
+
+    map.setView(
+      CONFIG.center,
+      CONFIG.zoom
+    );
+  }
 );
 
 document.addEventListener(
-    "click",
-    event => {
-        const dentroDelBuscador =
-            event.target.closest(
-                ".search"
-            );
-
-        const dentroDeResultados =
-            event.target.closest(
-                "#searchResults"
-            );
-
-        if (
-            !dentroDelBuscador &&
-            !dentroDeResultados
-        ) {
-            searchResults.style.display =
-                "none";
-        }
-    }
-);// -----------------------------------------------------
-// INICIALIZACIÓN
-// -----------------------------------------------------
-
-// Actualizar resultados al iniciar
-actualizarResultadosBusqueda();
-
-// Activar menú inferior
-navButtons.forEach(button => {
-
-    button.addEventListener("click", () => {
-
-        navButtons.forEach(item => {
-            item.classList.remove("active");
-        });
-
-        button.classList.add("active");
-
-    });
-
-});
-
-// Cerrar ficha al pulsar fuera (solo escritorio)
-document.addEventListener("click", event => {
-
+  "click",
+  event => {
     if (
-        placePanel.classList.contains("visible") &&
-        !event.target.closest("#placePanel") &&
-        !event.target.closest(".leaflet-marker-icon") &&
-        !event.target.closest(".search-result")
+      !event.target.closest(
+        ".search-wrap"
+      ) &&
+      !event.target.closest(
+        "#searchResults"
+      )
     ) {
-
-        cerrarFichaLugar();
-
+      searchResults.classList.add(
+        "hidden"
+      );
     }
+  }
+);
 
-});
+// =========================================================
+// MODAL AÑADIR DESCUBRIMIENTO
+// =========================================================
 
-// Evitar errores si no existe vídeo
-if(placeVideosButton){
+function openAddDiscovery() {
+  closePlace();
+  closeContent();
 
-    placeVideosButton.disabled = true;
+  discoveryModal.classList.add(
+    "open"
+  );
 
+  discoveryModal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+  window.setTimeout(
+    () => {
+      const input =
+        document.getElementById(
+          "discoveryTitle"
+        );
+
+      if (input) {
+        input.focus();
+      }
+    },
+    200
+  );
 }
 
-// Mensaje en consola
-console.log(
-    "%c🌍 Mundo Infinito Beta 0.3 cargada correctamente",
-    "color:#19c37d;font-size:16px;font-weight:bold;"
+function closeAddDiscovery() {
+  discoveryModal.classList.remove(
+    "open"
+  );
+
+  discoveryModal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+}
+
+openDiscoveryModal.addEventListener(
+  "click",
+  openAddDiscovery
 );
+
+closeDiscoveryModal.addEventListener(
+  "click",
+  closeAddDiscovery
+);
+
+discoveryModal.addEventListener(
+  "click",
+  event => {
+    if (
+      event.target ===
+      discoveryModal
+    ) {
+      closeAddDiscovery();
+    }
+  }
+);
+
+// =========================================================
+// USAR CENTRO DEL MAPA
+// =========================================================
+
+useMapCenter.addEventListener(
+  "click",
+  () => {
+    const center =
+      map.getCenter();
+
+    discoveryLat.value =
+      center.lat.toFixed(6);
+
+    discoveryLng.value =
+      center.lng.toFixed(6);
+
+    showToast(
+      "Coordenadas del mapa añadidas"
+    );
+  }
+);
+
+// =========================================================
+// GUARDAR NUEVO DESCUBRIMIENTO
+// =========================================================
+
+discoveryForm.addEventListener(
+  "submit",
+  event => {
+    event.preventDefault();
+
+    const form =
+      new FormData(
+        discoveryForm
+      );
+
+    const title =
+      String(
+        form.get("title") || ""
+      ).trim();
+
+    const placeText =
+      String(
+        form.get("place") || ""
+      ).trim();
+
+    const category =
+      String(
+        form.get("category") || ""
+      ).trim();
+
+    const link =
+      String(
+        form.get("link") || ""
+      ).trim();
+
+    const comment =
+      String(
+        form.get("comment") || ""
+      ).trim();
+
+    const latValue =
+      Number(
+        form.get("lat")
+      );
+
+    const lngValue =
+      Number(
+        form.get("lng")
+      );
+
+    if (
+      !title ||
+      !placeText ||
+      !category
+    ) {
+      showToast(
+        "Completa nombre, lugar y categoría"
+      );
+
+      return;
+    }
+
+    const center =
+      map.getCenter();
+
+    const lat =
+      Number.isFinite(latValue) &&
+      latValue !== 0
+        ? latValue
+        : center.lat;
+
+    const lng =
+      Number.isFinite(lngValue) &&
+      lngValue !== 0
+        ? lngValue
+        : center.lng;
+
+    const newDiscovery = {
+      id:
+        `local-${slug(title)}-${Date.now()}`,
+
+      name:
+        title,
+
+      title,
+
+      place:
+        placeText,
+
+      zone:
+        placeText,
+
+      category,
+
+      description:
+        comment ||
+        "Descubrimiento añadido por un Explorador.",
+
+      comment,
+
+      link,
+
+      lat,
+      lng,
+
+      createdAt:
+        new Date().toISOString()
+    };
+
+    userDiscoveries.push(
+      newDiscovery
+    );
+
+    saveJSON(
+      CONFIG.storage.discoveries,
+      userDiscoveries
+    );
+
+    const newPlace =
+      normalizePlace({
+        id:
+          newDiscovery.id,
+
+        name:
+          newDiscovery.name,
+
+        zone:
+          newDiscovery.zone,
+
+        category:
+          newDiscovery.category,
+
+        description:
+          newDiscovery.description,
+
+        lat:
+          newDiscovery.lat,
+
+        lng:
+          newDiscovery.lng,
+
+        rating: 5
+      });
+
+    places.push(
+      newPlace
+    );
+
+    addMarker(
+      newPlace
+    );
+
+    if (link) {
+      const localVideo =
+        normalizeVideo({
+          id:
+            `local-video-${Date.now()}`,
+
+          placeId:
+            newPlace.id,
+
+          place:
+            newPlace.name,
+
+          title:
+            title,
+
+          description:
+            comment,
+
+          type:
+            link.includes(
+              "instagram"
+            )
+              ? "Instagram"
+              : "Vídeo",
+
+          url:
+            link
+        });
+
+      videos.push(
+        localVideo
+      );
+    }
+
+    discoveryForm.reset();
+
+    closeAddDiscovery();
+
+    map.setView(
+      [lat, lng],
+      15
+    );
+
+    window.setTimeout(
+      () => {
+        openPlace(
+          newPlace.id
+        );
+      },
+      250
+    );
+
+    showToast(
+      "Descubrimiento añadido"
+    );
+  }
+);
+
+// =========================================================
+// ESCAPE
+// =========================================================
+
+document.addEventListener(
+  "keydown",
+  event => {
+    if (
+      event.key !== "Escape"
+    ) {
+      return;
+    }
+
+    closeAddDiscovery();
+    closePlace();
+    closeContent();
+  }
+);
+
+// =========================================================
+// ABRIR PANELES DEL MENÚ
+// =========================================================
+
+function openContent(
+  title,
+  html
+) {
+  closePlace();
+
+  contentPanelTitle.textContent =
+    title;
+
+  contentPanelBody.innerHTML =
+    html;
+
+  contentPanel.classList.add(
+    "open"
+  );
+
+  contentPanel.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+}
+
+function closeContent() {
+  contentPanel.classList.remove(
+    "open"
+  );
+
+  contentPanel.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+}
+
+closeContentPanel.addEventListener(
+  "click",
+  closeContent
+);// =========================================================
+// APP.JS · PARTE 4 DE 4
+// Paneles + menú + carga inicial
+// =========================================================
+
+// =========================================================
+// PANEL: TODOS LOS VÍDEOS
+// =========================================================
+
+function renderAllVideosPanel() {
+  if (videos.length === 0) {
+    openContent(
+      "Vídeos",
+      `
+        <div class="empty-state">
+          <span>🎥</span>
+          <strong>No hay vídeos todavía</strong>
+          <p>
+            Añade tus primeros Reels desde el botón +.
+          </p>
+        </div>
+      `
+    );
+
+    return;
+  }
+
+  const html =
+    videos
+      .map(video => `
+        <a
+          class="content-card"
+          href="${escapeHTML(video.url)}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div class="content-card-icon">
+            🎥
+          </div>
+
+          <div class="content-card-text">
+            <strong>
+              ${escapeHTML(video.title)}
+            </strong>
+
+            <p>
+              ${
+                escapeHTML(
+                  video.place ||
+                  "Brasil"
+                )
+              }
+            </p>
+          </div>
+        </a>
+      `)
+      .join("");
+
+  openContent(
+    "Vídeos",
+    html
+  );
+}
+
+// =========================================================
+// PANEL: GASTRONOMÍA
+// =========================================================
+
+function renderFoodPanel() {
+  const foodPlaces =
+    places.filter(place =>
+      [
+        "Restaurante",
+        "Gastronomía"
+      ].includes(place.category)
+    );
+
+  if (foodPlaces.length === 0) {
+    openContent(
+      "Gastronomía",
+      `
+        <div class="empty-state">
+          <span>🍴</span>
+          <strong>
+            Todavía no hay restaurantes
+          </strong>
+
+          <p>
+            Los iremos añadiendo en las siguientes versiones.
+          </p>
+        </div>
+      `
+    );
+
+    return;
+  }
+
+  const html =
+    foodPlaces
+      .map(place => `
+        <button
+          class="content-card"
+          type="button"
+          data-food-place="${escapeHTML(place.id)}"
+        >
+          <div class="content-card-icon">
+            ${
+              categoryIcons[place.category] ||
+              "🍴"
+            }
+          </div>
+
+          <div class="content-card-text">
+            <strong>
+              ${escapeHTML(place.name)}
+            </strong>
+
+            <p>
+              ${
+                escapeHTML(
+                  place.zone ||
+                  place.city
+                )
+              }
+            </p>
+          </div>
+        </button>
+      `)
+      .join("");
+
+  openContent(
+    "Gastronomía",
+    html
+  );
+
+  contentPanelBody
+    .querySelectorAll(
+      "[data-food-place]"
+    )
+    .forEach(button => {
+      button.addEventListener(
+        "click",
+        () => {
+          const place =
+            getPlaceById(
+              button.dataset.foodPlace
+            );
+
+          if (!place) {
+            return;
+          }
+
+          closeContent();
+
+          map.setView(
+            [place.lat, place.lng],
+            16
+          );
+
+          window.setTimeout(
+            () => {
+              openPlace(place.id);
+            },
+            250
+          );
+        }
+      );
+    });
+}
+
+// =========================================================
+// PANEL: MI VIAJE
+// =========================================================
+
+function renderTripPanel() {
+  openContent(
+    "Mi viaje",
+    `
+      <div class="empty-state">
+        <span>📅</span>
+
+        <strong>
+          Tu itinerario llegará pronto
+        </strong>
+
+        <p>
+          Aquí organizaremos los lugares por días para vuestro viaje a Brasil.
+        </p>
+      </div>
+    `
+  );
+}
+
+// =========================================================
+// PANEL: GUARDADOS
+// =========================================================
+
+function renderSavedPanel() {
+  const savedIds =
+    getSavedPlaces();
+
+  const savedPlaces =
+    places.filter(
+      place =>
+        savedIds.includes(place.id)
+    );
+
+  if (savedPlaces.length === 0) {
+    openContent(
+      "Guardados",
+      `
+        <div class="empty-state">
+          <span>❤️</span>
+
+          <strong>
+            Todavía no has guardado lugares
+          </strong>
+
+          <p>
+            Pulsa Guardar en cualquier ficha para añadirlo aquí.
+          </p>
+        </div>
+      `
+    );
+
+    return;
+  }
+
+  const html =
+    savedPlaces
+      .map(place => `
+        <button
+          class="content-card"
+          type="button"
+          data-saved-place="${escapeHTML(place.id)}"
+        >
+
+          <div class="content-card-icon">
+            ${
+              categoryIcons[place.category] ||
+              "📍"
+            }
+          </div>
+
+          <div class="content-card-text">
+
+            <strong>
+              ${escapeHTML(place.name)}
+            </strong>
+
+            <p>
+              ${
+                escapeHTML(
+                  [
+                    place.zone,
+                    place.category
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                )
+              }
+            </p>
+
+          </div>
+
+        </button>
+      `)
+      .join("");
+
+  openContent(
+    "Guardados",
+    html
+  );
+
+  contentPanelBody
+    .querySelectorAll(
+      "[data-saved-place]"
+    )
+    .forEach(button => {
+      button.addEventListener(
+        "click",
+        () => {
+          const place =
+            getPlaceById(
+              button.dataset.savedPlace
+            );
+
+          if (!place) {
+            return;
+          }
+
+          closeContent();
+
+          map.setView(
+            [place.lat, place.lng],
+            16
+          );
+
+          window.setTimeout(
+            () => {
+              openPlace(place.id);
+            },
+            250
+          );
+        }
+      );
+    });
+}
+
+// =========================================================
+// MENÚ INFERIOR
+// =========================================================
+
+function setActiveNav(
+  activeButton
+) {
+  navButtons.forEach(button => {
+    button.classList.remove(
+      "active"
+    );
+  });
+
+  activeButton.classList.add(
+    "active"
+  );
+}
+
+navButtons.forEach(button => {
+  button.addEventListener(
+    "click",
+    () => {
+      setActiveNav(button);
+
+      const section =
+        button.dataset.section;
+
+      if (
+        section === "explorar"
+      ) {
+        closeContent();
+        closePlace();
+
+        map.setView(
+          CONFIG.center,
+          CONFIG.zoom
+        );
+
+        return;
+      }
+
+      if (
+        section === "descubrimientos"
+      ) {
+        renderAllVideosPanel();
+        return;
+      }
+
+      if (
+        section === "gastronomia"
+      ) {
+        renderFoodPanel();
+        return;
+      }
+
+      if (
+        section === "viaje"
+      ) {
+        renderTripPanel();
+        return;
+      }
+
+      if (
+        section === "guardados"
+      ) {
+        renderSavedPanel();
+      }
+    }
+  );
+});
+
+// =========================================================
+// CERRAR PANELES AL HACER CLIC EN MAPA
+// =========================================================
+
+map.on(
+  "click",
+  () => {
+    closePlace();
+    closeContent();
+  }
+);
+
+// =========================================================
+// CARGAR DATOS
+// =========================================================
+
+async function loadAppData() {
+  const [
+    placesData,
+    videosData
+  ] = await Promise.all([
+    fetchJSON(
+      "data/places.json",
+      []
+    ),
+
+    fetchJSON(
+      "data/videos.json",
+      []
+    )
+  ]);
+
+  places =
+    mergePlaces(
+      placesData
+    );
+
+  const localPlaces =
+    localDiscoveriesAsPlaces();
+
+  localPlaces.forEach(place => {
+    if (
+      !places.some(
+        item =>
+          item.id === place.id
+      )
+    ) {
+      places.push(
+        place
+      );
+    }
+  });
+
+  videos =
+    videosData.map(
+      normalizeVideo
+    );
+
+  userDiscoveries
+    .filter(
+      discovery =>
+        discovery.link
+    )
+    .forEach(discovery => {
+      const alreadyExists =
+        videos.some(
+          video =>
+            video.url ===
+            discovery.link
+        );
+
+      if (
+        !alreadyExists
+      ) {
+        videos.push(
+          normalizeVideo({
+            id:
+              `local-video-${discovery.id}`,
+
+            placeId:
+              discovery.id,
+
+            place:
+              discovery.name ||
+              discovery.title,
+
+            title:
+              discovery.title ||
+              discovery.name,
+
+            description:
+              discovery.comment ||
+              discovery.description,
+
+            type:
+              discovery.link.includes(
+                "instagram"
+              )
+                ? "Instagram"
+                : "Vídeo",
+
+            url:
+              discovery.link
+          })
+        );
+      }
+    });
+
+  renderMarkers();
+}
+
+// =========================================================
+// CENTRAR MAPA DESPUÉS DE REDIMENSIONAR
+// =========================================================
+
+window.addEventListener(
+  "resize",
+  () => {
+    window.setTimeout(
+      () => {
+        map.invalidateSize();
+      },
+      120
+    );
+  }
+);
+
+// =========================================================
+// CONTROL DE ERRORES
+// =========================================================
+
+window.addEventListener(
+  "error",
+  event => {
+    console.error(
+      "Mundo Infinito:",
+      event.error ||
+      event.message
+    );
+  }
+);
+
+// =========================================================
+// INICIALIZAR
+// =========================================================
+
+async function init() {
+  await loadAppData();
+
+  map.invalidateSize();
+
+  console.log(
+    "🌍 Mundo Infinito v0.4.0"
+  );
+
+  console.log(
+    `📍 ${places.length} lugares`
+  );
+
+  console.log(
+    `🎥 ${videos.length} vídeos`
+  );
+}
+
+init();
