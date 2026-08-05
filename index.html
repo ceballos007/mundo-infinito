@@ -3,101 +3,245 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Mundo Infinito by Eric</title>
 
   <link rel="stylesheet" href="styles.css">
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
 
-  <link rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 </head>
 
 <body>
 
-<div class="app">
+  <div class="app">
 
-<header>
+    <header>
+      <div class="logo">
+        <div class="logo-title">
+          <span class="logo-icon">🌍</span>
 
-<div class="logo">
-🌍
-<h1>Mundo Infinito</h1>
-<p>by Eric</p>
-</div>
+          <div>
+            <h1>Mundo Infinito</h1>
+            <p>by Eric</p>
+          </div>
+        </div>
+      </div>
 
-<div class="welcome">
-<h2>Bienvenido, Explorador.</h2>
-</div>
+      <div class="welcome">
+        <h2>Bienvenido, Explorador.</h2>
+      </div>
 
-<div class="search">
+      <div class="search">
+        <span class="search-icon">🔍</span>
 
-<input
-type="text"
-placeholder="Buscar lugares, playas, comida..."
->
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Buscar lugares, playas o comida..."
+          autocomplete="off"
+        >
 
-</div>
+        <button
+          id="clearSearch"
+          class="clear-search"
+          type="button"
+          aria-label="Borrar búsqueda"
+        >
+          ×
+        </button>
+      </div>
 
-</header>
+      <div id="searchResults" class="search-results"></div>
+    </header>
 
-<div id="map"></div>
+    <main id="map"></main>
 
-<button class="addButton">
+    <button
+      id="openDiscoveryModal"
+      class="addButton"
+      type="button"
+      aria-label="Añadir descubrimiento"
+    >
+      +
+    </button>
 
-+
+    <nav>
+      <button class="nav-button active" type="button">
+        <span class="nav-icon">🗺️</span>
+        <span>Explorar</span>
+      </button>
 
-</button>
+      <button class="nav-button" type="button">
+        <span class="nav-icon">🎥</span>
+        <span>Descubrimientos</span>
+      </button>
 
-<nav>
+      <button class="nav-button" type="button">
+        <span class="nav-icon">🍴</span>
+        <span>Gastronomía</span>
+      </button>
 
-<button>
+      <button class="nav-button" type="button">
+        <span class="nav-icon">📅</span>
+        <span>Mi viaje</span>
+      </button>
 
-🗺️
+      <button class="nav-button" type="button">
+        <span class="nav-icon">❤️</span>
+        <span>Guardados</span>
+      </button>
+    </nav>
 
-<span>Explorar</span>
+  </div>
 
-</button>
+  <!-- MODAL AÑADIR DESCUBRIMIENTO -->
 
-<button>
+  <div id="discoveryModal" class="modal-overlay" aria-hidden="true">
 
-🎥
+    <section class="modal-card">
 
-<span>Descubrimientos</span>
+      <div class="modal-handle"></div>
 
-</button>
+      <div class="modal-header">
+        <div>
+          <span class="modal-eyebrow">Mundo Infinito</span>
+          <h2>Añadir descubrimiento</h2>
+          <p>Comparte un lugar con tus amigos.</p>
+        </div>
 
-<button>
+        <button
+          id="closeDiscoveryModal"
+          class="close-modal"
+          type="button"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </div>
 
-🍴
+      <form id="discoveryForm">
 
-<span>Gastronomía</span>
+        <label for="discoveryTitle">
+          Nombre del descubrimiento
+        </label>
 
-</button>
+        <input
+          id="discoveryTitle"
+          name="title"
+          type="text"
+          placeholder="Ejemplo: Mirador Dona Marta"
+          required
+        >
 
-<button>
+        <label for="discoveryPlace">
+          Barrio o zona
+        </label>
 
-📅
+        <input
+          id="discoveryPlace"
+          name="place"
+          type="text"
+          placeholder="Ejemplo: Santa Teresa"
+          required
+        >
 
-<span>Mi viaje</span>
+        <label for="discoveryCategory">
+          Categoría
+        </label>
 
-</button>
+        <select
+          id="discoveryCategory"
+          name="category"
+          required
+        >
+          <option value="">Selecciona una categoría</option>
+          <option value="Lugar">📍 Lugar</option>
+          <option value="Playa">🏖️ Playa</option>
+          <option value="Restaurante">🍴 Restaurante</option>
+          <option value="Gastronomía">🥘 Gastronomía</option>
+          <option value="Compras">🛍️ Compras</option>
+          <option value="Vida nocturna">🍹 Vida nocturna</option>
+          <option value="Transporte">🚕 Transporte</option>
+          <option value="Consejo">💡 Consejo</option>
+        </select>
 
-<button>
+        <label for="discoveryLink">
+          Enlace del Reel o vídeo
+        </label>
 
-❤️
+        <input
+          id="discoveryLink"
+          name="link"
+          type="url"
+          placeholder="https://www.instagram.com/reel/..."
+        >
 
-<span>Guardados</span>
+        <label for="discoveryComment">
+          Comentario
+          <span class="optional">(opcional)</span>
+        </label>
 
-</button>
+        <textarea
+          id="discoveryComment"
+          name="comment"
+          rows="3"
+          placeholder="Horario, precio, consejo o cualquier detalle útil..."
+        ></textarea>
 
-</nav>
+        <div class="coordinates-row">
+          <div>
+            <label for="discoveryLat">Latitud</label>
 
-</div>
+            <input
+              id="discoveryLat"
+              name="lat"
+              type="number"
+              step="any"
+              placeholder="-22.9068"
+            >
+          </div>
 
-<script src="app.js"></script>
+          <div>
+            <label for="discoveryLng">Longitud</label>
+
+            <input
+              id="discoveryLng"
+              name="lng"
+              type="number"
+              step="any"
+              placeholder="-43.1729"
+            >
+          </div>
+        </div>
+
+        <button class="save-discovery" type="submit">
+          Guardar descubrimiento
+        </button>
+
+      </form>
+
+    </section>
+
+  </div>
+
+  <!-- CONFIRMACIÓN -->
+
+  <div id="successToast" class="success-toast">
+    <span>✓</span>
+    Descubrimiento añadido
+  </div>
+
+  <script src="app.js"></script>
 
 </body>
 </html>
