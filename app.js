@@ -252,14 +252,14 @@ function añadirMarcador(lugar) {
             icon: greenIcon,
             title: lugar.nombre
         }
-    )
-        .addTo(map)
-        .bindPopup(crearPopup(lugar));
+    ).addTo(map);
+
+    marker.on("click", () => {
+        abrirFichaLugar(lugar);
+    });
 
     markerMap.set(lugar.id, marker);
 }
-
-lugares.forEach(añadirMarcador);
 
 // -----------------------------------------------------
 // MODAL
@@ -274,7 +274,173 @@ const discoveryForm =
     document.getElementById("discoveryForm");
 const successToast =
     document.getElementById("successToast");
+const placePanel =
+    document.getElementById("placePanel");
 
+const closePlacePanel =
+    document.getElementById("closePlacePanel");
+
+const placeCoverIcon =
+    document.getElementById("placeCoverIcon");
+
+const placeCategory =
+    document.getElementById("placeCategory");
+
+const placeName =
+    document.getElementById("placeName");
+
+const placeZone =
+    document.getElementById("placeZone");
+
+const placeDescription =
+    document.getElementById("placeDescription");
+
+const placeLocationText =
+    document.getElementById("placeLocationText");
+
+const placeTip =
+    document.getElementById("placeTip");
+
+const placeMapsButton =
+    document.getElementById("placeMapsButton");
+
+const placeVideoLink =
+    document.getElementById("placeVideoLink");
+
+const placeVideosButton =
+    document.getElementById("placeVideosButton");
+
+const savePlaceButton =
+    document.getElementById("savePlaceButton");const iconosCategorias = {
+    Lugar: "📍",
+    Mirador: "🌄",
+    Playa: "🏖️",
+    Cultura: "🎨",
+    Parque: "🌿",
+    Compras: "🛍️",
+    "Vida nocturna": "🍹",
+    Transporte: "✈️",
+    Restaurante: "🍴",
+    Gastronomía: "🥘",
+    Consejo: "💡"
+};
+
+const consejosCategorias = {
+    Lugar:
+        "Comprueba los horarios y reserva entrada si es necesario.",
+
+    Mirador:
+        "El amanecer o el atardecer suelen ofrecer las mejores vistas.",
+
+    Playa:
+        "Lleva protección solar, agua y evita dejar objetos sin vigilancia.",
+
+    Cultura:
+        "Intenta acudir temprano para disfrutar del lugar con más tranquilidad.",
+
+    Parque:
+        "Lleva calzado cómodo y agua.",
+
+    Compras:
+        "Compara precios y lleva algo de efectivo.",
+
+    "Vida nocturna":
+        "Comprueba el transporte de vuelta antes de salir.",
+
+    Transporte:
+        "Confirma siempre el punto exacto de recogida.",
+
+    Restaurante:
+        "Consulta horarios y si es necesario reservar.",
+
+    Gastronomía:
+        "Pregunta por la especialidad de la casa.",
+
+    Consejo:
+        "Guarda este descubrimiento para consultarlo durante el viaje."
+};
+
+let lugarSeleccionado = null;
+
+function abrirFichaLugar(lugar) {
+    lugarSeleccionado = lugar;
+
+    placeCoverIcon.textContent =
+        iconosCategorias[lugar.categoria] || "📍";
+
+    placeCategory.textContent =
+        lugar.categoria || "Lugar";
+
+    placeName.textContent =
+        lugar.nombre;
+
+    placeZone.textContent =
+        `${lugar.zona} · Río de Janeiro`;
+
+    placeDescription.textContent =
+        lugar.descripcion ||
+        "Descubrimiento añadido por un Explorador.";
+
+    placeLocationText.textContent =
+        `${lugar.zona}, Río de Janeiro, Brasil`;
+
+    placeTip.textContent =
+        consejosCategorias[lugar.categoria] ||
+        "Consulta la información antes de visitar el lugar.";
+
+    const mapsQuery = encodeURIComponent(
+        `${lugar.nombre}, ${lugar.zona}, Río de Janeiro, Brasil`
+    );
+
+    placeMapsButton.href =
+        `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+
+    if (lugar.link) {
+        placeVideoLink.href = lugar.link;
+        placeVideoLink.classList.remove("hidden");
+        placeVideosButton.disabled = false;
+    } else {
+        placeVideoLink.classList.add("hidden");
+        placeVideosButton.disabled = true;
+    }
+
+    const guardados = cargarLugaresGuardados();
+    const estaGuardado =
+        guardados.includes(lugar.id);
+
+    actualizarBotonGuardado(estaGuardado);
+
+    placePanel.classList.add("visible");
+    placePanel.setAttribute("aria-hidden", "false");
+}
+
+function cerrarFichaLugar() {
+    placePanel.classList.remove("visible");
+    placePanel.setAttribute("aria-hidden", "true");
+
+    lugarSeleccionado = null;
+}
+
+closePlacePanel.addEventListener(
+    "click",
+    cerrarFichaLugar
+);
+
+placeVideosButton.addEventListener(
+    "click",
+    () => {
+        if (
+            lugarSeleccionado &&
+            lugarSeleccionado.link
+        ) {
+            window.open(
+                lugarSeleccionado.link,
+                "_blank",
+                "noopener"
+            );
+        }
+    }
+);
 function abrirModal() {
     modal.classList.add("visible");
     modal.setAttribute("aria-hidden", "false");
@@ -414,20 +580,16 @@ function encontrarResultados(consulta) {
         return [];
     }
 
-    return lugares.filter(lugar => {
-        const contenido = normalizar(
-            [
-                lugar.nombre,
-                lugar.zona,
-                lugar.categoria,
-                lugar.descripcion
-            ].join(" ")
-        );
+function abrirLugar(lugar) {
+    searchInput.value = lugar.nombre;
+    clearSearch.style.display = "block";
+    searchResults.style.display = "none";
 
-        return palabras.every(
-            palabra => contenido.includes(palabra)
-        );
-    });
+    map.setView([lugar.lat, lugar.lng], 16);
+
+    window.setTimeout(() => {
+        abrirFichaLugar(lugar);
+    }, 300);
 }
 
 function abrirLugar(lugar) {
@@ -553,3 +715,73 @@ navButtons.forEach(button => {
         button.classList.add("active");
     });
 });
+// -----------------------------------------------------
+// LUGARES GUARDADOS
+// -----------------------------------------------------
+
+const SAVED_PLACES_KEY =
+    "mundoInfinitoLugaresGuardados";
+
+function cargarLugaresGuardados() {
+    try {
+        const datos =
+            localStorage.getItem(SAVED_PLACES_KEY);
+
+        return datos
+            ? JSON.parse(datos)
+            : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function actualizarBotonGuardado(guardado) {
+    if (guardado) {
+        savePlaceButton.classList.add("saved");
+
+        savePlaceButton.innerHTML = `
+            <span>♥</span>
+            <strong>Guardado</strong>
+        `;
+    } else {
+        savePlaceButton.classList.remove("saved");
+
+        savePlaceButton.innerHTML = `
+            <span>♡</span>
+            <strong>Guardar</strong>
+        `;
+    }
+}
+
+savePlaceButton.addEventListener(
+    "click",
+    () => {
+        if (!lugarSeleccionado) {
+            return;
+        }
+
+        const guardados =
+            cargarLugaresGuardados();
+
+        const posicion =
+            guardados.indexOf(
+                lugarSeleccionado.id
+            );
+
+        if (posicion >= 0) {
+            guardados.splice(posicion, 1);
+            actualizarBotonGuardado(false);
+        } else {
+            guardados.push(
+                lugarSeleccionado.id
+            );
+
+            actualizarBotonGuardado(true);
+        }
+
+        localStorage.setItem(
+            SAVED_PLACES_KEY,
+            JSON.stringify(guardados)
+        );
+    }
+);
