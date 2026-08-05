@@ -16,6 +16,8 @@
 
   <title>Mundo Infinito by Eric</title>
 
+  <!-- FUENTES -->
+
   <link
     rel="preconnect"
     href="https://fonts.googleapis.com"
@@ -32,10 +34,14 @@
     rel="stylesheet"
   >
 
+  <!-- LEAFLET -->
+
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   >
+
+  <!-- ESTILOS -->
 
   <link
     rel="stylesheet"
@@ -47,10 +53,15 @@
 <body>
 
   <!-- =====================================================
-       APP
+       MUNDO INFINITO
        ===================================================== -->
 
   <div class="app-shell">
+
+
+    <!-- ===================================================
+         CABECERA
+         =================================================== -->
 
     <header class="topbar">
 
@@ -61,8 +72,15 @@
         </div>
 
         <div>
-          <h1>Mundo Infinito</h1>
-          <p>by Eric · Brasil</p>
+
+          <h1>
+            Mundo Infinito
+          </h1>
+
+          <p>
+            by Eric · Brasil
+          </p>
+
         </div>
 
       </div>
@@ -77,7 +95,9 @@
 
       <div class="search-wrap">
 
-        <span>⌕</span>
+        <span>
+          ⌕
+        </span>
 
         <input
           id="searchInput"
@@ -106,7 +126,9 @@
     </header>
 
 
-    <!-- MAPA -->
+    <!-- ===================================================
+         MAPA
+         =================================================== -->
 
     <main
       id="map"
@@ -114,7 +136,9 @@
     ></main>
 
 
-    <!-- BOTÓN + -->
+    <!-- ===================================================
+         BOTÓN +
+         =================================================== -->
 
     <button
       id="openDiscoveryModal"
@@ -126,7 +150,9 @@
     </button>
 
 
-    <!-- NAVEGACIÓN -->
+    <!-- ===================================================
+         MENÚ INFERIOR
+         =================================================== -->
 
     <nav
       class="bottom-nav"
@@ -138,8 +164,15 @@
         data-section="explorar"
         type="button"
       >
-        <span>🗺️</span>
-        <small>Explorar</small>
+
+        <span>
+          🗺️
+        </span>
+
+        <small>
+          Explorar
+        </small>
+
       </button>
 
 
@@ -148,8 +181,15 @@
         data-section="descubrimientos"
         type="button"
       >
-        <span>🎥</span>
-        <small>Vídeos</small>
+
+        <span>
+          🎥
+        </span>
+
+        <small>
+          Vídeos
+        </small>
+
       </button>
 
 
@@ -158,8 +198,15 @@
         data-section="gastronomia"
         type="button"
       >
-        <span>🍴</span>
-        <small>Comida</small>
+
+        <span>
+          🍴
+        </span>
+
+        <small>
+          Comida
+        </small>
+
       </button>
 
 
@@ -168,8 +215,15 @@
         data-section="viaje"
         type="button"
       >
-        <span>📅</span>
-        <small>Mi viaje</small>
+
+        <span>
+          📅
+        </span>
+
+        <small>
+          Mi viaje
+        </small>
+
       </button>
 
 
@@ -178,8 +232,15 @@
         data-section="guardados"
         type="button"
       >
-        <span>❤️</span>
-        <small>Guardados</small>
+
+        <span>
+          ❤️
+        </span>
+
+        <small>
+          Guardados
+        </small>
+
       </button>
 
     </nav>
@@ -209,6 +270,8 @@
       ×
     </button>
 
+
+    <!-- HERO -->
 
     <div class="place-hero">
 
@@ -247,11 +310,18 @@
     </div>
 
 
+    <!-- CONTENIDO -->
+
     <div class="sheet-body">
 
       <div class="rating">
+
         ★★★★★
-        <span>Recomendado</span>
+
+        <span>
+          Recomendado
+        </span>
+
       </div>
 
 
@@ -269,11 +339,15 @@
           id="placeVideosButton"
           type="button"
         >
-          <span>🎥</span>
+
+          <span>
+            🎥
+          </span>
 
           <b id="placeVideoActionText">
             Vídeos
           </b>
+
         </button>
 
 
@@ -281,8 +355,15 @@
           id="savePlaceButton"
           type="button"
         >
-          <span>♡</span>
-          <b>Guardar</b>
+
+          <span>
+            ♡
+          </span>
+
+          <b>
+            Guardar
+          </b>
+
         </button>
 
 
@@ -292,8 +373,15 @@
           target="_blank"
           rel="noopener noreferrer"
         >
-          <span>🧭</span>
-          <b>Cómo llegar</b>
+
+          <span>
+            🧭
+          </span>
+
+          <b>
+            Cómo llegar
+          </b>
+
         </a>
 
       </div>
@@ -303,11 +391,18 @@
 
       <div class="info-card">
 
-        <span>📍</span>
+        <span>
+          📍
+        </span>
 
         <div>
-          <b>Ubicación</b>
+
+          <b>
+            Ubicación
+          </b>
+
           <p id="placeLocationText"></p>
+
         </div>
 
       </div>
@@ -317,17 +412,24 @@
 
       <div class="info-card">
 
-        <span>💡</span>
+        <span>
+          💡
+        </span>
 
         <div>
-          <b>Consejo del Explorador</b>
+
+          <b>
+            Consejo del Explorador
+          </b>
+
           <p id="placeTip"></p>
+
         </div>
 
       </div>
 
 
-      <!-- VÍDEOS RELACIONADOS -->
+      <!-- VÍDEOS -->
 
       <section class="video-section">
 
@@ -369,17 +471,18 @@
 
 
   <!-- =====================================================
-       AÑADIR DESCUBRIMIENTO
+       ➕ NUEVO EXPLORADOR DE VÍDEOS
+       v0.6
        ===================================================== -->
 
   <div
     id="discoveryModal"
-    class="modal-backdrop"
+    class="modal-backdrop discovery-v06"
     aria-hidden="true"
   >
 
     <section
-      class="modal-card"
+      class="modal-card discovery-v06-card"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modalTitle"
@@ -398,178 +501,697 @@
       </button>
 
 
-      <span class="eyebrow">
-        Mundo Infinito
-      </span>
+      <!-- CABECERA -->
 
+      <div class="discovery-modal-header">
 
-      <h2 id="modalTitle">
-        Añadir descubrimiento
-      </h2>
+        <span class="eyebrow">
+          Mundo Infinito
+        </span>
 
+        <h2 id="modalTitle">
+          Añadir descubrimiento
+        </h2>
 
-      <p class="muted">
-        Guarda un lugar, consejo o vídeo para compartirlo con los demás Exploradores.
-      </p>
+        <p class="muted">
+          Añade un vídeo y Mundo Infinito explorará los detalles útiles que contiene.
+        </p>
+
+      </div>
 
 
       <form id="discoveryForm">
 
 
-        <!-- NOMBRE -->
+        <!-- =================================================
+             PASO 1 · FUENTE
+             ================================================= -->
 
-        <label>
+        <section
+          class="discovery-step"
+          id="videoSourceStep"
+        >
 
-          Nombre
+          <div class="discovery-step-title">
+
+            <div class="discovery-step-number">
+              1
+            </div>
+
+            <div>
+
+              <span class="eyebrow">
+                Fuente
+              </span>
+
+              <h3>
+                Añade tu vídeo
+              </h3>
+
+            </div>
+
+          </div>
+
+
+          <label>
+
+            Enlace del Reel o vídeo
+
+            <input
+              id="discoveryVideoLink"
+              name="link"
+              type="url"
+              placeholder="https://www.instagram.com/reel/…"
+            >
+
+          </label>
+
+
+          <div class="source-divider">
+
+            <span>
+              o
+            </span>
+
+          </div>
+
+
+          <!-- SUBIDA FUTURA -->
+
+          <label
+            for="discoveryVideoFile"
+            class="video-upload-area"
+          >
+
+            <span class="video-upload-icon">
+              🎥
+            </span>
+
+            <strong>
+              Seleccionar vídeo
+            </strong>
+
+            <small>
+              MP4 · Próximamente conectado al almacenamiento
+            </small>
+
+          </label>
+
 
           <input
-            name="title"
-            id="discoveryTitle"
-            required
-            placeholder="Ej.: Mirador Dona Marta"
+            id="discoveryVideoFile"
+            type="file"
+            accept="video/*"
+            hidden
           >
 
-        </label>
 
+          <!-- PREVISUALIZACIÓN DEL VÍDEO -->
 
-        <!-- LUGAR -->
-
-        <label>
-
-          Lugar o zona
-
-          <input
-            name="place"
-            required
-            placeholder="Ej.: Santa Teresa"
+          <div
+            id="discoveryVideoPreview"
+            class="discovery-video-preview hidden"
           >
 
-        </label>
+            <video
+              id="discoveryPreviewPlayer"
+              controls
+              playsinline
+              preload="metadata"
+            ></video>
+
+          </div>
+
+        </section>
 
 
-        <!-- CATEGORÍA -->
+        <!-- =================================================
+             ESTADO DE EXPLORACIÓN
+             ================================================= -->
 
-        <label>
+        <section
+          id="videoExplorationStatus"
+          class="video-exploration hidden"
+          aria-live="polite"
+        >
 
-          Categoría
+          <div class="exploration-orbit">
 
-          <select
-            name="category"
-            required
+            <span>
+              🔎
+            </span>
+
+          </div>
+
+
+          <div class="exploration-copy">
+
+            <span class="eyebrow">
+              Mundo Infinito
+            </span>
+
+            <h3>
+              Explorando detalles del vídeo…
+            </h3>
+
+            <p
+              id="explorationMessage"
+              class="muted"
+            >
+              Preparando el contenido…
+            </p>
+
+          </div>
+
+
+          <div class="exploration-progress">
+
+            <div
+              id="explorationProgressBar"
+              class="exploration-progress-bar"
+            ></div>
+
+          </div>
+
+
+          <div
+            id="explorationSteps"
+            class="exploration-steps"
           >
 
-            <option value="">
-              Selecciona…
-            </option>
+            <span>
+              🎧 Escuchando lo que cuentan
+            </span>
 
-            <option>Lugar</option>
-            <option>Mirador</option>
-            <option>Playa</option>
-            <option>Parque</option>
-            <option>Cultura</option>
-            <option>Restaurante</option>
-            <option>Gastronomía</option>
-            <option>Compras</option>
-            <option>Vida nocturna</option>
-            <option>Transporte</option>
-            <option>Consejo</option>
+            <span>
+              📍 Localizando lugares
+            </span>
 
-          </select>
+            <span>
+              🍴 Buscando gastronomía
+            </span>
 
-        </label>
+            <span>
+              💡 Identificando consejos
+            </span>
 
+            <span>
+              ⏱️ Localizando momentos exactos
+            </span>
 
-        <!-- VÍDEO -->
+          </div>
 
-        <label>
-
-          Enlace del Reel o vídeo
-
-          <input
-            name="link"
-            type="url"
-            placeholder="https://www.instagram.com/reel/…"
-          >
-
-        </label>
+        </section>
 
 
-        <!-- COMENTARIO -->
+        <!-- =================================================
+             RESULTADO DE EXPLORACIÓN
+             ================================================= -->
 
-        <label>
+        <section
+          id="explorationResults"
+          class="exploration-results hidden"
+        >
 
-          Comentario
+          <div class="results-summary">
 
-          <textarea
-            name="comment"
-            rows="3"
-            placeholder="Horario, precio o consejo útil…"
-          ></textarea>
+            <div>
 
-        </label>
+              <span class="eyebrow">
+                Detalles encontrados
+              </span>
+
+              <h3>
+                <span id="detectedDetailsCount">
+                  0
+                </span>
+                detalles en este vídeo
+              </h3>
+
+            </div>
 
 
-        <!-- UBICACIÓN -->
+            <span class="results-success">
+              ✨
+            </span>
 
-        <div class="coords-head">
+          </div>
 
-          <b>
-            Ubicación
-          </b>
+
+          <!--
+            AQUÍ app.js CREARÁ AUTOMÁTICAMENTE
+            LAS TARJETAS DETECTADAS.
+          -->
+
+          <div
+            id="detectedDetailsList"
+            class="detected-details-list"
+          ></div>
 
 
           <button
-            id="useMapCenter"
+            id="addManualDetailButton"
+            class="secondary-btn add-detail-button"
             type="button"
-            class="secondary-btn"
           >
-            Usar centro del mapa
+            ＋ Añadir otro detalle
           </button>
 
-        </div>
+        </section>
 
 
-        <div class="coords-grid">
+        <!-- =================================================
+             EDITOR MANUAL
+             Se mantiene compatible con app.js actual.
+             ================================================= -->
+
+        <section
+          id="manualDetailEditor"
+          class="manual-detail-editor"
+        >
+
+          <div class="discovery-step-title">
+
+            <div class="discovery-step-number">
+              2
+            </div>
+
+            <div>
+
+              <span class="eyebrow">
+                Detalle
+              </span>
+
+              <h3>
+                Revisa o añade información
+              </h3>
+
+            </div>
+
+          </div>
+
+
+          <!-- TIPO -->
 
           <label>
 
-            Latitud
+            Tipo de detalle
+
+            <select
+              id="detailType"
+              name="detailType"
+            >
+
+              <option value="Lugar">
+                📍 Lugar
+              </option>
+
+              <option value="Restaurante">
+                🍴 Restaurante
+              </option>
+
+              <option value="Playa">
+                🏖️ Playa
+              </option>
+
+              <option value="Mirador">
+                🌄 Mirador
+              </option>
+
+              <option value="Consejo">
+                💡 Consejo
+              </option>
+
+              <option value="Precio">
+                💰 Precio
+              </option>
+
+              <option value="Transporte">
+                🚕 Transporte
+              </option>
+
+              <option value="Aviso">
+                ⚠️ Aviso
+              </option>
+
+              <option value="Compras">
+                🛍️ Compras
+              </option>
+
+              <option value="Evento">
+                🎉 Evento
+              </option>
+
+              <option value="Otro">
+                ✨ Otro
+              </option>
+
+            </select>
+
+          </label>
+
+
+          <!-- NOMBRE
+               ID/name conservados por compatibilidad
+               con app.js actual.
+          -->
+
+          <label>
+
+            Nombre o título
 
             <input
-              id="discoveryLat"
-              name="lat"
-              type="number"
-              step="any"
-              placeholder="-22.9068"
+              name="title"
+              id="discoveryTitle"
+              required
+              placeholder="Ej.: Escadaria Selarón"
             >
 
           </label>
 
 
+          <!-- LUGAR / ZONA -->
+
           <label>
 
-            Longitud
+            Lugar o zona
 
             <input
-              id="discoveryLng"
-              name="lng"
-              type="number"
-              step="any"
-              placeholder="-43.1729"
+              id="discoveryPlace"
+              name="place"
+              required
+              placeholder="Ej.: Lapa / Santa Teresa"
             >
 
           </label>
 
-        </div>
+
+          <!-- CATEGORÍA -->
+
+          <label>
+
+            Categoría
+
+            <select
+              id="discoveryCategory"
+              name="category"
+              required
+            >
+
+              <option value="">
+                Selecciona…
+              </option>
+
+              <option>
+                Lugar
+              </option>
+
+              <option>
+                Mirador
+              </option>
+
+              <option>
+                Playa
+              </option>
+
+              <option>
+                Parque
+              </option>
+
+              <option>
+                Cultura
+              </option>
+
+              <option>
+                Restaurante
+              </option>
+
+              <option>
+                Gastronomía
+              </option>
+
+              <option>
+                Compras
+              </option>
+
+              <option>
+                Vida nocturna
+              </option>
+
+              <option>
+                Transporte
+              </option>
+
+              <option>
+                Consejo
+              </option>
+
+            </select>
+
+          </label>
 
 
-        <!-- GUARDAR -->
+          <!-- =================================================
+               MOMENTO DEL VÍDEO
+               ================================================= -->
+
+          <div class="timestamp-editor">
+
+            <div class="timestamp-editor-title">
+
+              <span>
+                ⏱️
+              </span>
+
+              <div>
+
+                <b>
+                  Momento del vídeo
+                </b>
+
+                <small>
+                  Indica cuándo aparece esta información.
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="timestamp-grid">
+
+              <label>
+
+                Empieza
+
+                <input
+                  id="detailTimestampStart"
+                  name="timestamp_start_text"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="00:14"
+                  value="00:00"
+                >
+
+              </label>
+
+
+              <label>
+
+                Termina
+                <span class="optional">
+                  opcional
+                </span>
+
+                <input
+                  id="detailTimestampEnd"
+                  name="timestamp_end_text"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="00:38"
+                >
+
+              </label>
+
+            </div>
+
+
+            <button
+              id="useCurrentVideoTime"
+              type="button"
+              class="secondary-btn"
+            >
+              ⏱ Usar minuto actual del vídeo
+            </button>
+
+          </div>
+
+
+          <!-- COMENTARIO -->
+
+          <label>
+
+            Detalle o comentario
+
+            <textarea
+              id="discoveryComment"
+              name="comment"
+              rows="3"
+              placeholder="Horario, precio, recomendación o cualquier información útil…"
+            ></textarea>
+
+          </label>
+
+
+          <!-- =================================================
+               UBICACIÓN
+               ================================================= -->
+
+          <div class="coords-head">
+
+            <div>
+
+              <b>
+                📍 Ubicación
+              </b>
+
+              <small class="muted">
+                Para colocar el detalle en el mapa.
+              </small>
+
+            </div>
+
+
+            <button
+              id="useMapCenter"
+              type="button"
+              class="secondary-btn"
+            >
+              Usar centro del mapa
+            </button>
+
+          </div>
+
+
+          <div class="coords-grid">
+
+            <label>
+
+              Latitud
+
+              <input
+                id="discoveryLat"
+                name="lat"
+                type="number"
+                step="any"
+                placeholder="-22.9068"
+              >
+
+            </label>
+
+
+            <label>
+
+              Longitud
+
+              <input
+                id="discoveryLng"
+                name="lng"
+                type="number"
+                step="any"
+                placeholder="-43.1729"
+              >
+
+            </label>
+
+          </div>
+
+
+          <!-- ACCIONES DEL DETALLE -->
+
+          <div class="detail-editor-actions">
+
+            <button
+              id="cancelDetailEdit"
+              class="secondary-btn hidden"
+              type="button"
+            >
+              Cancelar
+            </button>
+
+
+            <button
+              id="addDetailToDraft"
+              class="secondary-btn"
+              type="button"
+            >
+              ＋ Añadir detalle
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             BORRADOR DEL VÍDEO
+             ================================================= -->
+
+        <section
+          id="videoDraftSummary"
+          class="video-draft-summary hidden"
+        >
+
+          <div class="section-head">
+
+            <div>
+
+              <span class="eyebrow">
+                Listo para guardar
+              </span>
+
+              <h3>
+                Descubrimientos del vídeo
+              </h3>
+
+            </div>
+
+
+            <span
+              id="draftDetailsCount"
+              class="count-badge"
+            >
+              0
+            </span>
+
+          </div>
+
+
+          <div
+            id="videoDraftDetailsList"
+            class="detected-details-list"
+          ></div>
+
+        </section>
+
+
+        <!-- =================================================
+             BOTÓN FINAL
+             Mantiene type=submit para Supabase actual.
+             ================================================= -->
 
         <button
-          class="primary-btn"
+          id="saveAllDiscoveriesButton"
+          class="primary-btn save-all-discoveries"
           type="submit"
         >
-          Guardar descubrimiento
+
+          <span>
+            ✓
+          </span>
+
+          Guardar todo
+
         </button>
 
       </form>
@@ -580,7 +1202,7 @@
 
 
   <!-- =====================================================
-       PANEL DEL MENÚ
+       PANEL GENERAL
        ===================================================== -->
 
   <section
@@ -625,7 +1247,7 @@
 
 
   <!-- =====================================================
-       REPRODUCTOR DE VÍDEO
+       REPRODUCTOR
        ===================================================== -->
 
   <div
@@ -673,7 +1295,9 @@
           playsinline
           preload="metadata"
         >
+
           Tu navegador no puede reproducir este vídeo.
+
         </video>
 
       </div>
@@ -696,32 +1320,32 @@
 
 
   <!-- =====================================================
-       LIBRERÍAS
-       IMPORTANTE: EL ORDEN NO SE CAMBIA
+       JAVASCRIPT
+       EL ORDEN ES IMPORTANTE
        ===================================================== -->
 
-  <!-- Leaflet / mapa -->
+  <!-- MAPA -->
 
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   ></script>
 
 
-  <!-- Supabase -->
+  <!-- SUPABASE -->
 
   <script
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
   ></script>
 
 
-  <!-- Configuración pública de Mundo Infinito -->
+  <!-- CONFIGURACIÓN -->
 
   <script
     src="supabase-config.js"
   ></script>
 
 
-  <!-- Aplicación -->
+  <!-- MUNDO INFINITO -->
 
   <script
     src="app.js"
