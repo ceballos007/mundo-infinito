@@ -1083,7 +1083,6 @@
             "✅ Vídeo guardado"
           );
 
-
           // =============================================
           // TRANSCRIPCIÓN LOCAL GRATUITA
           // =============================================
@@ -1132,443 +1131,7 @@
 
                     }
                   );
-function detailsFromTranscript(
-  transcript
-) {
 
-  if (
-    !transcript
-  ) {
-    return [];
-  }
-
-  const results =
-    [];
-
-  const chunks =
-    Array.isArray(
-      transcript.chunks
-    )
-      ? transcript.chunks
-      : [];
-
-  const fullText =
-    String(
-      transcript.text ||
-      ""
-    ).trim();
-
-
-  // =====================================================
-  // DETECTOR DE PRECIOS
-  // =====================================================
-
-  const priceRegex =
-    /(?:R\$|RS|\$)\s?\d+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?\s?(?:reais|real)/gi;
-
-
-  // =====================================================
-  // LUGARES CONOCIDOS DE RÍO / BRASIL
-  // Se puede ampliar después.
-  // =====================================================
-
-  const knownPlaces = [
-    "Copacabana",
-    "Ipanema",
-    "Leblon",
-    "Lapa",
-    "Santa Teresa",
-    "Botafogo",
-    "Arpoador",
-    "Cristo Redentor",
-    "Corcovado",
-    "Pão de Açúcar",
-    "Pao de Acucar",
-    "Escadaria Selarón",
-    "Escadaria Selaron",
-    "Maracanã",
-    "Maracana",
-    "Jardim Botânico",
-    "Jardim Botanico",
-    "Ilha Grande",
-    "Lopes Mendes"
-  ];
-
-
-  // =====================================================
-  // ANALIZAR FRAGMENTOS CON TIMESTAMP
-  // =====================================================
-
-  chunks.forEach(
-    chunk => {
-
-      const text =
-        String(
-          chunk.text ||
-          ""
-        ).trim();
-
-
-      const timestamp =
-        Array.isArray(
-          chunk.timestamp
-        )
-          ? Number(
-              chunk.timestamp[0] ||
-              0
-            )
-          : 0;
-
-
-      // -------------------------------------------------
-      // LUGARES
-      // -------------------------------------------------
-
-      knownPlaces.forEach(
-        placeName => {
-
-          if (
-            text
-              .toLowerCase()
-              .includes(
-                placeName
-                  .toLowerCase()
-              )
-          ) {
-
-            const alreadyExists =
-              results.some(
-                item =>
-                  item.title ===
-                    placeName &&
-                  item.timestampStart ===
-                    timestamp
-              );
-
-
-            if (
-              !alreadyExists
-            ) {
-
-              results.push({
-                id:
-                  crypto.randomUUID
-                    ? crypto.randomUUID()
-                    : `auto-${Date.now()}-${Math.random()}`,
-
-                title:
-                  placeName,
-
-                place:
-                  placeName,
-
-                type:
-                  "Lugar",
-
-                category:
-                  "Lugar",
-
-                comment:
-                  text,
-
-                timestampStart:
-                  timestamp,
-
-                timestampEnd:
-                  null,
-
-                lat:
-                  null,
-
-                lng:
-                  null,
-
-                confidence:
-                  0.85,
-
-                automatic:
-                  true
-              });
-
-            }
-
-          }
-
-        }
-      );
-
-
-      // -------------------------------------------------
-      // PRECIOS
-      // -------------------------------------------------
-
-      const prices =
-        text.match(
-          priceRegex
-        );
-
-
-      if (
-        prices
-      ) {
-
-        prices.forEach(
-          price => {
-
-            results.push({
-              id:
-                crypto.randomUUID
-                  ? crypto.randomUUID()
-                  : `auto-${Date.now()}-${Math.random()}`,
-
-              title:
-                price,
-
-              place:
-                CONFIG.city ||
-                "Río de Janeiro",
-
-              type:
-                "Precio",
-
-              category:
-                "Consejo",
-
-              comment:
-                text,
-
-              timestampStart:
-                timestamp,
-
-              timestampEnd:
-                null,
-
-              lat:
-                null,
-
-              lng:
-                null,
-
-              confidence:
-                0.8,
-
-              automatic:
-                true
-            });
-
-          }
-        );
-
-      }
-
-
-      // -------------------------------------------------
-      // CONSEJOS
-      // -------------------------------------------------
-
-      const adviceWords = [
-        "recomendo",
-        "recomiendo",
-        "vale a pena",
-        "mejor",
-        "melhor",
-        "cuidado",
-        "importante",
-        "tem que",
-        "hay que",
-        "evita",
-        "evitar"
-      ];
-
-
-      const isAdvice =
-        adviceWords.some(
-          word =>
-            text
-              .toLowerCase()
-              .includes(
-                word
-              )
-        );
-
-
-      if (
-        isAdvice
-      ) {
-
-        results.push({
-          id:
-            crypto.randomUUID
-              ? crypto.randomUUID()
-              : `auto-${Date.now()}-${Math.random()}`,
-
-          title:
-            "Consejo del vídeo",
-
-          place:
-            CONFIG.city ||
-            "Río de Janeiro",
-
-          type:
-            "Consejo",
-
-          category:
-            "Consejo",
-
-          comment:
-            text,
-
-          timestampStart:
-            timestamp,
-
-          timestampEnd:
-            null,
-
-          lat:
-            null,
-
-          lng:
-            null,
-
-          confidence:
-            0.7,
-
-          automatic:
-            true
-        });
-
-      }
-
-    }
-  );
-
-
-  // =====================================================
-  // FALLBACK SI WHISPER NO DEVUELVE CHUNKS
-  // =====================================================
-
-  if (
-    !chunks.length &&
-    fullText
-  ) {
-
-    const prices =
-      fullText.match(
-        priceRegex
-      );
-
-
-    knownPlaces.forEach(
-      placeName => {
-
-        if (
-          fullText
-            .toLowerCase()
-            .includes(
-              placeName
-                .toLowerCase()
-            )
-        ) {
-
-          results.push({
-            id:
-              crypto.randomUUID
-                ? crypto.randomUUID()
-                : `auto-${Date.now()}-${Math.random()}`,
-
-            title:
-              placeName,
-
-            place:
-              placeName,
-
-            type:
-              "Lugar",
-
-            category:
-              "Lugar",
-
-            comment:
-              fullText,
-
-            timestampStart:
-              0,
-
-            timestampEnd:
-              null,
-
-            lat:
-              null,
-
-            lng:
-              null,
-
-            confidence:
-              0.7,
-
-            automatic:
-              true
-          });
-
-        }
-
-      }
-    );
-
-
-    prices?.forEach(
-      price => {
-
-        results.push({
-          id:
-            crypto.randomUUID
-              ? crypto.randomUUID()
-              : `auto-${Date.now()}-${Math.random()}`,
-
-          title:
-            price,
-
-          place:
-            CONFIG.city ||
-            "Río de Janeiro",
-
-          type:
-            "Precio",
-
-          category:
-            "Consejo",
-
-          comment:
-            fullText,
-
-          timestampStart:
-            0,
-
-          timestampEnd:
-            null,
-
-          lat:
-            null,
-
-          lng:
-            null,
-
-          confidence:
-            0.6,
-
-          automatic:
-            true
-        });
-
-      }
-    );
-
-  }
-
-
-  return results;
-
-}
 
               console.log(
                 "📝 TRANSCRIPCIÓN DEL VÍDEO:",
@@ -1577,8 +1140,7 @@ function detailsFromTranscript(
 
 
               if (
-                localTranscript
-                  ?.text
+                localTranscript?.text
               ) {
 
                 console.log(
@@ -1591,8 +1153,7 @@ function detailsFromTranscript(
 
               if (
                 Array.isArray(
-                  localTranscript
-                    ?.chunks
+                  localTranscript?.chunks
                 )
               ) {
 
@@ -1672,11 +1233,6 @@ function detailsFromTranscript(
           );
 
 
-          /*
-           * Si Storage falla, mantenemos
-           * la previsualización local.
-           */
-
           await exploreVideo({
 
             type:
@@ -1701,7 +1257,653 @@ function detailsFromTranscript(
         }
 
       }
-    );  // =======================================================
+    );
+
+
+  // =======================================================
+  // CONVERTIR TRANSCRIPCIÓN EN DETALLES
+  // =======================================================
+
+  function detailsFromTranscript(
+    transcript
+  ) {
+
+    if (
+      !transcript
+    ) {
+
+      return [];
+
+    }
+
+
+    const results =
+      [];
+
+
+    const chunks =
+      Array.isArray(
+        transcript.chunks
+      )
+
+        ? transcript.chunks
+
+        : [];
+
+
+    const fullText =
+      String(
+        transcript.text ||
+        ""
+      ).trim();
+
+
+    // =====================================================
+    // PRECIOS
+    // =====================================================
+
+    const priceRegex =
+      /(?:R\$|RS|\$)\s?\d+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?\s?(?:reais|real)/gi;
+
+
+    // =====================================================
+    // LUGARES CONOCIDOS
+    // =====================================================
+
+    const knownPlaces = [
+
+      "Copacabana",
+      "Ipanema",
+      "Leblon",
+      "Lapa",
+      "Santa Teresa",
+      "Botafogo",
+      "Arpoador",
+
+      "Cristo Redentor",
+      "Corcovado",
+
+      "Pão de Açúcar",
+      "Pao de Acucar",
+
+      "Escadaria Selarón",
+      "Escadaria Selaron",
+
+      "Maracanã",
+      "Maracana",
+
+      "Jardim Botânico",
+      "Jardim Botanico",
+
+      "Ilha Grande",
+      "Lopes Mendes",
+
+      "Lagoa",
+      "Flamengo",
+      "Urca",
+      "Barra da Tijuca",
+      "Recreio",
+      "Centro",
+      "Gávea",
+      "Gavea",
+      "São Conrado",
+      "Sao Conrado"
+
+    ];
+
+
+    // =====================================================
+    // PALABRAS DE CONSEJO
+    // =====================================================
+
+    const adviceWords = [
+
+      "recomendo",
+      "recomienda",
+      "recomiendo",
+      "recomendamos",
+
+      "vale a pena",
+      "vale la pena",
+
+      "melhor",
+      "mejor",
+
+      "cuidado",
+
+      "importante",
+
+      "tem que",
+      "tienes que",
+      "hay que",
+
+      "evita",
+      "evitar",
+
+      "não esquece",
+      "nao esquece",
+      "no olvides",
+
+      "dica",
+      "consejo"
+
+    ];
+
+
+    // =====================================================
+    // CREAR DETALLE
+    // =====================================================
+
+    function createDetail({
+
+      title,
+
+      place,
+
+      type,
+
+      category,
+
+      comment,
+
+      timestampStart = 0,
+
+      confidence = 0.7
+
+    }) {
+
+      return {
+
+        id:
+          crypto.randomUUID
+
+            ? crypto.randomUUID()
+
+            : `auto-${Date.now()}-${Math.random()}`,
+
+
+        title,
+
+        place,
+
+        type,
+
+        category,
+
+        comment,
+
+
+        timestampStart:
+          Number(
+            timestampStart ||
+            0
+          ),
+
+
+        timestampEnd:
+          null,
+
+
+        lat:
+          null,
+
+
+        lng:
+          null,
+
+
+        confidence,
+
+
+        automatic:
+          true
+
+      };
+
+    }
+
+
+    // =====================================================
+    // ANALIZAR CHUNKS DE WHISPER
+    // =====================================================
+
+    chunks.forEach(
+      chunk => {
+
+        const text =
+          String(
+            chunk.text ||
+            ""
+          ).trim();
+
+
+        if (
+          !text
+        ) {
+
+          return;
+
+        }
+
+
+        const lowerText =
+          text.toLowerCase();
+
+
+        let timestamp =
+          0;
+
+
+        if (
+          Array.isArray(
+            chunk.timestamp
+          )
+        ) {
+
+          timestamp =
+            Number(
+              chunk.timestamp[0] ||
+              0
+            );
+
+        } else if (
+          Array.isArray(
+            chunk.timestamps
+          )
+        ) {
+
+          timestamp =
+            Number(
+              chunk.timestamps[0] ||
+              0
+            );
+
+        }
+
+
+        // -------------------------------------------------
+        // LUGARES
+        // -------------------------------------------------
+
+        knownPlaces.forEach(
+          placeName => {
+
+            if (
+              !lowerText.includes(
+                placeName.toLowerCase()
+              )
+            ) {
+
+              return;
+
+            }
+
+
+            const exists =
+              results.some(
+                item =>
+
+                  item.type ===
+                    "Lugar" &&
+
+                  item.title
+                    .toLowerCase() ===
+                    placeName
+                      .toLowerCase() &&
+
+                  Math.abs(
+                    item.timestampStart -
+                    timestamp
+                  ) < 3
+              );
+
+
+            if (
+              exists
+            ) {
+
+              return;
+
+            }
+
+
+            results.push(
+              createDetail({
+
+                title:
+                  placeName,
+
+                place:
+                  placeName,
+
+                type:
+                  "Lugar",
+
+                category:
+                  "Lugar",
+
+                comment:
+                  text,
+
+                timestampStart:
+                  timestamp,
+
+                confidence:
+                  0.9
+
+              })
+            );
+
+          }
+        );
+
+
+        // -------------------------------------------------
+        // PRECIOS
+        // -------------------------------------------------
+
+        const prices =
+          text.match(
+            priceRegex
+          );
+
+
+        prices?.forEach(
+          price => {
+
+            results.push(
+              createDetail({
+
+                title:
+                  price,
+
+                place:
+                  CONFIG.city ||
+                  "Río de Janeiro",
+
+                type:
+                  "Precio",
+
+                category:
+                  "Consejo",
+
+                comment:
+                  text,
+
+                timestampStart:
+                  timestamp,
+
+                confidence:
+                  0.85
+
+              })
+            );
+
+          }
+        );
+
+
+        // -------------------------------------------------
+        // CONSEJOS
+        // -------------------------------------------------
+
+        const isAdvice =
+          adviceWords.some(
+            word =>
+              lowerText.includes(
+                word
+              )
+          );
+
+
+        if (
+          isAdvice
+        ) {
+
+          results.push(
+            createDetail({
+
+              title:
+                "Consejo del vídeo",
+
+              place:
+                CONFIG.city ||
+                "Río de Janeiro",
+
+              type:
+                "Consejo",
+
+              category:
+                "Consejo",
+
+              comment:
+                text,
+
+              timestampStart:
+                timestamp,
+
+              confidence:
+                0.75
+
+            })
+          );
+
+        }
+
+      }
+    );
+
+
+    // =====================================================
+    // FALLBACK SOBRE EL TEXTO COMPLETO
+    // =====================================================
+
+    if (
+      !chunks.length &&
+      fullText
+    ) {
+
+      const lowerFullText =
+        fullText.toLowerCase();
+
+
+      knownPlaces.forEach(
+        placeName => {
+
+          if (
+            !lowerFullText.includes(
+              placeName.toLowerCase()
+            )
+          ) {
+
+            return;
+
+          }
+
+
+          results.push(
+            createDetail({
+
+              title:
+                placeName,
+
+              place:
+                placeName,
+
+              type:
+                "Lugar",
+
+              category:
+                "Lugar",
+
+              comment:
+                fullText,
+
+              timestampStart:
+                0,
+
+              confidence:
+                0.7
+
+            })
+          );
+
+        }
+      );
+
+
+      const prices =
+        fullText.match(
+          priceRegex
+        );
+
+
+      prices?.forEach(
+        price => {
+
+          results.push(
+            createDetail({
+
+              title:
+                price,
+
+              place:
+                CONFIG.city ||
+                "Río de Janeiro",
+
+              type:
+                "Precio",
+
+              category:
+                "Consejo",
+
+              comment:
+                fullText,
+
+              timestampStart:
+                0,
+
+              confidence:
+                0.65
+
+            })
+          );
+
+        }
+      );
+
+
+      const hasAdvice =
+        adviceWords.some(
+          word =>
+            lowerFullText.includes(
+              word
+            )
+        );
+
+
+      if (
+        hasAdvice
+      ) {
+
+        results.push(
+          createDetail({
+
+            title:
+              "Consejo del vídeo",
+
+            place:
+              CONFIG.city ||
+              "Río de Janeiro",
+
+            type:
+              "Consejo",
+
+            category:
+              "Consejo",
+
+            comment:
+              fullText,
+
+            timestampStart:
+              0,
+
+            confidence:
+              0.6
+
+          })
+        );
+
+      }
+
+    }
+
+
+    // =====================================================
+    // QUITAR DUPLICADOS
+    // =====================================================
+
+    const unique =
+      [];
+
+
+    const keys =
+      new Set();
+
+
+    results.forEach(
+      detail => {
+
+        const key =
+          [
+            detail.type,
+            detail.title
+              .toLowerCase(),
+            Math.floor(
+              detail.timestampStart /
+              3
+            )
+          ].join(
+            "|"
+          );
+
+
+        if (
+          keys.has(
+            key
+          )
+        ) {
+
+          return;
+
+        }
+
+
+        keys.add(
+          key
+        );
+
+
+        unique.push(
+          detail
+        );
+
+      }
+    );
+
+
+    console.log(
+      "🔎 Detalles detectados localmente:",
+      unique
+    );
+
+
+    return unique;
+
+  }
+
+
+  // =======================================================
   // PEGAR ENLACE
   // =======================================================
 
@@ -1718,14 +1920,8 @@ function detailsFromTranscript(
         sourceUrl();
 
 
-      if (!url) {
-
-        return;
-
-      }
-
-
       if (
+        !url ||
         url.length < 8
       ) {
 
@@ -1756,63 +1952,49 @@ function detailsFromTranscript(
 
 
   // =======================================================
-  // FASES DE EXPLORACIÓN
+  // FASES VISUALES
   // =======================================================
 
   const explorationPhases = [
 
     {
-      progress:
-        8,
-
+      progress: 8,
       message:
         "Preparando el vídeo…"
     },
 
     {
-      progress:
-        22,
-
+      progress: 22,
       message:
         "Escuchando lo que cuentan…"
     },
 
     {
-      progress:
-        38,
-
+      progress: 38,
       message:
         "Localizando lugares mencionados…"
     },
 
     {
-      progress:
-        54,
-
+      progress: 54,
       message:
         "Buscando restaurantes y recomendaciones…"
     },
 
     {
-      progress:
-        68,
-
+      progress: 68,
       message:
         "Identificando consejos útiles…"
     },
 
     {
-      progress:
-        82,
-
+      progress: 82,
       message:
         "Localizando momentos del vídeo…"
     },
 
     {
-      progress:
-        94,
-
+      progress: 94,
       message:
         "Organizando los detalles…"
     }
@@ -1851,7 +2033,6 @@ function detailsFromTranscript(
 
       await new Promise(
         resolve =>
-
           window.setTimeout(
             resolve,
             420
@@ -1907,10 +2088,165 @@ function detailsFromTranscript(
 
     try {
 
+      // ---------------------------------------------------
+      // PRIMERO EDGE FUNCTION
+      // ---------------------------------------------------
+
       automaticDetails =
         await requestAutomaticAnalysis(
           source
         );
+
+
+      // ---------------------------------------------------
+      // SI EDGE NO DEVUELVE NADA, USAR WHISPER LOCAL
+      // ---------------------------------------------------
+
+      if (
+        (
+          !Array.isArray(
+            automaticDetails
+          ) ||
+          automaticDetails.length ===
+            0
+        ) &&
+        source.transcript
+      ) {
+
+        automaticDetails =
+          detailsFromTranscript(
+            source.transcript
+          );
+
+
+        console.log(
+          "✨ Detalles obtenidos de la transcripción:",
+          automaticDetails
+        );
+
+      }
+
+
+    } catch (
+      error
+    ) {
+
+      console.warn(
+        "Mundo Infinito v0.6.2: análisis automático no disponible.",
+        error
+      );
+
+
+      // Incluso si falla Edge Function,
+      // intentamos aprovechar Whisper.
+      if (
+        source.transcript
+      ) {
+
+        try {
+
+          automaticDetails =
+            detailsFromTranscript(
+              source.transcript
+            );
+
+        } catch (
+          transcriptError
+        ) {
+
+          console.warn(
+            "No se pudieron interpretar los detalles de la transcripción:",
+            transcriptError
+          );
+
+        }
+
+      }
+
+    }
+
+
+    await animation;
+
+
+    if (
+      runId !==
+      explorationRun
+    ) {
+
+      return;
+
+    }
+
+
+    // =====================================================
+    // HAY RESULTADOS
+    // =====================================================
+
+    if (
+      Array.isArray(
+        automaticDetails
+      ) &&
+      automaticDetails.length
+    ) {
+
+      draftDetails =
+        automaticDetails
+          .map(
+            normalizeAutomaticDetail
+          )
+          .filter(
+            Boolean
+          );
+
+
+      setProgress(
+        100,
+        "Detalles encontrados"
+      );
+
+
+      showResults();
+
+
+      showToast?.(
+
+        draftDetails.length ===
+        1
+
+          ? "✨ 1 detalle encontrado"
+
+          : `✨ ${draftDetails.length} detalles encontrados`
+
+      );
+
+
+      return;
+
+    }
+
+
+    // =====================================================
+    // NO HA ENCONTRADO NADA
+    // =====================================================
+
+    setProgress(
+      100,
+      "Vídeo preparado"
+    );
+
+
+    showResults();
+
+
+    showToast?.(
+      "✨ Vídeo preparado para revisar"
+    );
+
+
+    openEditor();
+
+  }
 // =======================================================
 // USAR LA TRANSCRIPCIÓN LOCAL SI LA EDGE FUNCTION
 // NO HA DEVUELTO DETALLES
