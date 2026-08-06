@@ -404,7 +404,156 @@
 
 
   function sourceUrl() {
+  // =======================================================
+  // INFORMACIÓN DEL ENLACE SOCIAL
+  // =======================================================
 
+  function detectSocialPlatform(
+    url
+  ) {
+
+    const text =
+      String(
+        url ||
+        ""
+      ).toLowerCase();
+
+
+    if (
+      text.includes(
+        "instagram.com"
+      )
+    ) {
+
+      return "instagram";
+
+    }
+
+
+    if (
+      text.includes(
+        "tiktok.com"
+      )
+    ) {
+
+      return "tiktok";
+
+    }
+
+
+    return "other";
+
+  }
+
+
+  function extractHashtags(
+    text
+  ) {
+
+    const matches =
+      String(
+        text ||
+        ""
+      ).match(
+        /#[\p{L}\p{N}_]+/gu
+      );
+
+
+    return matches
+      ? Array.from(
+          new Set(
+            matches
+          )
+        )
+      : [];
+
+  }
+
+
+  function buildCombinedContext({
+    transcript = null,
+    caption = "",
+    hashtags = []
+  } = {}) {
+
+    const parts =
+      [];
+
+
+    if (
+      caption
+    ) {
+
+      parts.push(
+        `DESCRIPCIÓN DEL POST:\n${caption}`
+      );
+
+    }
+
+
+    if (
+      hashtags?.length
+    ) {
+
+      parts.push(
+        `HASHTAGS:\n${hashtags.join(" ")}`
+      );
+
+    }
+
+
+    if (
+      transcript?.visualText
+    ) {
+
+      parts.push(
+        `TEXTO VISIBLE EN EL VÍDEO:\n${transcript.visualText}`
+      );
+
+    }
+
+
+    /*
+     * transcript.text en la v0.5 ya puede contener
+     * principalmente OCR.
+     *
+     * Evitamos repetirlo si visualText es idéntico.
+     */
+
+    if (
+      transcript?.text &&
+      transcript.text !==
+        transcript.visualText
+    ) {
+
+      parts.push(
+        `TRANSCRIPCIÓN:\n${transcript.text}`
+      );
+
+    }
+
+
+    if (
+      transcript?.audioText
+    ) {
+
+      parts.push(
+        `AUDIO:\n${transcript.audioText}`
+      );
+
+    }
+
+
+    return parts
+      .filter(
+        Boolean
+      )
+      .join(
+        "\n\n"
+      )
+      .trim();
+
+  }
     return String(
       videoLink.value ||
       ""
@@ -2354,10 +2503,106 @@
             "analyze-video",
             {
 
-              body: {
+                           body: {
 
                 video_url:
                   source.url,
+
+                source_url:
+                  source.url,
+
+                storage_path:
+                  source.storagePath ||
+                  null,
+
+                source_type:
+                  source.type ||
+                  null,
+
+
+                // -----------------------------------------
+                // RED SOCIAL
+                // -----------------------------------------
+
+                platform:
+                  detectSocialPlatform(
+                    source.url
+                  ),
+
+
+                caption:
+                  source.caption ||
+                  "",
+
+
+                author:
+                  source.author ||
+                  "",
+
+
+                hashtags:
+                  source.hashtags ||
+                  extractHashtags(
+                    source.caption ||
+                    ""
+                  ),
+
+
+                // -----------------------------------------
+                // OCR / AUDIO
+                // -----------------------------------------
+
+                transcript:
+                  source.transcript ||
+                  null,
+
+
+                visual_text:
+                  source.transcript
+                    ?.visualText ||
+                  "",
+
+
+                audio_text:
+                  source.transcript
+                    ?.audioText ||
+                  "",
+
+
+                // -----------------------------------------
+                // TODO EL CONTEXTO JUNTO
+                // -----------------------------------------
+
+                combined_context:
+                  buildCombinedContext({
+
+                    transcript:
+                      source.transcript,
+
+                    caption:
+                      source.caption ||
+                      "",
+
+                    hashtags:
+                      source.hashtags ||
+                      extractHashtags(
+                        source.caption ||
+                        ""
+                      )
+
+                  }),
+
+
+                city:
+                  CONFIG?.city ||
+                  "Río de Janeiro",
+
+
+                country:
+                  CONFIG?.country ||
+                  "Brasil"
+
+              }
 
                 storage_path:
                   source.storagePath ||
