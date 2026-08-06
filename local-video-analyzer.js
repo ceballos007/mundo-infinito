@@ -1,6 +1,7 @@
 // =========================================================
-// MUNDO INFINITO · ANALIZADOR LOCAL v0.2
-// Transcripción gratuita de vídeos en el navegador
+// MUNDO INFINITO · ANALIZADOR LOCAL v0.3
+// Transcripción gratuita por fragmentos
+// Reduce consumo de memoria
 // =========================================================
 
 "use strict";
@@ -8,7 +9,7 @@
 (() => {
 
   console.log(
-    "🧠 Analizador local de Mundo Infinito cargado"
+    "🧠 Analizador local de Mundo Infinito v0.3 cargado"
   );
 
 
@@ -20,8 +21,16 @@
   let loadingModel = false;
 
 
+  const TARGET_SAMPLE_RATE =
+    16000;
+
+
+  const CHUNK_SECONDS =
+    20;
+
+
   // =======================================================
-  // COMPROBAR WEBGPU
+  // WEBGPU
   // =======================================================
 
   function hasWebGPU() {
@@ -35,7 +44,7 @@
 
 
   // =======================================================
-  // CARGAR TRANSFORMERS.JS
+  // TRANSFORMERS.JS
   // =======================================================
 
   async function loadTransformers() {
@@ -55,19 +64,22 @@
     onProgress = null
   ) {
 
-    // Ya está cargado
-    if (transcriber) {
+    if (
+      transcriber
+    ) {
 
       return transcriber;
 
     }
 
 
-    // Si otra llamada lo está cargando,
-    // esperamos a que termine.
-    if (loadingModel) {
+    if (
+      loadingModel
+    ) {
 
-      while (loadingModel) {
+      while (
+        loadingModel
+      ) {
 
         await new Promise(
           resolve =>
@@ -80,7 +92,9 @@
       }
 
 
-      if (!transcriber) {
+      if (
+        !transcriber
+      ) {
 
         throw new Error(
           "No se pudo cargar Whisper"
@@ -94,13 +108,14 @@
     }
 
 
-    loadingModel = true;
+    loadingModel =
+      true;
 
 
     try {
 
       console.log(
-        "📦 Cargando Whisper por primera vez…"
+        "📦 Cargando Whisper…"
       );
 
 
@@ -134,9 +149,9 @@
       };
 
 
-      // WebGPU si está disponible.
-      // Si no, Transformers.js utilizará WASM/CPU.
-      if (hasWebGPU()) {
+      if (
+        hasWebGPU()
+      ) {
 
         options.device =
           "webgpu";
@@ -167,7 +182,9 @@
       return transcriber;
 
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       console.error(
         "❌ No se pudo cargar Whisper:",
@@ -180,7 +197,8 @@
 
     } finally {
 
-      loadingModel = false;
+      loadingModel =
+        false;
 
     }
 
@@ -188,85 +206,19 @@
 
 
   // =======================================================
-  // TRANSCRIBIR AUDIO YA PREPARADO
-  // =======================================================
-
-  async function transcribeAudio(
-    audio,
-    onProgress = null
-  ) {
-
-    if (!audio) {
-
-      throw new Error(
-        "No se recibió audio para transcribir"
-      );
-
-    }
-
-
-    const whisper =
-      await getTranscriber(
-        onProgress
-      );
-
-
-    console.log(
-      "🎧 Transcribiendo audio…"
-    );
-
-
-    const result =
-      await whisper(
-        audio,
-        {
-
-          // Queremos tiempos para después saber
-          // cuándo aparece cada recomendación.
-          return_timestamps:
-            true,
-
-          chunk_length_s:
-            30,
-
-          stride_length_s:
-            5,
-
-          // Nuestros vídeos de Brasil
-          // pueden contener portugués.
-          language:
-            "portuguese",
-
-          task:
-            "transcribe"
-
-        }
-      );
-
-
-    console.log(
-      "📝 Transcripción:",
-      result
-    );
-
-
-    return result;
-
-  }
-
-
-  // =======================================================
-  // DECODIFICAR AUDIO DEL MP4
+  // DECODIFICAR AUDIO DEL VÍDEO
   // =======================================================
 
   async function decodeVideoAudio(
     file
   ) {
 
-    if (!file) {
+    if (
+      !file
+    ) {
 
       throw new Error(
-        "No se ha recibido ningún vídeo"
+        "No se recibió ningún vídeo"
       );
 
     }
@@ -281,7 +233,13 @@
       "📄 Archivo:",
       file.name || "vídeo",
       file.type || "tipo desconocido",
-      `${Math.round((file.size || 0) / 1024 / 1024 * 10) / 10} MB`
+      `${Math.round(
+        (
+          (file.size || 0) /
+          1024 /
+          1024
+        ) * 10
+      ) / 10} MB`
     );
 
 
@@ -294,7 +252,9 @@
       window.webkitAudioContext;
 
 
-    if (!AudioContextClass) {
+    if (
+      !AudioContextClass
+    ) {
 
       throw new Error(
         "Este navegador no permite decodificar audio"
@@ -310,9 +270,10 @@
     try {
 
       const decoded =
-        await audioContext.decodeAudioData(
-          arrayBuffer.slice(0)
-        );
+        await audioContext
+          .decodeAudioData(
+            arrayBuffer.slice(0)
+          );
 
 
       console.log(
@@ -333,10 +294,12 @@
       return decoded;
 
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       console.error(
-        "❌ No se pudo extraer el audio del vídeo:",
+        "❌ No se pudo extraer el audio:",
         error
       );
 
@@ -354,7 +317,7 @@
 
       } catch (_) {
 
-        // No hacemos nada.
+        // Nada.
       }
 
     }
@@ -363,30 +326,25 @@
 
 
   // =======================================================
-  // CONVERTIR AUDIO A MONO
+  // MEZCLAR A MONO
   // =======================================================
 
-  function createMonoBuffer(
-    audioBuffer,
-    audioContext
+  function mixToMono(
+    audioBuffer
   ) {
 
-    const monoBuffer =
-      audioContext.createBuffer(
-        1,
-        audioBuffer.length,
-        audioBuffer.sampleRate
-      );
-
-
-    const mono =
-      monoBuffer.getChannelData(
-        0
-      );
+    const length =
+      audioBuffer.length;
 
 
     const channels =
       audioBuffer.numberOfChannels;
+
+
+    const mono =
+      new Float32Array(
+        length
+      );
 
 
     for (
@@ -396,14 +354,15 @@
     ) {
 
       const source =
-        audioBuffer.getChannelData(
-          channel
-        );
+        audioBuffer
+          .getChannelData(
+            channel
+          );
 
 
       for (
         let i = 0;
-        i < source.length;
+        i < length;
         i++
       ) {
 
@@ -416,20 +375,110 @@
     }
 
 
-    return monoBuffer;
+    return mono;
 
   }
 
 
   // =======================================================
-  // REMUESTREAR A 16 kHz
+  // REMUESTREAR FLOAT32 A 16 KHZ
+  // =======================================================
+
+  function resampleFloat32(
+    input,
+    sourceRate,
+    targetRate =
+      TARGET_SAMPLE_RATE
+  ) {
+
+    if (
+      sourceRate ===
+      targetRate
+    ) {
+
+      return new Float32Array(
+        input
+      );
+
+    }
+
+
+    const ratio =
+      sourceRate /
+      targetRate;
+
+
+    const outputLength =
+      Math.max(
+        1,
+        Math.round(
+          input.length /
+          ratio
+        )
+      );
+
+
+    const output =
+      new Float32Array(
+        outputLength
+      );
+
+
+    for (
+      let i = 0;
+      i < outputLength;
+      i++
+    ) {
+
+      const sourcePosition =
+        i * ratio;
+
+
+      const left =
+        Math.floor(
+          sourcePosition
+        );
+
+
+      const right =
+        Math.min(
+          left + 1,
+          input.length - 1
+        );
+
+
+      const fraction =
+        sourcePosition -
+        left;
+
+
+      output[i] =
+        input[left] *
+        (
+          1 - fraction
+        ) +
+        input[right] *
+        fraction;
+
+    }
+
+
+    return output;
+
+  }
+
+
+  // =======================================================
+  // PREPARAR AUDIO A 16 KHZ
   // =======================================================
 
   async function resampleTo16k(
     audioBuffer
   ) {
 
-    if (!audioBuffer) {
+    if (
+      !audioBuffer
+    ) {
 
       throw new Error(
         "No se recibió AudioBuffer"
@@ -438,145 +487,415 @@
     }
 
 
-    const targetRate =
-      16000;
-
-
     console.log(
-      "🎚️ Preparando audio para Whisper…"
+      "🎚️ Preparando audio mono 16 kHz…"
     );
 
 
-    // Si ya está a 16 kHz,
-    // solamente lo convertimos a mono.
-    if (
-      audioBuffer.sampleRate ===
-      targetRate
-    ) {
-
-      const channels =
-        audioBuffer.numberOfChannels;
-
-
-      if (channels === 1) {
-
-        return new Float32Array(
-          audioBuffer.getChannelData(
-            0
-          )
-        );
-
-      }
-
-
-      const result =
-        new Float32Array(
-          audioBuffer.length
-        );
-
-
-      for (
-        let channel = 0;
-        channel < channels;
-        channel++
-      ) {
-
-        const source =
-          audioBuffer.getChannelData(
-            channel
-          );
-
-
-        for (
-          let i = 0;
-          i < source.length;
-          i++
-        ) {
-
-          result[i] +=
-            source[i] /
-            channels;
-
-        }
-
-      }
-
-
-      return result;
-
-    }
-
-
-    const targetLength =
-      Math.ceil(
-        audioBuffer.duration *
-        targetRate
+    const mono =
+      mixToMono(
+        audioBuffer
       );
 
 
-    const offlineContext =
-      new OfflineAudioContext(
-        1,
-        targetLength,
-        targetRate
+    const audio16k =
+      resampleFloat32(
+        mono,
+        audioBuffer.sampleRate,
+        TARGET_SAMPLE_RATE
       );
-
-
-    const monoBuffer =
-      createMonoBuffer(
-        audioBuffer,
-        offlineContext
-      );
-
-
-    const sourceNode =
-      offlineContext
-        .createBufferSource();
-
-
-    sourceNode.buffer =
-      monoBuffer;
-
-
-    sourceNode.connect(
-      offlineContext.destination
-    );
-
-
-    sourceNode.start(0);
-
-
-    const rendered =
-      await offlineContext
-        .startRendering();
 
 
     console.log(
       "✅ Audio preparado:",
       {
-        duration:
-          rendered.duration,
-
-        sampleRate:
-          rendered.sampleRate,
-
         samples:
-          rendered.length
+          audio16k.length,
+
+        seconds:
+          Math.round(
+            audio16k.length /
+            TARGET_SAMPLE_RATE
+          )
       }
     );
 
 
-    return new Float32Array(
-      rendered.getChannelData(
-        0
-      )
+    return audio16k;
+
+  }
+
+
+  // =======================================================
+  // DIVIDIR AUDIO EN TROZOS
+  // =======================================================
+
+  function splitAudioIntoChunks(
+    audio,
+    seconds =
+      CHUNK_SECONDS
+  ) {
+
+    const samplesPerChunk =
+      TARGET_SAMPLE_RATE *
+      seconds;
+
+
+    const chunks =
+      [];
+
+
+    for (
+      let start = 0;
+      start < audio.length;
+      start += samplesPerChunk
+    ) {
+
+      const end =
+        Math.min(
+          start +
+          samplesPerChunk,
+          audio.length
+        );
+
+
+      chunks.push({
+
+        startSample:
+          start,
+
+        startSecond:
+          start /
+          TARGET_SAMPLE_RATE,
+
+        audio:
+          audio.slice(
+            start,
+            end
+          )
+
+      });
+
+    }
+
+
+    return chunks;
+
+  }
+
+
+  // =======================================================
+  // TRANSCRIBIR UN FRAGMENTO
+  // =======================================================
+
+  async function transcribeChunk(
+    whisper,
+    chunkAudio
+  ) {
+
+    return await whisper(
+      chunkAudio,
+      {
+
+        return_timestamps:
+          true,
+
+        chunk_length_s:
+          20,
+
+        stride_length_s:
+          2,
+
+        language:
+          "portuguese",
+
+        task:
+          "transcribe"
+
+      }
     );
 
   }
 
 
   // =======================================================
-  // TRANSCRIBIR UN ARCHIVO DE VÍDEO
+  // AJUSTAR TIMESTAMPS AL TIEMPO REAL DEL VÍDEO
+  // =======================================================
+
+  function normalizeChunkResult(
+    result,
+    offsetSeconds
+  ) {
+
+    const normalizedChunks =
+      [];
+
+
+    const resultChunks =
+      Array.isArray(
+        result?.chunks
+      )
+
+        ? result.chunks
+
+        : [];
+
+
+    resultChunks.forEach(
+      chunk => {
+
+        const timestamp =
+          Array.isArray(
+            chunk.timestamp
+          )
+
+            ? chunk.timestamp
+
+            : [
+                0,
+                null
+              ];
+
+
+        const start =
+          Number(
+            timestamp[0] ||
+            0
+          ) +
+          offsetSeconds;
+
+
+        const end =
+          timestamp[1] ==
+            null
+
+            ? null
+
+            : Number(
+                timestamp[1]
+              ) +
+              offsetSeconds;
+
+
+        normalizedChunks.push({
+
+          text:
+            String(
+              chunk.text ||
+              ""
+            ).trim(),
+
+          timestamp:
+            [
+              start,
+              end
+            ]
+
+        });
+
+      }
+    );
+
+
+    return {
+
+      text:
+        String(
+          result?.text ||
+          ""
+        ).trim(),
+
+      chunks:
+        normalizedChunks
+
+    };
+
+  }
+
+
+  // =======================================================
+  // TRANSCRIBIR AUDIO POR FRAGMENTOS
+  // =======================================================
+
+  async function transcribeAudio(
+    audio,
+    onProgress = null
+  ) {
+
+    if (
+      !audio
+    ) {
+
+      throw new Error(
+        "No se recibió audio"
+      );
+
+    }
+
+
+    const whisper =
+      await getTranscriber(
+        onProgress
+      );
+
+
+    const pieces =
+      splitAudioIntoChunks(
+        audio,
+        CHUNK_SECONDS
+      );
+
+
+    console.log(
+      `🎧 Audio dividido en ${pieces.length} fragmentos`
+    );
+
+
+    const allText =
+      [];
+
+
+    const allChunks =
+      [];
+
+
+    for (
+      let index = 0;
+      index < pieces.length;
+      index++
+    ) {
+
+      const piece =
+        pieces[index];
+
+
+      console.log(
+        `🎧 Transcribiendo fragmento ${index + 1}/${pieces.length}`
+      );
+
+
+      if (
+        typeof onProgress ===
+        "function"
+      ) {
+
+        onProgress({
+
+          status:
+            "transcribing",
+
+          chunk:
+            index + 1,
+
+          total_chunks:
+            pieces.length,
+
+          progress:
+            (
+              index /
+              pieces.length
+            ) * 100
+
+        });
+
+      }
+
+
+      const result =
+        await transcribeChunk(
+          whisper,
+          piece.audio
+        );
+
+
+      const normalized =
+        normalizeChunkResult(
+          result,
+          piece.startSecond
+        );
+
+
+      if (
+        normalized.text
+      ) {
+
+        allText.push(
+          normalized.text
+        );
+
+      }
+
+
+      allChunks.push(
+        ...normalized.chunks
+      );
+
+
+      /*
+       * Dejamos respirar al navegador
+       * entre fragmentos.
+       */
+      await new Promise(
+        resolve =>
+          window.setTimeout(
+            resolve,
+            50
+          )
+      );
+
+    }
+
+
+    if (
+      typeof onProgress ===
+      "function"
+    ) {
+
+      onProgress({
+
+        status:
+          "done",
+
+        chunk:
+          pieces.length,
+
+        total_chunks:
+          pieces.length,
+
+        progress:
+          100
+
+      });
+
+    }
+
+
+    const finalResult = {
+
+      text:
+        allText
+          .join(" ")
+          .trim(),
+
+      chunks:
+        allChunks
+
+    };
+
+
+    console.log(
+      "📝 Transcripción completa:",
+      finalResult
+    );
+
+
+    return finalResult;
+
+  }
+
+
+  // =======================================================
+  // TRANSCRIBIR ARCHIVO DE VÍDEO
   // =======================================================
 
   async function transcribeVideoFile(
@@ -584,7 +903,9 @@
     onProgress = null
   ) {
 
-    if (!file) {
+    if (
+      !file
+    ) {
 
       throw new Error(
         "Selecciona primero un vídeo"
@@ -598,7 +919,7 @@
     );
 
     console.log(
-      "🧠 MUNDO INFINITO · ANÁLISIS LOCAL"
+      "🧠 MUNDO INFINITO · ANÁLISIS LOCAL v0.3"
     );
 
     console.log(
@@ -606,26 +927,18 @@
     );
 
 
-    // 1. MP4 → AudioBuffer
     const decoded =
       await decodeVideoAudio(
         file
       );
 
 
-    // 2. AudioBuffer → Float32 mono 16 kHz
     const audio16k =
       await resampleTo16k(
         decoded
       );
 
 
-    console.log(
-      "🎧 Enviando audio a Whisper…"
-    );
-
-
-    // 3. Whisper
     const result =
       await transcribeAudio(
         audio16k,
@@ -634,20 +947,7 @@
 
 
     console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-    console.log(
       "✅ TRANSCRIPCIÓN TERMINADA"
-    );
-
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-
-    console.log(
-      result
     );
 
 
@@ -665,7 +965,9 @@
     onProgress = null
   ) {
 
-    if (!url) {
+    if (
+      !url
+    ) {
 
       throw new Error(
         "No se recibió la URL del vídeo"
@@ -685,7 +987,9 @@
       );
 
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
 
       throw new Error(
         `No se pudo descargar el vídeo (${response.status})`
@@ -702,7 +1006,9 @@
       blob.type.includes(
         "webm"
       )
+
         ? "webm"
+
         : "mp4";
 
 
@@ -729,7 +1035,7 @@
 
 
   // =======================================================
-  // API PÚBLICA PARA VIDEO-EXPLORER
+  // API PÚBLICA
   // =======================================================
 
   window.MundoInfinitoAnalyzer = {
@@ -738,11 +1044,13 @@
 
     getTranscriber,
 
-    transcribeAudio,
-
     decodeVideoAudio,
 
     resampleTo16k,
+
+    splitAudioIntoChunks,
+
+    transcribeAudio,
 
     transcribeVideoFile,
 
@@ -752,7 +1060,7 @@
 
 
   console.log(
-    "✅ MundoInfinitoAnalyzer preparado"
+    "✅ MundoInfinitoAnalyzer v0.3 preparado"
   );
 
 
