@@ -1432,6 +1432,972 @@
       Array.isArray(
         transcript.chunks
       )
+        ? transcript.chunks
+        : [];
+
+
+    const fullText =
+      String(
+        transcript.text ||
+        transcript.visualText ||
+        ""
+      ).trim();
+
+
+    // =====================================================
+    // UTILIDADES
+    // =====================================================
+
+    function normalize(
+      text
+    ) {
+
+      return String(
+        text ||
+        ""
+      )
+        .normalize(
+          "NFD"
+        )
+        .replace(
+          /[\u0300-\u036f]/g,
+          ""
+        )
+        .toLowerCase();
+
+    }
+
+
+    function createDetail({
+
+      title,
+
+      place,
+
+      type,
+
+      category,
+
+      comment,
+
+      timestampStart = 0,
+
+      confidence = 0.8
+
+    }) {
+
+      return {
+
+        id:
+          crypto.randomUUID
+
+            ? crypto.randomUUID()
+
+            : `auto-${Date.now()}-${Math.random()}`,
+
+
+        title,
+
+        place,
+
+        type,
+
+        category,
+
+        comment,
+
+
+        timestampStart:
+          Number(
+            timestampStart ||
+            0
+          ),
+
+
+        timestampEnd:
+          null,
+
+
+        lat:
+          null,
+
+
+        lng:
+          null,
+
+
+        confidence,
+
+
+        automatic:
+          true
+
+      };
+
+    }
+
+
+    function pushUnique(
+      detail
+    ) {
+
+      const key =
+        [
+          normalize(
+            detail.type
+          ),
+
+          normalize(
+            detail.title
+          ),
+
+          Math.floor(
+            Number(
+              detail.timestampStart ||
+              0
+            ) / 3
+          )
+        ].join(
+          "|"
+        );
+
+
+      const exists =
+        results.some(
+          item => {
+
+            const itemKey =
+              [
+                normalize(
+                  item.type
+                ),
+
+                normalize(
+                  item.title
+                ),
+
+                Math.floor(
+                  Number(
+                    item.timestampStart ||
+                    0
+                  ) / 3
+                )
+              ].join(
+                "|"
+              );
+
+
+            return (
+              itemKey ===
+              key
+            );
+
+          }
+        );
+
+
+      if (
+        !exists
+      ) {
+
+        results.push(
+          detail
+        );
+
+      }
+
+    }
+
+
+    // =====================================================
+    // DICCIONARIOS
+    // =====================================================
+
+    const places = [
+
+      "Rio de Janeiro",
+      "Río de Janeiro",
+
+      "Copacabana",
+      "Ipanema",
+      "Leblon",
+      "Lapa",
+      "Santa Teresa",
+      "Botafogo",
+      "Arpoador",
+      "Urca",
+      "Lagoa",
+      "Flamengo",
+      "Gávea",
+      "Gavea",
+      "São Conrado",
+      "Sao Conrado",
+      "Barra da Tijuca",
+      "Recreio",
+
+      "Cristo Redentor",
+      "Corcovado",
+
+      "Pão de Açúcar",
+      "Pao de Acucar",
+
+      "Escadaria Selarón",
+      "Escadaria Selaron",
+
+      "Maracanã",
+      "Maracana",
+
+      "Jardim Botânico",
+      "Jardim Botanico",
+
+      "Ilha Grande",
+      "Lopes Mendes"
+
+    ];
+
+
+    const airportTerms = [
+
+      "aeroporto",
+      "aeropuerto",
+
+      "galeao",
+      "galeão",
+
+      "gig",
+
+      "santos dumont",
+
+      "sdu"
+
+    ];
+
+
+    const transportTerms = [
+
+      "uber",
+      "99",
+      "99pop",
+      "taxi",
+      "táxi",
+
+      "metro",
+      "metrô",
+
+      "onibus",
+      "ônibus",
+      "autobus",
+      "autobús",
+
+      "transfer",
+
+      "van",
+
+      "trem",
+      "tren"
+
+    ];
+
+
+    const adviceTerms = [
+
+      "erro",
+      "error",
+
+      "cuidado",
+
+      "evita",
+      "evitar",
+
+      "nao faca",
+      "não faça",
+      "no hagas",
+
+      "recomendo",
+      "recomiendo",
+      "recomendamos",
+
+      "dica",
+      "consejo",
+
+      "importante",
+
+      "vale a pena",
+      "vale la pena",
+
+      "tem que",
+      "hay que",
+
+      "turista",
+      "turistas"
+
+    ];
+
+
+    const restaurantTerms = [
+
+      "restaurante",
+      "restaurant",
+
+      "bar",
+
+      "boteco",
+
+      "cafeteria",
+      "café",
+      "cafe",
+
+      "comer",
+      "comida"
+
+    ];
+
+
+    const beachTerms = [
+
+      "praia",
+      "playa",
+      "beach"
+
+    ];
+
+
+    const shoppingTerms = [
+
+      "shopping",
+
+      "compras",
+
+      "loja",
+      "tienda",
+
+      "mercado"
+
+    ];
+
+
+    const priceRegex =
+      /(?:R\$|RS|\$|€)\s?\d+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?\s?(?:reais|real|euros?)/gi;
+
+
+    // =====================================================
+    // ANALIZAR UN TEXTO
+    // =====================================================
+
+    function analyzeText(
+      text,
+      timestamp = 0
+    ) {
+
+      const cleanText =
+        String(
+          text ||
+          ""
+        ).trim();
+
+
+      if (
+        !cleanText
+      ) {
+
+        return;
+
+      }
+
+
+      const normalized =
+        normalize(
+          cleanText
+        );
+
+
+      // ===================================================
+      // LUGARES
+      // ===================================================
+
+      places.forEach(
+        placeName => {
+
+          if (
+            normalized.includes(
+              normalize(
+                placeName
+              )
+            )
+          ) {
+
+            pushUnique(
+              createDetail({
+
+                title:
+                  placeName,
+
+                place:
+                  placeName,
+
+                type:
+                  "Lugar",
+
+                category:
+                  "Lugar",
+
+                comment:
+                  cleanText,
+
+                timestampStart:
+                  timestamp,
+
+                confidence:
+                  0.92
+
+              })
+            );
+
+          }
+
+        }
+      );
+
+
+      // ===================================================
+      // AEROPUERTO
+      // ===================================================
+
+      const hasAirport =
+        airportTerms.some(
+          term =>
+            normalized.includes(
+              normalize(
+                term
+              )
+            )
+        );
+
+
+      if (
+        hasAirport
+      ) {
+
+        const isRio =
+          normalized.includes(
+            "rio de janeiro"
+          );
+
+
+        let airportTitle =
+          "Aeropuerto";
+
+
+        if (
+          normalized.includes(
+            "galeao"
+          ) ||
+          normalized.includes(
+            "gig"
+          )
+        ) {
+
+          airportTitle =
+            "Aeropuerto Internacional de Galeão";
+
+        } else if (
+          normalized.includes(
+            "santos dumont"
+          ) ||
+          normalized.includes(
+            "sdu"
+          )
+        ) {
+
+          airportTitle =
+            "Aeropuerto Santos Dumont";
+
+        } else if (
+          isRio
+        ) {
+
+          airportTitle =
+            "Aeropuerto de Río de Janeiro";
+
+        }
+
+
+        pushUnique(
+          createDetail({
+
+            title:
+              airportTitle,
+
+            place:
+              isRio
+                ? "Río de Janeiro"
+                : airportTitle,
+
+            type:
+              "Lugar",
+
+            category:
+              "Lugar",
+
+            comment:
+              cleanText,
+
+            timestampStart:
+              timestamp,
+
+            confidence:
+              0.9
+
+          })
+        );
+
+      }
+
+
+      // ===================================================
+      // TRANSPORTE
+      // ===================================================
+
+      const detectedTransport =
+        transportTerms.find(
+          term =>
+            normalized.includes(
+              normalize(
+                term
+              )
+            )
+        );
+
+
+      if (
+        detectedTransport
+      ) {
+
+        let transportTitle =
+          detectedTransport;
+
+
+        if (
+          normalize(
+            detectedTransport
+          ) ===
+          "uber"
+        ) {
+
+          transportTitle =
+            hasAirport
+              ? "Uber en el aeropuerto"
+              : "Uber";
+
+        }
+
+
+        pushUnique(
+          createDetail({
+
+            title:
+              transportTitle,
+
+            place:
+              normalized.includes(
+                "rio de janeiro"
+              )
+                ? "Río de Janeiro"
+                : CONFIG.city ||
+                  "Río de Janeiro",
+
+            type:
+              "Transporte",
+
+            category:
+              "Transporte",
+
+            comment:
+              cleanText,
+
+            timestampStart:
+              timestamp,
+
+            confidence:
+              0.9
+
+          })
+        );
+
+      }
+
+
+      // ===================================================
+      // CONSEJO / AVISO
+      // ===================================================
+
+      const hasAdvice =
+        adviceTerms.some(
+          term =>
+            normalized.includes(
+              normalize(
+                term
+              )
+            )
+        );
+
+
+      if (
+        hasAdvice
+      ) {
+
+        let adviceTitle =
+          "Consejo del vídeo";
+
+
+        if (
+          normalized.includes(
+            "error"
+          ) ||
+          normalized.includes(
+            "erro"
+          )
+        ) {
+
+          adviceTitle =
+            normalized.includes(
+              "turista"
+            )
+              ? "Error habitual de los turistas"
+              : "Error que conviene evitar";
+
+        }
+
+
+        if (
+          hasAirport &&
+          detectedTransport
+        ) {
+
+          adviceTitle =
+            "Consejo de transporte en el aeropuerto";
+
+        }
+
+
+        pushUnique(
+          createDetail({
+
+            title:
+              adviceTitle,
+
+            place:
+              normalized.includes(
+                "rio de janeiro"
+              )
+                ? "Río de Janeiro"
+                : CONFIG.city ||
+                  "Río de Janeiro",
+
+            type:
+              "Consejo",
+
+            category:
+              "Consejo",
+
+            comment:
+              cleanText,
+
+            timestampStart:
+              timestamp,
+
+            confidence:
+              0.85
+
+          })
+        );
+
+      }
+
+
+      // ===================================================
+      // RESTAURANTE / BAR
+      // ===================================================
+
+      const restaurantWord =
+        restaurantTerms.find(
+          term =>
+            normalized.includes(
+              normalize(
+                term
+              )
+            )
+        );
+
+
+      if (
+        restaurantWord
+      ) {
+
+        pushUnique(
+          createDetail({
+
+            title:
+              "Lugar para comer o beber",
+
+            place:
+              CONFIG.city ||
+              "Río de Janeiro",
+
+            type:
+              "Restaurante",
+
+            category:
+              "Restaurante",
+
+            comment:
+              cleanText,
+
+            timestampStart:
+              timestamp,
+
+            confidence:
+              0.72
+
+          })
+        );
+
+      }
+
+
+      // ===================================================
+      // PLAYA
+      // ===================================================
+
+      const hasBeach =
+        beachTerms.some(
+          term =>
+            normalized.includes(
+              normalize(
+                term
+              )
+            )
+        );
+
+
+      if (
+        hasBeach
+      ) {
+
+        pushUnique(
+          createDetail({
+
+            title:
+              "Playa mencionada en el vídeo",
+
+            place:
+              CONFIG.city ||
+              "Brasil",
+
+            type:
+              "Playa",
+
+            category:
+              "Playa",
+
+            comment:
+              cleanText,
+
+            timestampStart:
+              timestamp,
+
+            confidence:
+              0.72
+
+          })
+        );
+
+      }
+
+
+      // ===================================================
+      // COMPRAS
+      // ===================================================
+
+      const hasShopping =
+        shoppingTerms.some(
+          term =>
+            normalized.includes(
+              normalize(
+                term
+              )
+            )
+        );
+
+
+      if (
+        hasShopping
+      ) {
+
+        pushUnique(
+          createDetail({
+
+            title:
+              "Compras",
+
+            place:
+              CONFIG.city ||
+              "Río de Janeiro",
+
+            type:
+              "Compras",
+
+            category:
+              "Compras",
+
+            comment:
+              cleanText,
+
+            timestampStart:
+              timestamp,
+
+            confidence:
+              0.7
+
+          })
+        );
+
+      }
+
+
+      // ===================================================
+      // PRECIOS
+      // ===================================================
+
+      const prices =
+        cleanText.match(
+          priceRegex
+        );
+
+
+      prices?.forEach(
+        price => {
+
+          pushUnique(
+            createDetail({
+
+              title:
+                price,
+
+              place:
+                CONFIG.city ||
+                "Río de Janeiro",
+
+              type:
+                "Precio",
+
+              category:
+                "Consejo",
+
+              comment:
+                cleanText,
+
+              timestampStart:
+                timestamp,
+
+              confidence:
+                0.88
+
+            })
+          );
+
+        }
+      );
+
+    }
+
+
+    // =====================================================
+    // CHUNKS DEL OCR / AUDIO
+    // =====================================================
+
+    chunks.forEach(
+      chunk => {
+
+        const text =
+          String(
+            chunk.text ||
+            ""
+          ).trim();
+
+
+        let timestamp =
+          0;
+
+
+        if (
+          Array.isArray(
+            chunk.timestamp
+          )
+        ) {
+
+          timestamp =
+            Number(
+              chunk.timestamp[0] ||
+              0
+            );
+
+        }
+
+
+        analyzeText(
+          text,
+          timestamp
+        );
+
+      }
+    );
+
+
+    // =====================================================
+    // SI NO HAY CHUNKS, ANALIZAR TEXTO COMPLETO
+    // =====================================================
+
+    if (
+      !chunks.length &&
+      fullText
+    ) {
+
+      analyzeText(
+        fullText,
+        0
+      );
+
+    }
+
+
+    console.log(
+      "🔎 Detalles detectados:",
+      results
+    );
+
+
+    return results;
+
+  }
+
+    if (
+      !transcript
+    ) {
+
+      return [];
+
+    }
+
+
+    const results =
+      [];
+
+
+    const chunks =
+      Array.isArray(
+        transcript.chunks
+      )
 
         ? transcript.chunks
 
