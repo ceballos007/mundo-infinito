@@ -3318,7 +3318,159 @@ button:disabled {
     center;
 
   gap:
-    8px;
+    8px;/* =========================================================
+   MUNDO INFINITO · ANÁLISIS VISUAL DEL VÍDEO
+   ========================================================= */
+
+.video-exploration {
+  margin: 18px 0;
+  padding: 28px 22px;
+  border-radius: 24px;
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(53, 194, 255, 0.14),
+      transparent 58%
+    ),
+    rgba(255,255,255,0.96);
+  border: 1px solid rgba(50, 120, 180, 0.14);
+  box-shadow: 0 16px 45px rgba(20, 50, 80, 0.10);
+  text-align: center;
+}
+
+.video-exploration.hidden {
+  display: none !important;
+}
+
+.exploration-orbit {
+  width: 90px;
+  height: 90px;
+  margin: 2px auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-radius: 50%;
+}
+
+.exploration-orbit::before,
+.exploration-orbit::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(40, 150, 220, 0.18);
+}
+
+.exploration-orbit::before {
+  inset: 4px;
+  animation: mundoPulse 1.8s ease-in-out infinite;
+}
+
+.exploration-orbit::after {
+  inset: 14px;
+  border-style: dashed;
+  animation: mundoOrbit 3.2s linear infinite;
+}
+
+.thinking-compass {
+  position: relative;
+  z-index: 2;
+  display: inline-block;
+  font-size: 44px;
+  line-height: 1;
+  animation: mundoSearch 1.35s ease-in-out infinite;
+}
+
+.exploration-copy h3 {
+  margin: 6px 0 8px;
+  font-size: 1.15rem;
+}
+
+.exploration-copy p {
+  min-height: 24px;
+  margin: 0;
+}
+
+.exploration-progress {
+  width: 100%;
+  height: 8px;
+  margin: 20px 0 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(30, 90, 140, 0.10);
+}
+
+.exploration-progress-bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    #2b8cff,
+    #27c9c3
+  );
+  transition: width 0.45s ease;
+}
+
+.exploration-steps {
+  display: grid;
+  gap: 7px;
+  text-align: left;
+  max-width: 390px;
+  margin: 0 auto;
+}
+
+.exploration-steps span {
+  padding: 8px 11px;
+  border-radius: 12px;
+  background: rgba(45, 130, 190, 0.055);
+  font-size: 0.88rem;
+}
+
+@keyframes mundoSearch {
+  0% {
+    transform: translate(-5px, -2px) rotate(-8deg) scale(0.96);
+  }
+
+  25% {
+    transform: translate(5px, -5px) rotate(7deg) scale(1.03);
+  }
+
+  50% {
+    transform: translate(6px, 5px) rotate(-3deg) scale(1);
+  }
+
+  75% {
+    transform: translate(-5px, 5px) rotate(7deg) scale(1.04);
+  }
+
+  100% {
+    transform: translate(-5px, -2px) rotate(-8deg) scale(0.96);
+  }
+}
+
+@keyframes mundoOrbit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mundoPulse {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.45;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
 
   border-radius:
     17px;
