@@ -1353,5 +1353,214 @@
 <script src="video-explorer.js"></script>
 <script src="notes-explorer.js"></script>
 
+<script>
+/* =========================================================
+   MUNDO INFINITO · MENÚ DEL BOTÓN +
+   Vídeo / Localiza tus notas
+   ========================================================= */
+(function () {
+  "use strict";
+
+  const style = document.createElement("style");
+  style.textContent = `
+    /* notes-explorer.js conserva su botón interno, pero no lo mostramos */
+    #openNotesExplorer {
+      display: none !important;
+    }
+
+    .mi-plus-menu-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 99990;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(7, 27, 22, .28);
+      backdrop-filter: blur(5px);
+    }
+
+    .mi-plus-menu-backdrop.open {
+      display: flex;
+    }
+
+    .mi-plus-menu {
+      width: min(520px, 100%);
+      padding: 18px;
+      border-radius: 28px;
+      background: #fff;
+      box-shadow: 0 24px 70px rgba(7, 27, 22, .24);
+    }
+
+    .mi-plus-menu-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .mi-plus-menu-head strong {
+      font-size: 20px;
+      color: #10251f;
+    }
+
+    .mi-plus-menu-close {
+      width: 42px;
+      height: 42px;
+      border: 0;
+      border-radius: 50%;
+      background: #f2f6f4;
+      font-size: 26px;
+      cursor: pointer;
+    }
+
+    .mi-plus-option {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 14px;
+      align-items: center;
+      margin-top: 10px;
+      padding: 16px;
+      border: 1px solid #dfe9e5;
+      border-radius: 20px;
+      background: #fff;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .mi-plus-option:hover {
+      background: #f3faf7;
+    }
+
+    .mi-plus-option-icon {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border-radius: 17px;
+      background: #e8f5f0;
+      font-size: 27px;
+    }
+
+    .mi-plus-option b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 17px;
+      color: #10251f;
+    }
+
+    .mi-plus-option small {
+      display: block;
+      line-height: 1.35;
+      color: #72817c;
+      font-size: 13px;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const backdrop = document.createElement("div");
+  backdrop.id = "mundoInfinitoPlusMenu";
+  backdrop.className = "mi-plus-menu-backdrop";
+  backdrop.setAttribute("aria-hidden", "true");
+
+  backdrop.innerHTML = `
+    <div class="mi-plus-menu" role="dialog" aria-modal="true" aria-label="Añadir a Mundo Infinito">
+      <div class="mi-plus-menu-head">
+        <strong>¿Qué quieres añadir?</strong>
+        <button class="mi-plus-menu-close" id="closePlusMenu" type="button" aria-label="Cerrar">×</button>
+      </div>
+
+      <button class="mi-plus-option" id="plusAnalyzeVideo" type="button">
+        <span class="mi-plus-option-icon">🎥</span>
+        <span>
+          <b>Analizar un vídeo</b>
+          <small>Selecciona un vídeo y extrae sus descubrimientos.</small>
+        </span>
+      </button>
+
+      <button class="mi-plus-option" id="plusLocateNotes" type="button">
+        <span class="mi-plus-option-icon">📝</span>
+        <span>
+          <b>Localiza tus notas</b>
+          <small>Pega información y crea lugares en el mapa.</small>
+        </span>
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+
+  const plusButton = document.getElementById("openDiscoveryModal");
+  let allowOriginalDiscoveryClick = false;
+
+  function openMenu() {
+    backdrop.classList.add("open");
+    backdrop.setAttribute("aria-hidden", "false");
+  }
+
+  function closeMenu() {
+    backdrop.classList.remove("open");
+    backdrop.setAttribute("aria-hidden", "true");
+  }
+
+  if (plusButton) {
+    /* Captura el + antes de que app.js abra directamente el modal de vídeo. */
+    plusButton.addEventListener(
+      "click",
+      function (event) {
+        if (allowOriginalDiscoveryClick) {
+          allowOriginalDiscoveryClick = false;
+          return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openMenu();
+      },
+      true
+    );
+  }
+
+  document.getElementById("closePlusMenu")
+    .addEventListener("click", closeMenu);
+
+  backdrop.addEventListener("click", function (event) {
+    if (event.target === backdrop) {
+      closeMenu();
+    }
+  });
+
+  document.getElementById("plusAnalyzeVideo")
+    .addEventListener("click", function () {
+      closeMenu();
+
+      if (!plusButton) {
+        return;
+      }
+
+      allowOriginalDiscoveryClick = true;
+      plusButton.click();
+    });
+
+  document.getElementById("plusLocateNotes")
+    .addEventListener("click", function () {
+      closeMenu();
+
+      const notesButton =
+        document.getElementById("openNotesExplorer");
+
+      if (notesButton) {
+        notesButton.click();
+      } else {
+        console.error(
+          "Localiza tus notas no está disponible. Comprueba notes-explorer.js"
+        );
+      }
+    });
+})();
+</script>
+
 </body>
 </html>
