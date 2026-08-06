@@ -105,6 +105,7 @@ let saving = false;
 const ICONS = {
 Lugar: "n",
 Restaurante: "n",
+Bar: "n",
 Playa: "nn",
 Mirador: "n",
 Consejo: "n",
@@ -113,6 +114,10 @@ Transporte: "n",
 Aviso: "nn",
 Compras: "nn",
 Evento: "n",
+"Vida nocturna": "n",
+Gastronomía: "n",
+Cultura: "n",
+Parque: "n",
 Otro: "n"
 };
 // =======================================================
@@ -3216,4 +3221,4 @@ closeEditor();
 console.log(
 "n Mundo Infinito · Explorador de vídeos v0.6.2 cargado"
 );
-})(); // FIN vid
+})(); // FIN video
