@@ -660,55 +660,109 @@ return normalize(category)
 .replace(/\s+/g, "-");
 }
 function resolveCategoryIcon(category) {
-const raw =
-String(
-category ||
-""
-).trim();
-if (
-categoryIcons[
-raw
-]
-) {
-return categoryIcons[
-raw
-];
-}
-const key =
-normalize(
-raw
-);
-const aliases = {
-lugar: "n",
-restaurante: "n",
-restaurant: "n",
-bar: "n",
-boteco: "n",
-gastronomia: "n",
-comida: "n",
-playa: "nn",
-praia: "nn",
-mirador: "n",
-viewpoint: "n",
-cultura: "n",
-parque: "n",
-compras: "nn",
-shopping: "nn",
-"vida nocturna": "n",
-nightlife: "n",
-transporte: "n",
-transport: "n",
-consejo: "n",
-aviso: "nn",
-evento: "n",
-precio: "n"
-};
-return (
-aliases[
-key
-] ||
-"n"
-);
+
+  const raw =
+    String(
+      category ||
+      ""
+    ).trim();
+
+  if (
+    categoryIcons[
+      raw
+    ]
+  ) {
+    return categoryIcons[
+      raw
+    ];
+  }
+
+  const key =
+    normalize(
+      raw
+    );
+
+  const aliases = {
+
+    lugar:
+      "\u{1F4CD}",
+
+    restaurante:
+      "\u{1F374}",
+
+    restaurant:
+      "\u{1F374}",
+
+    bar:
+      "\u{1F379}",
+
+    boteco:
+      "\u{1F379}",
+
+    gastronomia:
+      "\u{1F958}",
+
+    comida:
+      "\u{1F958}",
+
+    playa:
+      "\u{1F3D6}\u{FE0F}",
+
+    praia:
+      "\u{1F3D6}\u{FE0F}",
+
+    mirador:
+      "\u{1F304}",
+
+    viewpoint:
+      "\u{1F304}",
+
+    cultura:
+      "\u{1F3A8}",
+
+    parque:
+      "\u{1F33F}",
+
+    compras:
+      "\u{1F6CD}\u{FE0F}",
+
+    shopping:
+      "\u{1F6CD}\u{FE0F}",
+
+    "vida nocturna":
+      "\u{1F379}",
+
+    nightlife:
+      "\u{1F379}",
+
+    transporte:
+      "\u{1F695}",
+
+    transport:
+      "\u{1F695}",
+
+    consejo:
+      "\u{1F4A1}",
+
+    aviso:
+      "\u{26A0}\u{FE0F}",
+
+    evento:
+      "\u{1F389}",
+
+    precio:
+      "\u{1F4B0}"
+
+  };
+
+
+  return (
+    aliases[
+      key
+    ] ||
+    "\u{1F4CD}"
+  );
+
 }
 function createMarkerIcon(place) {
 const icon =
