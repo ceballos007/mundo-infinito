@@ -467,7 +467,10 @@
 
     </div>
 
-  </aside>  <!-- =====================================================
+  </aside>
+
+
+  <!-- =====================================================
        ➕ NUEVO EXPLORADOR DE VÍDEOS
        v0.6
        ===================================================== -->
@@ -627,226 +630,169 @@
              ================================================= -->
 
         <section
-          id="videoExplorationStatus"
-          class="video-exploration hidden"
-          aria-live="polite"
+  id="videoExplorationStatus"
+  class="video-exploration hidden"
+  aria-live="polite"
+>
+
+  <div class="exploration-orbit">
+
+    <span class="thinking-compass">
+      🧭
+    </span>
+
+  </div>
+
+
+  <div class="exploration-copy">
+
+    <span class="eyebrow">
+      Mundo Infinito
+    </span>
+
+    <h3>
+      Analizando los descubrimientos de este vídeo…
+    </h3>
+
+    <p
+      id="explorationMessage"
+      class="muted"
+    >
+      Preparando el contenido…
+    </p>
+
+  </div>
+
+
+  <div class="exploration-progress">
+
+    <div
+      id="explorationProgressBar"
+      class="exploration-progress-bar"
+    ></div>
+
+  </div>
+
+
+  <div
+    id="explorationSteps"
+    class="exploration-steps"
+  >
+
+    <span>
+      📍 Buscando lugares y experiencias
+    </span>
+
+    <span>
+      🍴 Identificando gastronomía
+    </span>
+
+    <span>
+      💡 Detectando consejos útiles
+    </span>
+
+    <span>
+      🚕 Revisando transporte y desplazamientos
+    </span>
+
+    <span>
+      ⏱️ Localizando momentos del vídeo
+    </span>
+
+  </div>
+
+</section>
+
+
+
+        <!-- =================================================
+             RESULTADO DE EXPLORACIÓN
+             ================================================= -->
+
+        <section
+          id="explorationResults"
+          class="exploration-results hidden"
         >
 
-          <div class="exploration-orbit">
+          <div class="results-summary">
 
-            <span class="thinking-compass">
-              🧭
+            <div>
+
+              <span class="eyebrow">
+                Detalles encontrados
+              </span>
+
+              <h3>
+                <span id="detectedDetailsCount">
+                  0
+                </span>
+                detalles en este vídeo
+              </h3>
+
+            </div>
+
+
+            <span class="results-success">
+              ✨
             </span>
 
           </div>
 
 
-          <div class="exploration-copy">
-
-            <span class="eyebrow">
-              Mundo Infinito
-            </span>
-
-            <h3>
-              Analizando los descubrimientos de este vídeo…
-            </h3>
-
-            <p
-              id="explorationMessage"
-              class="muted"
-            >
-              Preparando el contenido…
-            </p>
-
-          </div>
-
-
-          <div class="exploration-progress">
-
-            <div
-              id="explorationProgressBar"
-              class="exploration-progress-bar"
-            ></div>
-
-          </div>
-
+          <!--
+            AQUÍ app.js CREARÁ AUTOMÁTICAMENTE
+            LAS TARJETAS DETECTADAS.
+          -->
 
           <div
-            id="explorationSteps"
-            class="exploration-steps"
+            id="detectedDetailsList"
+            class="detected-details-list"
+          ></div>
+
+
+          <button
+            id="addManualDetailButton"
+            class="secondary-btn add-detail-button"
+            type="button"
           >
-
-            <span>
-              📍 Buscando lugares y experiencias
-            </span>
-
-            <span>
-              🍴 Identificando gastronomía
-            </span>
-
-            <span>
-              💡 Detectando consejos útiles
-            </span>
-
-            <span>
-              🚕 Revisando transporte y desplazamientos
-            </span>
-
-            <span>
-              ⏱️ Localizando momentos del vídeo
-            </span>
-
-          </div>
+            ＋ Añadir otro detalle
+          </button>
 
         </section>
 
 
-        <div class="exploration-orbit">
+        <!-- =================================================
+             EDITOR MANUAL
+             Se mantiene compatible con app.js actual.
+             ================================================= -->
 
-          <span>
-            🔎
-          </span>
-
-        </div>
-
-
-        <div class="exploration-copy">
-
-          <span class="eyebrow">
-            Mundo Infinito
-          </span>
-
-          <h3>
-            Explorando detalles del vídeo…
-          </h3>
-
-          <p
-            id="explorationMessage"
-            class="muted"
-          >
-            Preparando el contenido…
-          </p>
-
-        </div>
-
-
-        <div class="exploration-progress">
-
-          <div
-            id="explorationProgressBar"
-            class="exploration-progress-bar"
-          ></div>
-
-        </div>
-
-
-        <div
-          id="explorationSteps"
-          class="exploration-steps"
+        <section
+          id="manualDetailEditor"
+          class="manual-detail-editor"
         >
 
-          <span>
-            🎧 Escuchando lo que cuentan
-          </span>
+          <div class="discovery-step-title">
 
-          <span>
-            📍 Localizando lugares
-          </span>
+            <div class="discovery-step-number">
+              2
+            </div>
 
-          <span>
-            🍴 Buscando gastronomía
-          </span>
+            <div>
 
-          <span>
-            💡 Identificando consejos
-          </span>
-
-          <span>
-            ⏱️ Localizando momentos exactos
-          </span>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
-           RESULTADO DE EXPLORACIÓN
-           ================================================= -->
-
-      <section
-        id="explorationResults"
-        class="exploration-results hidden"
-      >
-
-        <div class="results-summary">
-
-          <div>
-
-            <span class="eyebrow">
-              Detalles encontrados
-            </span>
-
-            <h3>
-              <span id="detectedDetailsCount">
-                0
+              <span class="eyebrow">
+                Detalle
               </span>
-              detalles en este vídeo
-            </h3>
+
+              <h3>
+                Revisa o añade información
+              </h3>
+
+            </div>
 
           </div>
 
 
-          <span
-            id="selectedDetailsCount"
-            class="count-badge"
-          >
-            0
-          </span>
-
-        </div>
-
-
-        <div
-          id="detectedDetailsList"
-          class="detected-details-list"
-        ></div>
-
-      </section>
-
-
-      <!-- =================================================
-           PASO 2 · DETALLE
-           ================================================= -->
-
-      <section
-        class="discovery-step"
-        id="detailEditorStep"
-      >
-
-        <div class="discovery-step-title">
-
-          <div class="discovery-step-number">
-            2
-          </div>
-
-          <div>
-
-            <span class="eyebrow">
-              Detalle
-            </span>
-
-            <h3>
-              Revisa o añade información
-            </h3>
-
-          </div>
-
-        </div>
-
-
-        <div class="form-grid">
-
+          <!-- TIPO -->
 
           <label>
 
@@ -861,196 +807,285 @@
                 📍 Lugar
               </option>
 
-              <option value="Gastronomía">
-                🍴 Gastronomía
+              <option value="Restaurante">
+                🍴 Restaurante
+              </option>
+
+              <option value="Playa">
+                🏖️ Playa
+              </option>
+
+              <option value="Mirador">
+                🌄 Mirador
               </option>
 
               <option value="Consejo">
                 💡 Consejo
               </option>
 
-              <option value="Transporte">
-                🚕 Transporte
-              </option>
-
-              <option value="Evento">
-                🎉 Evento
-              </option>
-
               <option value="Precio">
                 💰 Precio
+              </option>
+
+              <option value="Transporte">
+                🚕 Transporte
               </option>
 
               <option value="Aviso">
                 ⚠️ Aviso
               </option>
 
+              <option value="Compras">
+                🛍️ Compras
+              </option>
+
+              <option value="Evento">
+                🎉 Evento
+              </option>
+
+              <option value="Otro">
+                ✨ Otro
+              </option>
+
             </select>
 
           </label>
 
+
+          <!-- NOMBRE
+               ID/name conservados por compatibilidad
+               con app.js actual.
+          -->
 
           <label>
 
             Nombre o título
 
             <input
-              id="detailName"
-              name="name"
-              type="text"
+              name="title"
+              id="discoveryTitle"
+              required
               placeholder="Ej.: Escadaria Selarón"
             >
 
           </label>
 
 
+          <!-- LUGAR / ZONA -->
+
           <label>
 
             Lugar o zona
 
             <input
-              id="detailZone"
-              name="zone"
-              type="text"
+              id="discoveryPlace"
+              name="place"
+              required
               placeholder="Ej.: Lapa / Santa Teresa"
             >
 
           </label>
 
 
+          <!-- CATEGORÍA -->
+
           <label>
 
             Categoría
 
             <select
-              id="detailCategory"
+              id="discoveryCategory"
               name="category"
+              required
             >
 
               <option value="">
                 Selecciona…
               </option>
 
-              <option value="Lugar">
+              <option>
                 Lugar
               </option>
 
-              <option value="Restaurante">
-                Restaurante
-              </option>
-
-              <option value="Bar">
-                Bar
-              </option>
-
-              <option value="Gastronomía">
-                Gastronomía
-              </option>
-
-              <option value="Playa">
-                Playa
-              </option>
-
-              <option value="Mirador">
+              <option>
                 Mirador
               </option>
 
-              <option value="Cultura">
-                Cultura
+              <option>
+                Playa
               </option>
 
-              <option value="Parque">
+              <option>
                 Parque
               </option>
 
-              <option value="Compras">
+              <option>
+                Cultura
+              </option>
+
+              <option>
+                Restaurante
+              </option>
+
+              <option>
+                Gastronomía
+              </option>
+
+              <option>
                 Compras
               </option>
 
-              <option value="Vida nocturna">
+              <option>
                 Vida nocturna
               </option>
 
-              <option value="Transporte">
+              <option>
                 Transporte
               </option>
 
-              <option value="Consejo">
+              <option>
                 Consejo
-              </option>
-
-              <option value="Aviso">
-                Aviso
-              </option>
-
-              <option value="Evento">
-                Evento
-              </option>
-
-              <option value="Precio">
-                Precio
               </option>
 
             </select>
 
           </label>
 
-        </div>        <label>
 
-          Comentario o información útil
+          <!-- =================================================
+               MOMENTO DEL VÍDEO
+               ================================================= -->
 
-          <textarea
-            id="detailComment"
-            name="comment"
-            rows="4"
-            placeholder="Ej.: Merece la pena ir al atardecer porque hay menos gente."
-          ></textarea>
+          <div class="timestamp-editor">
 
-        </label>
+            <div class="timestamp-editor-title">
 
-
-        <!-- TIEMPOS DEL VÍDEO -->
-
-        <div class="timestamp-editor">
-
-          <div class="timestamp-head">
-
-            <div>
-
-              <span class="eyebrow">
-                Momento del vídeo
+              <span>
+                ⏱️
               </span>
 
-              <h4>
-                ¿Cuándo aparece este detalle?
-              </h4>
+              <div>
+
+                <b>
+                  Momento del vídeo
+                </b>
+
+                <small>
+                  Indica cuándo aparece esta información.
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="timestamp-grid">
+
+              <label>
+
+                Empieza
+
+                <input
+                  id="detailTimestampStart"
+                  name="timestamp_start_text"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="00:14"
+                  value="00:00"
+                >
+
+              </label>
+
+
+              <label>
+
+                Termina
+                <span class="optional">
+                  opcional
+                </span>
+
+                <input
+                  id="detailTimestampEnd"
+                  name="timestamp_end_text"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="00:38"
+                >
+
+              </label>
 
             </div>
 
 
             <button
               id="useCurrentVideoTime"
-              class="secondary-btn compact"
               type="button"
+              class="secondary-btn"
             >
-              ⏱️ Usar momento actual
+              ⏱ Usar minuto actual del vídeo
             </button>
 
           </div>
 
 
-          <div class="form-grid two-columns">
+          <!-- COMENTARIO -->
+
+          <label>
+
+            Detalle o comentario
+
+            <textarea
+              id="discoveryComment"
+              name="comment"
+              rows="3"
+              placeholder="Horario, precio, recomendación o cualquier información útil…"
+            ></textarea>
+
+          </label>
+
+
+          <!-- =================================================
+               UBICACIÓN
+               ================================================= -->
+
+          <div class="coords-head">
+
+            <div>
+
+              <b>
+                📍 Ubicación
+              </b>
+
+              <small class="muted">
+                Para colocar el detalle en el mapa.
+              </small>
+
+            </div>
+
+
+            <button
+              id="useMapCenter"
+              type="button"
+              class="secondary-btn"
+            >
+              Usar centro del mapa
+            </button>
+
+          </div>
+
+
+          <div class="coords-grid">
 
             <label>
 
-              Desde
+              Latitud
 
               <input
-                id="detailTimestampStart"
-                name="timestampStart"
-                type="text"
-                placeholder="00:00"
-                value="00:00"
+                id="discoveryLat"
+                name="lat"
+                type="number"
+                step="any"
+                placeholder="-22.9068"
               >
 
             </label>
@@ -1058,395 +1093,264 @@
 
             <label>
 
-              Hasta
+              Longitud
 
               <input
-                id="detailTimestampEnd"
-                name="timestampEnd"
-                type="text"
-                placeholder="00:15"
+                id="discoveryLng"
+                name="lng"
+                type="number"
+                step="any"
+                placeholder="-43.1729"
               >
 
             </label>
 
           </div>
 
-        </div>
 
+          <!-- ACCIONES DEL DETALLE -->
 
-        <!-- COORDENADAS -->
+          <div class="detail-editor-actions">
 
-        <div class="form-grid two-columns">
-
-          <label>
-
-            Latitud
-
-            <input
-              id="discoveryLat"
-              name="lat"
-              type="number"
-              step="any"
-              placeholder="-22.9068"
+            <button
+              id="cancelDetailEdit"
+              class="secondary-btn hidden"
+              type="button"
             >
+              Cancelar
+            </button>
 
-          </label>
 
-
-          <label>
-
-            Longitud
-
-            <input
-              id="discoveryLng"
-              name="lng"
-              type="number"
-              step="any"
-              placeholder="-43.1729"
+            <button
+              id="addDetailToDraft"
+              class="secondary-btn"
+              type="button"
             >
+              ＋ Añadir detalle
+            </button>
 
-          </label>
+          </div>
 
-        </div>
-
-
-        <!-- BOTONES DEL EDITOR -->
-
-        <div class="detail-editor-actions">
-
-          <button
-            id="cancelDetailEdit"
-            class="secondary-btn hidden"
-            type="button"
-          >
-            Cancelar edición
-          </button>
+        </section>
 
 
-          <button
-            id="addDetailToDraft"
-            class="primary-btn"
-            type="button"
-          >
-            ＋ Añadir detalle
-          </button>
+        <!-- =================================================
+             BORRADOR DEL VÍDEO
+             ================================================= -->
 
-        </div>
+        <section
+          id="videoDraftSummary"
+          class="video-draft-summary hidden"
+        >
 
-      </section>
+          <div class="section-head">
 
+            <div>
 
-      <!-- =================================================
-           AÑADIR DETALLE MANUAL
-           ================================================= -->
+              <span class="eyebrow">
+                Listo para guardar
+              </span>
 
-      <button
-        id="addManualDetailButton"
-        class="manual-detail-button"
-        type="button"
-      >
+              <h3>
+                Descubrimientos del vídeo
+              </h3>
 
-        <span>
-          ＋
-        </span>
-
-        Añadir otro detalle manualmente
-
-      </button>
+            </div>
 
 
-      <!-- =================================================
-           RESUMEN DE DETALLES
-           ================================================= -->
-
-      <section
-        id="videoDraftSummary"
-        class="video-draft-summary hidden"
-      >
-
-        <div class="section-head">
-
-          <div>
-
-            <span class="eyebrow">
-              Resumen
+            <span
+              id="draftDetailsCount"
+              class="count-badge"
+            >
+              0
             </span>
 
-            <h3>
-              Detalles que guardarás
-            </h3>
-
           </div>
 
 
-          <span
-            id="draftDetailsCount"
-            class="count-badge"
-          >
-            0
+          <div
+            id="videoDraftDetailsList"
+            class="detected-details-list"
+          ></div>
+
+        </section>
+
+
+        <!-- =================================================
+             BOTÓN FINAL
+             Mantiene type=submit para Supabase actual.
+             ================================================= -->
+
+        <button
+          id="saveAllDiscoveriesButton"
+          class="primary-btn save-all-discoveries"
+          type="submit"
+        >
+
+          <span>
+            ✓
           </span>
 
-        </div>
+          Guardar todo
 
+        </button>
 
-        <div
-          id="videoDraftDetailsList"
-          class="video-draft-details-list"
-        ></div>
+      </form>
 
-      </section>
-
-
-      <!-- =================================================
-           BOTÓN FINAL
-           ================================================= -->
-
-      <button
-        id="saveAllDiscoveriesButton"
-        class="primary-btn discovery-save-all"
-        type="submit"
-      >
-        Guardar descubrimientos
-      </button>
-
-
-      <!-- CAMPOS COMPATIBILIDAD -->
-
-      <input
-        id="discoveryTitle"
-        type="hidden"
-      >
-
-      <input
-        id="discoveryPlace"
-        type="hidden"
-      >
-
-      <input
-        id="discoveryCategory"
-        type="hidden"
-      >
-
-      <textarea
-        id="discoveryComment"
-        hidden
-      ></textarea>
-
-    </form>
-
-  </section>
-
-</div>
-
-
-<!-- =====================================================
-     PANEL DE CONTENIDO
-     ===================================================== -->
-
-<aside
-  id="contentPanel"
-  class="sheet content-sheet"
-  aria-hidden="true"
->
-
-  <div class="sheet-handle"></div>
-
-
-  <button
-    id="closeContentPanel"
-    class="sheet-close"
-    type="button"
-    aria-label="Cerrar"
-  >
-    ×
-  </button>
-
-
-  <div class="content-header">
-
-    <span
-      id="contentEyebrow"
-      class="eyebrow"
-    >
-      Mundo Infinito
-    </span>
-
-    <h2 id="contentTitle">
-      Explorar
-    </h2>
-
-    <p
-      id="contentSubtitle"
-      class="muted"
-    ></p>
+    </section>
 
   </div>
 
 
-  <div
-    id="contentBody"
-    class="content-body"
-  ></div>
-
-</aside>
-
-
-<!-- =====================================================
-     MODAL VÍDEO
-     ===================================================== -->
-
-<div
-  id="videoModal"
-  class="modal-backdrop video-modal"
-  aria-hidden="true"
->
+  <!-- =====================================================
+       PANEL GENERAL
+       ===================================================== -->
 
   <section
-    class="modal-card video-modal-card"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="videoModalTitle"
+    id="contentPanel"
+    class="content-panel"
+    aria-hidden="true"
   >
 
-    <div class="sheet-handle"></div>
+    <div class="content-head">
+
+      <div>
+
+        <span class="eyebrow">
+          Mundo Infinito
+        </span>
+
+        <h2 id="contentPanelTitle">
+          Descubrimientos
+        </h2>
+
+      </div>
 
 
-    <button
-      id="closeVideoModal"
-      class="sheet-close"
-      type="button"
-      aria-label="Cerrar vídeo"
-    >
-      ×
-    </button>
-
-
-    <div class="video-modal-header">
-
-      <span class="eyebrow">
-        Descubrimiento
-      </span>
-
-      <h2 id="videoModalTitle">
-        Vídeo
-      </h2>
-
-      <p
-        id="videoModalMeta"
-        class="muted"
-      ></p>
-
-    </div>
-
-
-    <div class="video-player-wrap">
-
-      <video
-        id="videoPlayer"
-        controls
-        playsinline
-        preload="metadata"
-      ></video>
+      <button
+        id="closeContentPanel"
+        class="sheet-close"
+        type="button"
+        aria-label="Cerrar"
+      >
+        ×
+      </button>
 
     </div>
 
 
     <div
-      id="videoMomentCard"
-      class="video-moment-card hidden"
-    >
+      id="contentPanelBody"
+      class="content-body"
+    ></div>
 
-      <span>
-        ⏱️
-      </span>
+  </section>
 
-      <div>
 
-        <b id="videoMomentTitle">
-          Momento destacado
-        </b>
+  <!-- =====================================================
+       REPRODUCTOR
+       ===================================================== -->
 
-        <p id="videoMomentText"></p>
+  <div
+    id="videoModal"
+    class="video-modal"
+    aria-hidden="true"
+  >
+
+    <div class="video-modal-card">
+
+      <button
+        id="closeVideoModal"
+        class="video-close"
+        type="button"
+        aria-label="Cerrar vídeo"
+      >
+        ×
+      </button>
+
+
+      <div class="video-modal-header">
+
+        <span class="eyebrow">
+          Mundo Infinito
+        </span>
+
+
+        <h2 id="videoModalTitle">
+          Vídeo
+        </h2>
+
+
+        <p id="videoModalPlace">
+          Brasil
+        </p>
+
+      </div>
+
+
+      <div class="video-player-wrap">
+
+        <video
+          id="videoPlayer"
+          controls
+          playsinline
+          preload="metadata"
+        >
+
+          Tu navegador no puede reproducir este vídeo.
+
+        </video>
 
       </div>
 
     </div>
 
-  </section>
-
-</div>
+  </div>
 
 
-<!-- =====================================================
-     TOAST
-     ===================================================== -->
+  <!-- =====================================================
+       MENSAJES
+       ===================================================== -->
 
-<div
-  id="toast"
-  class="toast"
-  role="status"
-  aria-live="polite"
-></div>
-
-
-<!-- =====================================================
-     LEAFLET
-     ===================================================== -->
-
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-></script>
+  <div
+    id="toast"
+    class="toast"
+    role="status"
+    aria-live="polite"
+  ></div>
 
 
-<!-- =====================================================
-     SUPABASE
-     ===================================================== -->
+  <!-- =====================================================
+       JAVASCRIPT
+       EL ORDEN ES IMPORTANTE
+       ===================================================== -->
 
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-></script>
+  <!-- MAPA -->
 
-
-<!-- =====================================================
-     CONFIGURACIÓN SUPABASE
-     ===================================================== -->
-
-<script src="supabase-config.js"></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
 
 
-<!-- =====================================================
-     MUNDO INFINITO
-     ===================================================== -->
+  <!-- SUPABASE -->
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+
+  <!-- CONFIGURACIÓN -->
+
+  <script
+    src="supabase-config.js"
+  ></script>
+
+
+   <!-- MUNDO INFINITO -->
 
 <script src="app.js"></script>
-
-
-<!-- =====================================================
-     ANALIZADOR LOCAL
-     ===================================================== -->
-
 <script src="local-video-analyzer.js"></script>
-
-
-<!-- =====================================================
-     EXPLORADOR DE VÍDEOS
-     ===================================================== -->
-
 <script src="video-explorer.js"></script>
-
-
-<!-- =====================================================
-     LOCALIZA TUS NOTAS
-     ===================================================== -->
-
-<script src="notes-explorer.js"></script>
-
-
-</body>
-
-</html><script src="video-explorer.js"></script>
-
-<!-- LOCALIZA TUS NOTAS -->
 <script src="notes-explorer.js"></script>
 
 </body>
