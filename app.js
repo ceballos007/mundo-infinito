@@ -659,10 +659,62 @@ function markerClass(category) {
 return normalize(category)
 .replace(/\s+/g, "-");
 }
+function resolveCategoryIcon(category) {
+const raw =
+String(
+category ||
+""
+).trim();
+if (
+categoryIcons[
+raw
+]
+) {
+return categoryIcons[
+raw
+];
+}
+const key =
+normalize(
+raw
+);
+const aliases = {
+lugar: "n",
+restaurante: "n",
+restaurant: "n",
+bar: "n",
+boteco: "n",
+gastronomia: "n",
+comida: "n",
+playa: "nn",
+praia: "nn",
+mirador: "n",
+viewpoint: "n",
+cultura: "n",
+parque: "n",
+compras: "nn",
+shopping: "nn",
+"vida nocturna": "n",
+nightlife: "n",
+transporte: "n",
+transport: "n",
+consejo: "n",
+aviso: "nn",
+evento: "n",
+precio: "n"
+};
+return (
+aliases[
+key
+] ||
+"n"
+);
+}
 function createMarkerIcon(place) {
 const icon =
-categoryIcons[place.category] ||
-"n";
+resolveCategoryIcon(
+place.category
+);
 return L.divIcon({
 className: "",
 html: `
@@ -2476,11 +2528,27 @@ return 0;
 }
 function detailIcon(item) {
 const typeIcons = {
-Lugar: "n", Restaurante: "n", Playa: "nn", Mirador: "n",
-Consejo: "n", Precio: "n", Transporte: "n", Aviso: "nn",
-Compras: "nn", Evento: "n", Otro: "n"
+Lugar: "n",
+Restaurante: "n",
+Bar: "n",
+Playa: "nn",
+Mirador: "n",
+Consejo: "n",
+Precio: "n",
+Transporte: "n",
+Aviso: "nn",
+Compras: "nn",
+Evento: "n",
+Otro: "n"
 };
-return typeIcons[item.type] || categoryIcons[item.category] || "n";
+return (
+typeIcons[
+item.type
+] ||
+resolveCategoryIcon(
+item.category
+)
+);
 }
 function resetDetailEditor() {
 editingDraftIndex = null;
@@ -3925,6 +3993,4 @@ console.log(
 // ARRANCAR
 // =========================================================
 init();
-// =========================================================
-// FIN · MUNDO INFINITO v0.6.0
-// =========================
+// =====================
