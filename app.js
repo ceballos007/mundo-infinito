@@ -91,7 +91,7 @@ getDeviceId();
 // =========================================================
 // LUGARES BASE
 // =========================================================
-const defaultPlaces = [
+const defaultPlaces = [];
 {
 id: "cristo-redentor",
 name:
