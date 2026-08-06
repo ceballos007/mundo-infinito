@@ -2923,14 +2923,14 @@ for (
 const detail
 of draftDetails
 ) {
+/*
+* Forzamos geocode-place para CADA descubrimiento.
+* No confiamos en coordenadas previas de Gemini.
+*/
 let lat =
-Number(
-detail.lat
-);
+null;
 let lng =
-Number(
-detail.lng
-);
+null;
 if (
 !Number.isFinite(lat) ||
 !Number.isFinite(lng)
@@ -3216,4 +3216,4 @@ closeEditor();
 console.log(
 "n Mundo Infinito · Explorador de vídeos v0.6.2 cargado"
 );
-})(); // FIN video-explorer v0.
+})(); // FIN vid
