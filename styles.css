@@ -3533,7 +3533,27 @@ button:disabled {
   }
 }
 
+/* =========================================================
+   BRÚJULA · ANÁLISIS DE DESCUBRIMIENTOS
+   ========================================================= */
 
+.thinking-compass {
+  display: inline-block;
+  font-size: 34px;
+  line-height: 1;
+  animation: mundoCompassSpin 1.6s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes mundoCompassSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
 /* =========================================================
    FIN · MUNDO INFINITO v0.6
    ========================================================= */
