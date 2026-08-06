@@ -1,4 +1,4 @@
-// =========================================================
+/ =========================================================
 // MUNDO INFINITO · video-explorer v0.6.2
 // Extensión segura sobre app.js v0.5 estable
 // Un vídeo -> varios detalles -> revisión -> Supabase
@@ -1845,6 +1845,28 @@ title,
 place,
 type,
 category,
+
+// Conservar la ubicación detectada por Gemini.
+// Esto permite geolocalizar también lugares fuera de Brasil
+// cuando el vídeo identifica claramente ciudad/estado/país.
+city:
+String(
+item.city ||
+""
+).trim(),
+
+state:
+String(
+item.state ||
+""
+).trim(),
+
+country:
+String(
+item.country ||
+""
+).trim(),
+
 comment:
 description,
 timestampStart:
