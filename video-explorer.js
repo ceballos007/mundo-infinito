@@ -1310,36 +1310,25 @@
                 );
 
               }
+          showToast?.(
+            "✅ Vídeo guardado"
+          );
 
 
-              showToast?.(
-                "✅ Audio explorado"
-              );
+          // =============================================
+          // ANALIZAR EN SERVIDOR
+          // =============================================
+
+          setProgress(
+            30,
+            "Analizando el vídeo con IA…"
+          );
 
 
-              setProgress(
-                65,
-                "Organizando lo encontrado…"
-              );
-
-
-            } catch (
-              transcriptionError
-            ) {
-
-              console.warn(
-                "No se pudo transcribir el vídeo localmente:",
-                transcriptionError
-              );
-
-
-              showToast?.(
-                "Vídeo guardado · análisis de audio no disponible"
-              );
-
-            }
-
-          }
+          console.log(
+            "🧠 Enviando vídeo a Gemini:",
+            uploadedVideoUrl
+          );
 
 
           // -----------------------------------------------
@@ -1360,15 +1349,9 @@
               uploadedVideoPath,
 
             transcript:
-              localTranscript
+              null
 
           });
-
-
-        } catch (
-          error
-        ) {
-
           console.error(
             "Mundo Infinito v0.6.2 · Error subiendo vídeo:",
             error
