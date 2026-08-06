@@ -963,10 +963,7 @@
 
     };
 
-  }
-
-
-  // =======================================================
+  }  // =======================================================
   // SELECCIONAR VÍDEO
   // =======================================================
 
@@ -1083,9 +1080,7 @@
             "✅ Vídeo guardado"
           );
 
-          // =============================================
-          // TRANSCRIPCIÓN LOCAL GRATUITA
-          // =============================================
+
           // =============================================
           // TRANSCRIPCIÓN LOCAL GRATUITA
           // =============================================
@@ -1458,7 +1453,7 @@
 
 
     // =====================================================
-    // ANALIZAR FRAGMENTOS CON TIMESTAMP
+    // ANALIZAR CHUNKS DE WHISPER
     // =====================================================
 
     chunks.forEach(
@@ -2114,7 +2109,7 @@
     try {
 
       // ---------------------------------------------------
-      // PRIMERO INTENTAMOS EDGE FUNCTION
+      // PRIMERO EDGE FUNCTION
       // ---------------------------------------------------
 
       automaticDetails =
@@ -2124,8 +2119,8 @@
 
 
       // ---------------------------------------------------
-      // SI EDGE NO DEVUELVE NADA:
-      // USAMOS LA TRANSCRIPCIÓN LOCAL
+      // SI EDGE NO DEVUELVE NADA,
+      // USAR LA TRANSCRIPCIÓN LOCAL
       // ---------------------------------------------------
 
       if (
@@ -2133,11 +2128,16 @@
           !Array.isArray(
             automaticDetails
           ) ||
-          automaticDetails.length ===
-            0
+          automaticDetails.length === 0
         ) &&
-        source.transcript
+        source.transcript &&
+        typeof detailsFromTranscript === "function"
       ) {
+
+        console.log(
+          "🧠 Analizando la transcripción local…"
+        );
+
 
         automaticDetails =
           detailsFromTranscript(
@@ -2163,12 +2163,9 @@
       );
 
 
-      // ---------------------------------------------------
-      // SI FALLA EDGE, AÚN PODEMOS USAR WHISPER
-      // ---------------------------------------------------
-
       if (
-        source.transcript
+        source.transcript &&
+        typeof detailsFromTranscript === "function"
       ) {
 
         try {
@@ -2180,7 +2177,7 @@
 
 
           console.log(
-            "✨ Detalles locales tras error de Edge:",
+            "✨ Detalles locales encontrados:",
             automaticDetails
           );
 
@@ -2193,6 +2190,10 @@
             "No se pudieron interpretar los detalles de la transcripción:",
             transcriptError
           );
+
+
+          automaticDetails =
+            [];
 
         }
 
@@ -2222,7 +2223,7 @@
       Array.isArray(
         automaticDetails
       ) &&
-      automaticDetails.length
+      automaticDetails.length > 0
     ) {
 
       draftDetails =
@@ -2235,28 +2236,37 @@
           );
 
 
-      setProgress(
-        100,
-        "Detalles encontrados"
+      console.log(
+        "📋 Detalles normalizados:",
+        draftDetails
       );
 
 
-      showResults();
+      if (
+        draftDetails.length > 0
+      ) {
+
+        setProgress(
+          100,
+          "Detalles encontrados"
+        );
 
 
-      showToast?.(
-
-        draftDetails.length ===
-        1
-
-          ? "✨ 1 detalle encontrado"
-
-          : `✨ ${draftDetails.length} detalles encontrados`
-
-      );
+        showResults();
 
 
-      return;
+        showToast?.(
+          draftDetails.length === 1
+
+            ? "✨ 1 detalle encontrado"
+
+            : `✨ ${draftDetails.length} detalles encontrados`
+        );
+
+
+        return;
+
+      }
 
     }
 
@@ -2281,284 +2291,7 @@
 
     openEditor();
 
-  }
-
-      // ---------------------------------------------------
-      // PRIMERO EDGE FUNCTION
-      // ---------------------------------------------------
-
-      automaticDetails =
-        await requestAutomaticAnalysis(
-          source
-        );
-
-
-      // ---------------------------------------------------
-      // SI EDGE NO DEVUELVE NADA, USAR WHISPER LOCAL
-      // ---------------------------------------------------
-
-      if (
-        (
-          !Array.isArray(
-            automaticDetails
-          ) ||
-          automaticDetails.length ===
-            0
-        ) &&
-        source.transcript
-      ) {
-
-        automaticDetails =
-          detailsFromTranscript(
-            source.transcript
-          );
-
-
-        console.log(
-          "✨ Detalles obtenidos de la transcripción:",
-          automaticDetails
-        );
-
-      }
-
-
-    } catch (
-      error
-    ) {
-
-      console.warn(
-        "Mundo Infinito v0.6.2: análisis automático no disponible.",
-        error
-      );
-
-
-      // Incluso si falla Edge Function,
-      // intentamos aprovechar Whisper.
-      if (
-        source.transcript
-      ) {
-
-        try {
-
-          automaticDetails =
-            detailsFromTranscript(
-              source.transcript
-            );
-
-        } catch (
-          transcriptError
-        ) {
-
-          console.warn(
-            "No se pudieron interpretar los detalles de la transcripción:",
-            transcriptError
-          );
-
-        }
-
-      }
-
-    }
-
-
-    await animation;
-
-
-    if (
-      runId !==
-      explorationRun
-    ) {
-
-      return;
-
-    }
-
-
-    // =====================================================
-    // HAY RESULTADOS
-    // =====================================================
-
-    if (
-      Array.isArray(
-        automaticDetails
-      ) &&
-      automaticDetails.length
-    ) {
-
-      draftDetails =
-        automaticDetails
-          .map(
-            normalizeAutomaticDetail
-          )
-          .filter(
-            Boolean
-          );
-
-
-      setProgress(
-        100,
-        "Detalles encontrados"
-      );
-
-
-      showResults();
-
-
-      showToast?.(
-
-        draftDetails.length ===
-        1
-
-          ? "✨ 1 detalle encontrado"
-
-          : `✨ ${draftDetails.length} detalles encontrados`
-
-      );
-
-
-      return;
-
-    }
-
-
-    // =====================================================
-    // NO HA ENCONTRADO NADA
-    // =====================================================
-
-    setProgress(
-      100,
-      "Vídeo preparado"
-    );
-
-
-    showResults();
-
-
-    showToast?.(
-      "✨ Vídeo preparado para revisar"
-    );
-
-
-    openEditor();
-
-  }
-// =======================================================
-// USAR LA TRANSCRIPCIÓN LOCAL SI LA EDGE FUNCTION
-// NO HA DEVUELTO DETALLES
-// =======================================================
-if (
-  (!automaticDetails ||
-   automaticDetails.length === 0) &&
-  source.transcript &&
-  typeof detailsFromTranscript === "function"
-) {
-  automaticDetails =
-    detailsFromTranscript(
-      source.transcript
-    );
-
-  console.log(
-    "✨ Detalles obtenidos de la transcripción:",
-    automaticDetails
-  );
-
-}
-    } catch (
-      error
-    ) {
-
-      console.warn(
-        "Mundo Infinito v0.6.2: análisis automático no disponible.",
-        error
-      );
-
-    }
-
-
-    await animation;
-
-
-    if (
-      runId !==
-      explorationRun
-    ) {
-
-      return;
-
-    }
-
-
-    // -----------------------------------------------------
-    // SI HAY RESULTADOS
-    // -----------------------------------------------------
-
-    if (
-      Array.isArray(
-        automaticDetails
-      ) &&
-      automaticDetails.length
-    ) {
-
-      draftDetails =
-        automaticDetails
-          .map(
-            normalizeAutomaticDetail
-          )
-          .filter(
-            Boolean
-          );
-
-
-      setProgress(
-        100,
-        "Detalles encontrados"
-      );
-
-
-      showResults();
-
-
-      showToast?.(
-
-        draftDetails.length ===
-        1
-
-          ? "✨ 1 detalle encontrado"
-
-          : `✨ ${draftDetails.length} detalles encontrados`
-
-      );
-
-
-      return;
-
-    }
-
-
-    // -----------------------------------------------------
-    // SIN RESULTADOS AUTOMÁTICOS
-    // -----------------------------------------------------
-
-    setProgress(
-      100,
-      "Vídeo preparado"
-    );
-
-
-    showResults();
-
-
-    showToast?.(
-      "✨ Vídeo preparado para revisar"
-    );
-
-
-    openEditor();
-
-  }
-
-
-  // =======================================================
+  }  // =======================================================
   // ANALIZADOR AUTOMÁTICO / EDGE FUNCTION
   // =======================================================
 
@@ -3206,7 +2939,7 @@ if (
 
 
   // =======================================================
-  // MINUTO ACTUAL DEL REPRODUCTOR
+  // USAR MOMENTO ACTUAL DEL VÍDEO
   // =======================================================
 
   useCurrentTimeButton
@@ -3370,7 +3103,10 @@ if (
           );
 
       }
-    );  // =======================================================
+    );
+
+
+  // =======================================================
   // LEER DATOS DEL EDITOR
   // =======================================================
 
@@ -4367,7 +4103,10 @@ if (
 
     }
 
-  }  // =======================================================
+  }
+
+
+  // =======================================================
   // GUARDAR TODO
   // =======================================================
 
@@ -4376,6 +4115,7 @@ if (
     async event => {
 
       event.preventDefault();
+
       event.stopImmediatePropagation();
 
 
@@ -4388,10 +4128,6 @@ if (
       }
 
 
-      // ---------------------------------------------------
-      // COMPROBAR DETALLES
-      // ---------------------------------------------------
-
       if (
         !draftDetails.length
       ) {
@@ -4400,16 +4136,14 @@ if (
           "Añade al menos un detalle"
         );
 
+
         openEditor();
+
 
         return;
 
       }
 
-
-      // ---------------------------------------------------
-      // URL DEL VÍDEO
-      // ---------------------------------------------------
 
       const url =
         uploadedVideoUrl ||
@@ -4425,14 +4159,11 @@ if (
           "Añade primero un vídeo o Reel"
         );
 
+
         return;
 
       }
 
-
-      // ---------------------------------------------------
-      // SI EL ARCHIVO SIGUE SUBIENDO
-      // ---------------------------------------------------
 
       if (
         selectedFile &&
@@ -4443,14 +4174,11 @@ if (
           "Espera a que termine de subir el vídeo"
         );
 
+
         return;
 
       }
 
-
-      // ---------------------------------------------------
-      // SI HAY ARCHIVO LOCAL, DEBE TENER URL DE STORAGE
-      // ---------------------------------------------------
 
       if (
         selectedFile &&
@@ -4461,14 +4189,11 @@ if (
           "El vídeo todavía no está guardado en Mundo Infinito"
         );
 
+
         return;
 
       }
 
-
-      // ---------------------------------------------------
-      // SUPABASE
-      // ---------------------------------------------------
 
       if (
         !supabaseClient ||
@@ -4479,14 +4204,11 @@ if (
           "No hay conexión con la base compartida"
         );
 
+
         return;
 
       }
 
-
-      // ---------------------------------------------------
-      // BOTÓN
-      // ---------------------------------------------------
 
       saving =
         true;
@@ -4521,7 +4243,7 @@ if (
       try {
 
         // =================================================
-        // 1. CREAR EL VÍDEO
+        // 1. CREAR VÍDEO
         // =================================================
 
         const savedVideo =
@@ -4555,7 +4277,7 @@ if (
 
 
         // =================================================
-        // 2. CREAR LOS DETALLES
+        // 2. CREAR DETALLES
         // =================================================
 
         const created =
@@ -4602,10 +4324,6 @@ if (
 
               : center.lng;
 
-
-          // -----------------------------------------------
-          // CREAR / REUTILIZAR LUGAR
-          // -----------------------------------------------
 
           const savedPlace =
             await createOrGetPlace({
@@ -4658,10 +4376,6 @@ if (
           }
 
 
-          // -----------------------------------------------
-          // CREAR DESCUBRIMIENTO
-          // -----------------------------------------------
-
           const savedDiscovery =
             await createSupabaseDiscovery({
 
@@ -4690,8 +4404,9 @@ if (
                 ),
 
               timestampEnd:
+
                 detail.timestampEnd ==
-                  null
+                null
 
                   ? null
 
@@ -4741,7 +4456,7 @@ if (
 
 
         // =================================================
-        // 5. LIMPIAR ESTADO
+        // 5. LIMPIAR
         // =================================================
 
         draftDetails =
@@ -4775,7 +4490,7 @@ if (
 
 
         // =================================================
-        // 6. CENTRAR EN EL PRIMER LUGAR
+        // 6. IR AL PRIMER LUGAR
         // =================================================
 
         if (
@@ -4857,7 +4572,7 @@ if (
 
 
   // =======================================================
-  // CERRAR EDITOR CON ESCAPE
+  // ESCAPE
   // =======================================================
 
   document.addEventListener(
