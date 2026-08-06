@@ -1,7 +1,22 @@
 // =========================================================
-// MUNDO INFINITO · ANALIZADOR LOCAL v0.3
-// Transcripción gratuita por fragmentos
-// Reduce consumo de memoria
+// MUNDO INFINITO · ANALIZADOR LOCAL v0.4
+// Whisper local sin cargar el MP4 completo en RAM
+//
+// Vídeo local
+//   ↓
+// reproducción interna silenciosa
+//   ↓
+// AudioWorklet captura únicamente el audio
+//   ↓
+// fragmentos pequeños
+//   ↓
+// Whisper
+//   ↓
+// texto + timestamps
+//
+// NO usa:
+// file.arrayBuffer()
+// decodeAudioData() sobre el vídeo completo
 // =========================================================
 
 "use strict";
@@ -9,24 +24,37 @@
 (() => {
 
   console.log(
-    "🧠 Analizador local de Mundo Infinito v0.3 cargado"
+    "🧠 Analizador local de Mundo Infinito v0.4 cargado"
   );
 
 
   // =======================================================
-  // ESTADO
+  // CONFIGURACIÓN
   // =======================================================
-
-  let transcriber = null;
-  let loadingModel = false;
-
 
   const TARGET_SAMPLE_RATE =
     16000;
 
-
+  // Cada fragmento de audio que mandamos a Whisper.
+  // 10 segundos mantiene el consumo de RAM muy bajo.
   const CHUNK_SECONDS =
-    20;
+    10;
+
+  // Máximo de fragmentos esperando a Whisper.
+  // Si Whisper tarda, pausamos temporalmente el vídeo.
+  const MAX_QUEUE =
+    2;
+
+
+  // =======================================================
+  // ESTADO WHISPER
+  // =======================================================
+
+  let transcriber =
+    null;
+
+  let loadingModel =
+    false;
 
 
   // =======================================================
@@ -36,7 +64,8 @@
   function hasWebGPU() {
 
     return (
-      typeof navigator !== "undefined" &&
+      typeof navigator !==
+        "undefined" &&
       "gpu" in navigator
     );
 
@@ -44,7 +73,7 @@
 
 
   // =======================================================
-  // TRANSFORMERS.JS
+  // CARGAR TRANSFORMERS.JS
   // =======================================================
 
   async function loadTransformers() {
@@ -97,7 +126,7 @@
       ) {
 
         throw new Error(
-          "No se pudo cargar Whisper"
+          "Whisper no pudo cargarse"
         );
 
       }
@@ -115,7 +144,7 @@
     try {
 
       console.log(
-        "📦 Cargando Whisper…"
+        "📦 Cargando Whisper Tiny…"
       );
 
 
@@ -138,9 +167,12 @@
               "function"
             ) {
 
-              onProgress(
-                progress
-              );
+              onProgress({
+                stage:
+                  "model",
+
+                ...progress
+              });
 
             }
 
@@ -161,8 +193,10 @@
 
       console.log(
         hasWebGPU()
+
           ? "⚡ Whisper usando WebGPU"
-          : "🧠 Whisper usando CPU/WASM"
+
+          : "🧠 Whisper usando WASM/CPU"
       );
 
 
@@ -187,9 +221,13 @@
     ) {
 
       console.error(
-        "❌ No se pudo cargar Whisper:",
+        "❌ Error cargando Whisper:",
         error
       );
+
+
+      transcriber =
+        null;
 
 
       throw error;
@@ -206,182 +244,126 @@
 
 
   // =======================================================
-  // DECODIFICAR AUDIO DEL VÍDEO
+  // ESPERAR EVENTO
   // =======================================================
 
-  async function decodeVideoAudio(
-    file
+  function waitForEvent(
+    element,
+    eventName,
+    timeout =
+      15000
   ) {
 
-    if (
-      !file
-    ) {
+    return new Promise(
+      (
+        resolve,
+        reject
+      ) => {
 
-      throw new Error(
-        "No se recibió ningún vídeo"
-      );
-
-    }
-
-
-    console.log(
-      "🎬 Extrayendo audio del vídeo…"
-    );
+        let timer =
+          null;
 
 
-    console.log(
-      "📄 Archivo:",
-      file.name || "vídeo",
-      file.type || "tipo desconocido",
-      `${Math.round(
-        (
-          (file.size || 0) /
-          1024 /
-          1024
-        ) * 10
-      ) / 10} MB`
-    );
+        const cleanup =
+          () => {
+
+            element.removeEventListener(
+              eventName,
+              success
+            );
 
 
-    const arrayBuffer =
-      await file.arrayBuffer();
+            element.removeEventListener(
+              "error",
+              failure
+            );
 
 
-    const AudioContextClass =
-      window.AudioContext ||
-      window.webkitAudioContext;
+            if (
+              timer
+            ) {
+
+              clearTimeout(
+                timer
+              );
+
+            }
+
+          };
 
 
-    if (
-      !AudioContextClass
-    ) {
+        const success =
+          event => {
 
-      throw new Error(
-        "Este navegador no permite decodificar audio"
-      );
+            cleanup();
 
-    }
+            resolve(
+              event
+            );
 
-
-    const audioContext =
-      new AudioContextClass();
+          };
 
 
-    try {
+        const failure =
+          () => {
 
-      const decoded =
-        await audioContext
-          .decodeAudioData(
-            arrayBuffer.slice(0)
+            cleanup();
+
+
+            reject(
+              new Error(
+                "El navegador no pudo reproducir el vídeo"
+              )
+            );
+
+          };
+
+
+        element.addEventListener(
+          eventName,
+          success,
+          {
+            once:
+              true
+          }
+        );
+
+
+        element.addEventListener(
+          "error",
+          failure,
+          {
+            once:
+              true
+          }
+        );
+
+
+        timer =
+          window.setTimeout(
+            () => {
+
+              cleanup();
+
+
+              reject(
+                new Error(
+                  `Tiempo agotado esperando ${eventName}`
+                )
+              );
+
+            },
+            timeout
           );
 
-
-      console.log(
-        "🎵 Audio decodificado:",
-        {
-          duration:
-            decoded.duration,
-
-          sampleRate:
-            decoded.sampleRate,
-
-          channels:
-            decoded.numberOfChannels
-        }
-      );
-
-
-      return decoded;
-
-
-    } catch (
-      error
-    ) {
-
-      console.error(
-        "❌ No se pudo extraer el audio:",
-        error
-      );
-
-
-      throw new Error(
-        "Chrome no pudo decodificar el audio de este vídeo"
-      );
-
-
-    } finally {
-
-      try {
-
-        await audioContext.close();
-
-      } catch (_) {
-
-        // Nada.
       }
-
-    }
+    );
 
   }
 
 
   // =======================================================
-  // MEZCLAR A MONO
-  // =======================================================
-
-  function mixToMono(
-    audioBuffer
-  ) {
-
-    const length =
-      audioBuffer.length;
-
-
-    const channels =
-      audioBuffer.numberOfChannels;
-
-
-    const mono =
-      new Float32Array(
-        length
-      );
-
-
-    for (
-      let channel = 0;
-      channel < channels;
-      channel++
-    ) {
-
-      const source =
-        audioBuffer
-          .getChannelData(
-            channel
-          );
-
-
-      for (
-        let i = 0;
-        i < length;
-        i++
-      ) {
-
-        mono[i] +=
-          source[i] /
-          channels;
-
-      }
-
-    }
-
-
-    return mono;
-
-  }
-
-
-  // =======================================================
-  // REMUESTREAR FLOAT32 A 16 KHZ
+  // REMUESTREAR PCM
   // =======================================================
 
   function resampleFloat32(
@@ -392,13 +374,23 @@
   ) {
 
     if (
+      !input ||
+      !input.length
+    ) {
+
+      return new Float32Array(
+        0
+      );
+
+    }
+
+
+    if (
       sourceRate ===
       targetRate
     ) {
 
-      return new Float32Array(
-        input
-      );
+      return input;
 
     }
 
@@ -430,13 +422,13 @@
       i++
     ) {
 
-      const sourcePosition =
+      const position =
         i * ratio;
 
 
       const left =
         Math.floor(
-          sourcePosition
+          position
         );
 
 
@@ -448,17 +440,21 @@
 
 
       const fraction =
-        sourcePosition -
+        position -
         left;
 
 
       output[i] =
-        input[left] *
         (
-          1 - fraction
+          input[left] *
+          (
+            1 - fraction
+          )
         ) +
-        input[right] *
-        fraction;
+        (
+          input[right] *
+          fraction
+        );
 
     }
 
@@ -469,142 +465,35 @@
 
 
   // =======================================================
-  // PREPARAR AUDIO A 16 KHZ
+  // TRANSCRIBIR UN FRAGMENTO PCM
   // =======================================================
 
-  async function resampleTo16k(
-    audioBuffer
+  async function transcribePCMChunk(
+    whisper,
+    audio16k
   ) {
 
     if (
-      !audioBuffer
+      !audio16k ||
+      !audio16k.length
     ) {
 
-      throw new Error(
-        "No se recibió AudioBuffer"
-      );
+      return {
+        text:
+          "",
+        chunks:
+          []
+      };
 
     }
 
-
-    console.log(
-      "🎚️ Preparando audio mono 16 kHz…"
-    );
-
-
-    const mono =
-      mixToMono(
-        audioBuffer
-      );
-
-
-    const audio16k =
-      resampleFloat32(
-        mono,
-        audioBuffer.sampleRate,
-        TARGET_SAMPLE_RATE
-      );
-
-
-    console.log(
-      "✅ Audio preparado:",
-      {
-        samples:
-          audio16k.length,
-
-        seconds:
-          Math.round(
-            audio16k.length /
-            TARGET_SAMPLE_RATE
-          )
-      }
-    );
-
-
-    return audio16k;
-
-  }
-
-
-  // =======================================================
-  // DIVIDIR AUDIO EN TROZOS
-  // =======================================================
-
-  function splitAudioIntoChunks(
-    audio,
-    seconds =
-      CHUNK_SECONDS
-  ) {
-
-    const samplesPerChunk =
-      TARGET_SAMPLE_RATE *
-      seconds;
-
-
-    const chunks =
-      [];
-
-
-    for (
-      let start = 0;
-      start < audio.length;
-      start += samplesPerChunk
-    ) {
-
-      const end =
-        Math.min(
-          start +
-          samplesPerChunk,
-          audio.length
-        );
-
-
-      chunks.push({
-
-        startSample:
-          start,
-
-        startSecond:
-          start /
-          TARGET_SAMPLE_RATE,
-
-        audio:
-          audio.slice(
-            start,
-            end
-          )
-
-      });
-
-    }
-
-
-    return chunks;
-
-  }
-
-
-  // =======================================================
-  // TRANSCRIBIR UN FRAGMENTO
-  // =======================================================
-
-  async function transcribeChunk(
-    whisper,
-    chunkAudio
-  ) {
 
     return await whisper(
-      chunkAudio,
+      audio16k,
       {
 
         return_timestamps:
           true,
-
-        chunk_length_s:
-          20,
-
-        stride_length_s:
-          2,
 
         language:
           "portuguese",
@@ -619,19 +508,26 @@
 
 
   // =======================================================
-  // AJUSTAR TIMESTAMPS AL TIEMPO REAL DEL VÍDEO
+  // NORMALIZAR TIMESTAMPS
   // =======================================================
 
-  function normalizeChunkResult(
+  function normalizeResult(
     result,
     offsetSeconds
   ) {
+
+    const text =
+      String(
+        result?.text ||
+        ""
+      ).trim();
+
 
     const normalizedChunks =
       [];
 
 
-    const resultChunks =
+    const chunks =
       Array.isArray(
         result?.chunks
       )
@@ -641,10 +537,10 @@
         : [];
 
 
-    resultChunks.forEach(
+    chunks.forEach(
       chunk => {
 
-        const timestamp =
+        const rawTimestamp =
           Array.isArray(
             chunk.timestamp
           )
@@ -657,24 +553,22 @@
               ];
 
 
-        const start =
+        const localStart =
           Number(
-            timestamp[0] ||
+            rawTimestamp[0] ||
             0
-          ) +
-          offsetSeconds;
+          );
 
 
-        const end =
-          timestamp[1] ==
+        const localEnd =
+          rawTimestamp[1] ==
             null
 
             ? null
 
             : Number(
-                timestamp[1]
-              ) +
-              offsetSeconds;
+                rawTimestamp[1]
+              );
 
 
         normalizedChunks.push({
@@ -685,11 +579,20 @@
               ""
             ).trim(),
 
-          timestamp:
-            [
-              start,
-              end
-            ]
+          timestamp: [
+
+            offsetSeconds +
+            localStart,
+
+            localEnd ==
+              null
+
+              ? null
+
+              : offsetSeconds +
+                localEnd
+
+          ]
 
         });
 
@@ -697,13 +600,35 @@
     );
 
 
+    /*
+     * Algunos resultados pueden venir con text
+     * pero sin chunks.
+     *
+     * Creamos uno para no perder el timestamp.
+     */
+
+    if (
+      text &&
+      !normalizedChunks.length
+    ) {
+
+      normalizedChunks.push({
+
+        text,
+
+        timestamp: [
+          offsetSeconds,
+          null
+        ]
+
+      });
+
+    }
+
+
     return {
 
-      text:
-        String(
-          result?.text ||
-          ""
-        ).trim(),
+      text,
 
       chunks:
         normalizedChunks
@@ -714,7 +639,1231 @@
 
 
   // =======================================================
-  // TRANSCRIBIR AUDIO POR FRAGMENTOS
+  // CREAR AUDIOWORKLET
+  // =======================================================
+
+  async function createCaptureWorklet(
+    audioContext
+  ) {
+
+    /*
+     * Este procesador recibe el audio que el navegador
+     * ya está reproduciendo.
+     *
+     * Solo envía PCM.
+     * Nunca copia el MP4 completo.
+     */
+
+    const workletCode =
+      `
+        class MundoInfinitoCaptureProcessor
+          extends AudioWorkletProcessor {
+
+          process(
+            inputs,
+            outputs,
+            parameters
+          ) {
+
+            const input =
+              inputs[0];
+
+            if (
+              !input ||
+              !input.length ||
+              !input[0] ||
+              !input[0].length
+            ) {
+
+              return true;
+
+            }
+
+            const length =
+              input[0].length;
+
+            const channels =
+              input.length;
+
+            const mono =
+              new Float32Array(
+                length
+              );
+
+            for (
+              let channel = 0;
+              channel < channels;
+              channel++
+            ) {
+
+              const source =
+                input[channel];
+
+              if (!source) {
+                continue;
+              }
+
+              for (
+                let i = 0;
+                i < length;
+                i++
+              ) {
+
+                mono[i] +=
+                  source[i] /
+                  channels;
+
+              }
+
+            }
+
+            this.port.postMessage(
+              mono,
+              [
+                mono.buffer
+              ]
+            );
+
+            return true;
+
+          }
+
+        }
+
+        registerProcessor(
+          "mundo-infinito-capture",
+          MundoInfinitoCaptureProcessor
+        );
+      `;
+
+
+    const blob =
+      new Blob(
+        [
+          workletCode
+        ],
+        {
+          type:
+            "text/javascript"
+        }
+      );
+
+
+    const moduleUrl =
+      URL.createObjectURL(
+        blob
+      );
+
+
+    try {
+
+      await audioContext
+        .audioWorklet
+        .addModule(
+          moduleUrl
+        );
+
+
+    } finally {
+
+      URL.revokeObjectURL(
+        moduleUrl
+      );
+
+    }
+
+
+    return new AudioWorkletNode(
+      audioContext,
+      "mundo-infinito-capture"
+    );
+
+  }
+
+
+  // =======================================================
+  // TRANSCRIBIR VÍDEO SIN CARGARLO ENTERO EN RAM
+  // =======================================================
+
+  async function transcribeVideoFile(
+    file,
+    onProgress = null
+  ) {
+
+    if (
+      !file
+    ) {
+
+      throw new Error(
+        "No se recibió ningún vídeo"
+      );
+
+    }
+
+
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
+
+    console.log(
+      "🧠 MUNDO INFINITO · ANALIZADOR v0.4"
+    );
+
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
+
+
+    console.log(
+      "📄 Vídeo:",
+      {
+        name:
+          file.name,
+
+        type:
+          file.type,
+
+        sizeMB:
+          Math.round(
+            (
+              file.size /
+              1024 /
+              1024
+            ) * 10
+          ) / 10
+      }
+    );
+
+
+    // -----------------------------------------------------
+    // WHISPER
+    // -----------------------------------------------------
+
+    const whisper =
+      await getTranscriber(
+        onProgress
+      );
+
+
+    // -----------------------------------------------------
+    // AUDIO CONTEXT
+    // -----------------------------------------------------
+
+    const AudioContextClass =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+
+    if (
+      !AudioContextClass
+    ) {
+
+      throw new Error(
+        "Este navegador no dispone de AudioContext"
+      );
+
+    }
+
+
+    const audioContext =
+      new AudioContextClass();
+
+
+    // -----------------------------------------------------
+    // VÍDEO INTERNO
+    // -----------------------------------------------------
+
+    const video =
+      document.createElement(
+        "video"
+      );
+
+
+    const objectUrl =
+      URL.createObjectURL(
+        file
+      );
+
+
+    video.src =
+      objectUrl;
+
+
+    video.preload =
+      "metadata";
+
+
+    video.playsInline =
+      true;
+
+
+    video.controls =
+      false;
+
+
+    /*
+     * No conectamos sonido audible.
+     * Lo enviaremos a un GainNode con ganancia 0.
+     */
+
+    video.volume =
+      1;
+
+
+    video.style.position =
+      "fixed";
+
+    video.style.left =
+      "-99999px";
+
+    video.style.top =
+      "-99999px";
+
+    video.style.width =
+      "1px";
+
+    video.style.height =
+      "1px";
+
+    video.style.opacity =
+      "0";
+
+
+    document.body.appendChild(
+      video
+    );
+
+
+    // -----------------------------------------------------
+    // VARIABLES DE CAPTURA
+    // -----------------------------------------------------
+
+    let sourceNode =
+      null;
+
+    let workletNode =
+      null;
+
+    let silentGain =
+      null;
+
+
+    let ended =
+      false;
+
+
+    let captureFinished =
+      false;
+
+
+    let processing =
+      false;
+
+
+    let pausedByQueue =
+      false;
+
+
+    let accumulator =
+      null;
+
+
+    let accumulatorOffset =
+      0;
+
+
+    let capturedSamples =
+      0;
+
+
+    const queue =
+      [];
+
+
+    const textParts =
+      [];
+
+
+    const finalChunks =
+      [];
+
+
+    let resolveFinished =
+      null;
+
+
+    let rejectFinished =
+      null;
+
+
+    const finishedPromise =
+      new Promise(
+        (
+          resolve,
+          reject
+        ) => {
+
+          resolveFinished =
+            resolve;
+
+          rejectFinished =
+            reject;
+
+        }
+      );
+
+
+    // -----------------------------------------------------
+    // LIMPIEZA
+    // -----------------------------------------------------
+
+    async function cleanup() {
+
+      try {
+
+        video.pause();
+
+      } catch (_) {}
+
+
+      try {
+
+        workletNode
+          ?.disconnect();
+
+      } catch (_) {}
+
+
+      try {
+
+        sourceNode
+          ?.disconnect();
+
+      } catch (_) {}
+
+
+      try {
+
+        silentGain
+          ?.disconnect();
+
+      } catch (_) {}
+
+
+      try {
+
+        await audioContext.close();
+
+      } catch (_) {}
+
+
+      try {
+
+        video.remove();
+
+      } catch (_) {}
+
+
+      URL.revokeObjectURL(
+        objectUrl
+      );
+
+    }
+
+
+    // -----------------------------------------------------
+    // COMPROBAR FINAL
+    // -----------------------------------------------------
+
+    function checkFinished() {
+
+      if (
+        !captureFinished
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        processing
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        queue.length
+      ) {
+
+        return;
+
+      }
+
+
+      resolveFinished?.();
+
+    }
+
+
+    // -----------------------------------------------------
+    // PAUSAR SI WHISPER SE RETRASA
+    // -----------------------------------------------------
+
+    function updateBackpressure() {
+
+      if (
+        queue.length >=
+          MAX_QUEUE &&
+        !video.paused
+      ) {
+
+        pausedByQueue =
+          true;
+
+
+        video.pause();
+
+
+        console.log(
+          "⏸️ Pausa temporal para liberar memoria"
+        );
+
+      }
+
+    }
+
+
+    // -----------------------------------------------------
+    // REANUDAR
+    // -----------------------------------------------------
+
+    async function resumeIfPossible() {
+
+      if (
+        !pausedByQueue
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        queue.length >=
+        MAX_QUEUE
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        ended
+      ) {
+
+        return;
+
+      }
+
+
+      pausedByQueue =
+        false;
+
+
+      try {
+
+        await video.play();
+
+
+        console.log(
+          "▶️ Continuando análisis"
+        );
+
+
+      } catch (
+        error
+      ) {
+
+        console.warn(
+          "No se pudo reanudar automáticamente:",
+          error
+        );
+
+      }
+
+    }
+
+
+    // -----------------------------------------------------
+    // PROCESAR COLA
+    // -----------------------------------------------------
+
+    async function processQueue() {
+
+      if (
+        processing
+      ) {
+
+        return;
+
+      }
+
+
+      processing =
+        true;
+
+
+      try {
+
+        while (
+          queue.length
+        ) {
+
+          const item =
+            queue.shift();
+
+
+          await resumeIfPossible();
+
+
+          const audio16k =
+            resampleFloat32(
+              item.audio,
+              audioContext.sampleRate,
+              TARGET_SAMPLE_RATE
+            );
+
+
+          const chunkNumber =
+            finalChunks.length +
+            1;
+
+
+          console.log(
+            `🎧 Whisper · fragmento desde ${item.startSecond.toFixed(1)} s`
+          );
+
+
+          if (
+            typeof onProgress ===
+            "function"
+          ) {
+
+            onProgress({
+
+              status:
+                "transcribing",
+
+              stage:
+                "whisper",
+
+              current_second:
+                item.startSecond,
+
+              duration:
+                Number.isFinite(
+                  video.duration
+                )
+
+                  ? video.duration
+
+                  : null
+
+            });
+
+          }
+
+
+          const result =
+            await transcribePCMChunk(
+              whisper,
+              audio16k
+            );
+
+
+          const normalized =
+            normalizeResult(
+              result,
+              item.startSecond
+            );
+
+
+          if (
+            normalized.text
+          ) {
+
+            textParts.push(
+              normalized.text
+            );
+
+          }
+
+
+          finalChunks.push(
+            ...normalized.chunks
+          );
+
+
+          /*
+           * Dejamos referencias locales libres.
+           * El GC podrá recuperar este bloque.
+           */
+
+          item.audio =
+            null;
+
+
+          console.log(
+            `✅ Fragmento ${chunkNumber} terminado`
+          );
+
+
+          await new Promise(
+            resolve =>
+              window.setTimeout(
+                resolve,
+                20
+              )
+          );
+
+
+          await resumeIfPossible();
+
+        }
+
+
+      } catch (
+        error
+      ) {
+
+        rejectFinished?.(
+          error
+        );
+
+
+      } finally {
+
+        processing =
+          false;
+
+
+        await resumeIfPossible();
+
+
+        checkFinished();
+
+      }
+
+    }
+
+
+    // -----------------------------------------------------
+    // ENVIAR FRAGMENTO A LA COLA
+    // -----------------------------------------------------
+
+    function enqueueChunk(
+      audio,
+      startSecond
+    ) {
+
+      if (
+        !audio ||
+        !audio.length
+      ) {
+
+        return;
+
+      }
+
+
+      queue.push({
+
+        audio,
+
+        startSecond
+
+      });
+
+
+      updateBackpressure();
+
+
+      processQueue();
+
+    }
+
+
+    try {
+
+      // ---------------------------------------------------
+      // METADATA
+      // ---------------------------------------------------
+
+      if (
+        video.readyState < 1
+      ) {
+
+        await waitForEvent(
+          video,
+          "loadedmetadata",
+          20000
+        );
+
+      }
+
+
+      console.log(
+        "🎬 Duración:",
+        Number.isFinite(
+          video.duration
+        )
+
+          ? `${video.duration.toFixed(1)} s`
+
+          : "desconocida"
+      );
+
+
+      // ---------------------------------------------------
+      // AUDIO WORKLET
+      // ---------------------------------------------------
+
+      await audioContext.resume();
+
+
+      sourceNode =
+        audioContext
+          .createMediaElementSource(
+            video
+          );
+
+
+      workletNode =
+        await createCaptureWorklet(
+          audioContext
+        );
+
+
+      silentGain =
+        audioContext.createGain();
+
+
+      silentGain.gain.value =
+        0;
+
+
+      sourceNode.connect(
+        workletNode
+      );
+
+
+      workletNode.connect(
+        silentGain
+      );
+
+
+      silentGain.connect(
+        audioContext.destination
+      );
+
+
+      // ---------------------------------------------------
+      // BUFFER DE SOLO 10 SEGUNDOS
+      // ---------------------------------------------------
+
+      const chunkSamples =
+        Math.max(
+          1,
+          Math.round(
+            audioContext.sampleRate *
+            CHUNK_SECONDS
+          )
+        );
+
+
+      accumulator =
+        new Float32Array(
+          chunkSamples
+        );
+
+
+      // ---------------------------------------------------
+      // AUDIO RECIBIDO DEL WORKLET
+      // ---------------------------------------------------
+
+      workletNode
+        .port
+        .onmessage =
+          event => {
+
+            const incoming =
+              event.data;
+
+
+            if (
+              !(incoming instanceof Float32Array) ||
+              !incoming.length
+            ) {
+
+              return;
+
+            }
+
+
+            let readOffset =
+              0;
+
+
+            while (
+              readOffset <
+              incoming.length
+            ) {
+
+              const available =
+                accumulator.length -
+                accumulatorOffset;
+
+
+              const remaining =
+                incoming.length -
+                readOffset;
+
+
+              const amount =
+                Math.min(
+                  available,
+                  remaining
+                );
+
+
+              accumulator.set(
+                incoming.subarray(
+                  readOffset,
+                  readOffset +
+                  amount
+                ),
+                accumulatorOffset
+              );
+
+
+              accumulatorOffset +=
+                amount;
+
+
+              capturedSamples +=
+                amount;
+
+
+              readOffset +=
+                amount;
+
+
+              // -------------------------------------------
+              // TENEMOS UN FRAGMENTO COMPLETO
+              // -------------------------------------------
+
+              if (
+                accumulatorOffset >=
+                accumulator.length
+              ) {
+
+                const startSecond =
+                  (
+                    capturedSamples -
+                    accumulator.length
+                  ) /
+                  audioContext.sampleRate;
+
+
+                const readyChunk =
+                  accumulator;
+
+
+                accumulator =
+                  new Float32Array(
+                    chunkSamples
+                  );
+
+
+                accumulatorOffset =
+                  0;
+
+
+                enqueueChunk(
+                  readyChunk,
+                  startSecond
+                );
+
+              }
+
+            }
+
+          };
+
+
+      // ---------------------------------------------------
+      // PROGRESO DE CAPTURA
+      // ---------------------------------------------------
+
+      video.addEventListener(
+        "timeupdate",
+        () => {
+
+          if (
+            typeof onProgress !==
+            "function"
+          ) {
+
+            return;
+
+          }
+
+
+          const duration =
+            video.duration;
+
+
+          const current =
+            video.currentTime;
+
+
+          onProgress({
+
+            status:
+              "capturing",
+
+            stage:
+              "audio",
+
+            current_second:
+              current,
+
+            duration:
+              Number.isFinite(
+                duration
+              )
+
+                ? duration
+
+                : null,
+
+            progress:
+              Number.isFinite(
+                duration
+              ) &&
+              duration > 0
+
+                ? (
+                    current /
+                    duration
+                  ) * 100
+
+                : null
+
+          });
+
+        }
+      );
+
+
+      // ---------------------------------------------------
+      // FINAL DEL VÍDEO
+      // ---------------------------------------------------
+
+      video.addEventListener(
+        "ended",
+        () => {
+
+          ended =
+            true;
+
+
+          console.log(
+            "🎬 Captura del vídeo terminada"
+          );
+
+
+          /*
+           * Pequeño margen para que AudioWorklet
+           * entregue sus últimas muestras.
+           */
+
+          window.setTimeout(
+            () => {
+
+              if (
+                accumulatorOffset >
+                0
+              ) {
+
+                const partial =
+                  accumulator.slice(
+                    0,
+                    accumulatorOffset
+                  );
+
+
+                const startSecond =
+                  (
+                    capturedSamples -
+                    accumulatorOffset
+                  ) /
+                  audioContext.sampleRate;
+
+
+                enqueueChunk(
+                  partial,
+                  startSecond
+                );
+
+
+                accumulatorOffset =
+                  0;
+
+              }
+
+
+              accumulator =
+                null;
+
+
+              captureFinished =
+                true;
+
+
+              checkFinished();
+
+            },
+            150
+          );
+
+        },
+        {
+          once:
+            true
+        }
+      );
+
+
+      // ---------------------------------------------------
+      // REPRODUCIR INTERNAMENTE
+      // ---------------------------------------------------
+
+      console.log(
+        "🎙️ Capturando únicamente el audio…"
+      );
+
+
+      try {
+
+        await video.play();
+
+
+      } catch (
+        playError
+      ) {
+
+        throw new Error(
+          "Chrome bloqueó la reproducción interna del vídeo. Vuelve a pulsar Seleccionar vídeo."
+        );
+
+      }
+
+
+      // ---------------------------------------------------
+      // ESPERAR CAPTURA + WHISPER
+      // ---------------------------------------------------
+
+      await finishedPromise;
+
+
+      const finalResult = {
+
+        text:
+          textParts
+            .join(" ")
+            .replace(
+              /\s+/g,
+              " "
+            )
+            .trim(),
+
+        chunks:
+          finalChunks
+
+      };
+
+
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
+
+      console.log(
+        "✅ TRANSCRIPCIÓN v0.4 TERMINADA"
+      );
+
+      console.log(
+        finalResult
+      );
+
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
+
+
+      if (
+        typeof onProgress ===
+        "function"
+      ) {
+
+        onProgress({
+
+          status:
+            "done",
+
+          stage:
+            "complete",
+
+          progress:
+            100
+
+        });
+
+      }
+
+
+      return finalResult;
+
+
+    } catch (
+      error
+    ) {
+
+      console.error(
+        "❌ Error del analizador v0.4:",
+        error
+      );
+
+
+      throw error;
+
+
+    } finally {
+
+      await cleanup();
+
+    }
+
+  }
+
+
+  // =======================================================
+  // COMPATIBILIDAD: transcribeAudio
   // =======================================================
 
   async function transcribeAudio(
@@ -739,225 +1888,33 @@
       );
 
 
-    const pieces =
-      splitAudioIntoChunks(
-        audio,
-        CHUNK_SECONDS
-      );
+    return await whisper(
+      audio,
+      {
 
+        return_timestamps:
+          true,
 
-    console.log(
-      `🎧 Audio dividido en ${pieces.length} fragmentos`
-    );
+        language:
+          "portuguese",
 
-
-    const allText =
-      [];
-
-
-    const allChunks =
-      [];
-
-
-    for (
-      let index = 0;
-      index < pieces.length;
-      index++
-    ) {
-
-      const piece =
-        pieces[index];
-
-
-      console.log(
-        `🎧 Transcribiendo fragmento ${index + 1}/${pieces.length}`
-      );
-
-
-      if (
-        typeof onProgress ===
-        "function"
-      ) {
-
-        onProgress({
-
-          status:
-            "transcribing",
-
-          chunk:
-            index + 1,
-
-          total_chunks:
-            pieces.length,
-
-          progress:
-            (
-              index /
-              pieces.length
-            ) * 100
-
-        });
+        task:
+          "transcribe"
 
       }
-
-
-      const result =
-        await transcribeChunk(
-          whisper,
-          piece.audio
-        );
-
-
-      const normalized =
-        normalizeChunkResult(
-          result,
-          piece.startSecond
-        );
-
-
-      if (
-        normalized.text
-      ) {
-
-        allText.push(
-          normalized.text
-        );
-
-      }
-
-
-      allChunks.push(
-        ...normalized.chunks
-      );
-
-
-      /*
-       * Dejamos respirar al navegador
-       * entre fragmentos.
-       */
-      await new Promise(
-        resolve =>
-          window.setTimeout(
-            resolve,
-            50
-          )
-      );
-
-    }
-
-
-    if (
-      typeof onProgress ===
-      "function"
-    ) {
-
-      onProgress({
-
-        status:
-          "done",
-
-        chunk:
-          pieces.length,
-
-        total_chunks:
-          pieces.length,
-
-        progress:
-          100
-
-      });
-
-    }
-
-
-    const finalResult = {
-
-      text:
-        allText
-          .join(" ")
-          .trim(),
-
-      chunks:
-        allChunks
-
-    };
-
-
-    console.log(
-      "📝 Transcripción completa:",
-      finalResult
     );
-
-
-    return finalResult;
-
-  }
-
-
-  // =======================================================
-  // TRANSCRIBIR ARCHIVO DE VÍDEO
-  // =======================================================
-
-  async function transcribeVideoFile(
-    file,
-    onProgress = null
-  ) {
-
-    if (
-      !file
-    ) {
-
-      throw new Error(
-        "Selecciona primero un vídeo"
-      );
-
-    }
-
-
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-    console.log(
-      "🧠 MUNDO INFINITO · ANÁLISIS LOCAL v0.3"
-    );
-
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-
-    const decoded =
-      await decodeVideoAudio(
-        file
-      );
-
-
-    const audio16k =
-      await resampleTo16k(
-        decoded
-      );
-
-
-    const result =
-      await transcribeAudio(
-        audio16k,
-        onProgress
-      );
-
-
-    console.log(
-      "✅ TRANSCRIPCIÓN TERMINADA"
-    );
-
-
-    return result;
 
   }
 
 
   // =======================================================
   // TRANSCRIBIR DESDE URL
+  // =======================================================
+  //
+  // IMPORTANTE:
+  // Esta función puede necesitar descargar un Blob completo.
+  // Para los MP4 seleccionados desde el dispositivo,
+  // Mundo Infinito usa transcribeVideoFile().
   // =======================================================
 
   async function transcribeVideoUrl(
@@ -970,14 +1927,14 @@
     ) {
 
       throw new Error(
-        "No se recibió la URL del vídeo"
+        "No se recibió una URL"
       );
 
     }
 
 
     console.log(
-      "🌐 Descargando vídeo desde Storage…"
+      "🌐 Obteniendo vídeo…"
     );
 
 
@@ -992,7 +1949,7 @@
     ) {
 
       throw new Error(
-        `No se pudo descargar el vídeo (${response.status})`
+        `No se pudo obtener el vídeo (${response.status})`
       );
 
     }
@@ -1002,22 +1959,12 @@
       await response.blob();
 
 
-    const extension =
-      blob.type.includes(
-        "webm"
-      )
-
-        ? "webm"
-
-        : "mp4";
-
-
     const file =
       new File(
         [
           blob
         ],
-        `mundo-infinito.${extension}`,
+        "mundo-infinito.mp4",
         {
           type:
             blob.type ||
@@ -1044,12 +1991,6 @@
 
     getTranscriber,
 
-    decodeVideoAudio,
-
-    resampleTo16k,
-
-    splitAudioIntoChunks,
-
     transcribeAudio,
 
     transcribeVideoFile,
@@ -1060,7 +2001,7 @@
 
 
   console.log(
-    "✅ MundoInfinitoAnalyzer v0.3 preparado"
+    "✅ MundoInfinitoAnalyzer v0.4 preparado"
   );
 
 
