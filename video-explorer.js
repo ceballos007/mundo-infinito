@@ -1228,7 +1228,7 @@
     );
 
 
-  openManualEditor();
+openEditor();
 
   }
 
