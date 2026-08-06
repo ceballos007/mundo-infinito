@@ -1,4 +1,9 @@
-/ =========================================================
+Biblioteca
+/
+video-explorer-A95-CORREGIDO-0-0-Y-PAISES.txt
+
+
+// =========================================================
 // MUNDO INFINITO · video-explorer v0.6.2
 // Extensión segura sobre app.js v0.5 estable
 // Un vídeo -> varios detalles -> revisión -> Supabase
@@ -1711,6 +1716,48 @@ return [];
 }
 }
 // =======================================================
+// COORDENADAS REALES
+// Evita que null se convierta en 0 y salte la geolocalización.
+// =======================================================
+function hasRealCoordinates(
+lat,
+lng
+) {
+
+const latitude =
+Number(
+lat
+);
+
+const longitude =
+Number(
+lng
+);
+
+return (
+Number.isFinite(
+latitude
+) &&
+Number.isFinite(
+longitude
+) &&
+latitude >= -90 &&
+latitude <= 90 &&
+longitude >= -180 &&
+longitude <= 180 &&
+!(
+Math.abs(
+latitude
+) < 0.000001 &&
+Math.abs(
+longitude
+) < 0.000001
+)
+);
+
+}
+
+// =======================================================
 // NORMALIZAR RESULTADOS AUTOMÁTICOS
 // =======================================================
 function normalizeAutomaticDetail(
@@ -2945,19 +2992,39 @@ for (
 const detail
 of draftDetails
 ) {
+const rawLat =
+detail.lat;
+
+const rawLng =
+detail.lng;
+
 let lat =
-Number(
-detail.lat
+(
+rawLat === null ||
+rawLat === undefined ||
+rawLat === ""
+)
+? null
+: Number(
+rawLat
 );
 
 let lng =
-Number(
-detail.lng
+(
+rawLng === null ||
+rawLng === undefined ||
+rawLng === ""
+)
+? null
+: Number(
+rawLng
 );
 
 if (
-!Number.isFinite(lat) ||
-!Number.isFinite(lng)
+!hasRealCoordinates(
+lat,
+lng
+)
 ) {
 
 try {
@@ -3023,15 +3090,9 @@ geocodeError
 
 if (
 geocodeData?.found &&
-Number.isFinite(
-Number(
-geocodeData.lat
-)
-) &&
-Number.isFinite(
-Number(
+hasRealCoordinates(
+geocodeData.lat,
 geocodeData.lng
-)
 )
 ) {
 
@@ -3080,8 +3141,10 @@ geocodeError
  */
 
 if (
-!Number.isFinite(lat) ||
-!Number.isFinite(lng)
+!hasRealCoordinates(
+lat,
+lng
+)
 ) {
 
 console.warn(
@@ -3106,7 +3169,13 @@ description:
 detail.comment ||
 "Detalle encontrado en un vídeo de Mundo Infinito.",
 lat,
-lng
+lng,
+city:
+detail.city ||
+"",
+country:
+detail.country ||
+""
 });
 if (
 !savedPlace
