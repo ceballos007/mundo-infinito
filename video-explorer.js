@@ -2923,28 +2923,116 @@ for (
 const detail
 of draftDetails
 ) {
-const center =
-map.getCenter();
-const lat =
-Number.isFinite(
+let lat =
 Number(
 detail.lat
-)
-)
-? Number(
-detail.lat
-)
-: center.lat;
-const lng =
-Number.isFinite(
+);
+let lng =
 Number(
 detail.lng
+);
+if (
+!Number.isFinite(lat) ||
+!Number.isFinite(lng)
+) {
+try {
+console.log(
+"n Localizando:",
+detail.title
+);
+const {
+data:
+geocodeData,
+error:
+geocodeError
+} =
+await supabaseClient
+.functions
+.invoke(
+"geocode-place",
+{
+body: {
+name:
+detail.title,
+zone:
+detail.place ||
+"",
+city:
+detail.city ||
+CONFIG.city ||
+"Rio de Janeiro",
+country:
+detail.country ||
+CONFIG.country ||
+"Brasil"
+}
+}
+);
+if (
+geocodeError
+) {
+console.warn(
+"No se pudo geolocalizar:",
+detail.title,
+geocodeError
+);
+}
+if (
+geocodeData?.found &&
+Number.isFinite(
+Number(
+geocodeData.lat
+)
+) &&
+Number.isFinite(
+Number(
+geocodeData.lng
 )
 )
-? Number(
-detail.lng
-)
-: center.lng;
+) {
+lat =
+Number(
+geocodeData.lat
+);
+lng =
+Number(
+geocodeData.lng
+);
+detail.lat =
+lat;
+detail.lng =
+lng;
+console.log(
+"n Localizado:",
+detail.title,
+lat,
+lng
+);
+}
+} catch (
+geocodeError
+) {
+console.warn(
+"Error localizando:",
+detail.title,
+geocodeError
+);
+}
+}
+/*
+* Si no hemos encontrado coordenadas reales,
+* no colocamos el descubrimiento en un punto inventado.
+*/
+if (
+!Number.isFinite(lat) ||
+!Number.isFinite(lng)
+) {
+console.warn(
+"nn Ubicación pendiente:",
+detail.title
+);
+continue;
+}
 const savedPlace =
 await createOrGetPlace({
 name:
@@ -3125,4 +3213,4 @@ closeEditor();
 console.log(
 "n Mundo Infinito · Explorador de vídeos v0.6.2 cargado"
 );
-})(); // FIN video-explorer v0.
+})(); // FIN video-explorer v0
