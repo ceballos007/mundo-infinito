@@ -1727,6 +1727,7 @@ updateSavedButton();
 );
 // =========================================================
 // BUSCADOR
+// Lugares de Mundo Infinito + ciudades de Brasil
 // =========================================================
 function searchPlaces(
 query
@@ -1763,10 +1764,197 @@ word
 );
 }
 // =========================================================
+// BÚSQUEDA DE CIUDADES DE BRASIL
+// No crea marcadores ni guarda nada.
+// Solo mueve el mapa.
+// =========================================================
+let citySearchTimer =
+null;
+let citySearchController =
+null;
+let citySearchRun =
+0;
+async function searchBrazilCities(
+query
+) {
+const text =
+String(
+query ||
+""
+).trim();
+if (
+text.length <
+2
+) {
+return [];
+}
+if (
+citySearchController
+) {
+citySearchController.abort();
+}
+citySearchController =
+new AbortController();
+const params =
+new URLSearchParams({
+q:
+text,
+format:
+"jsonv2",
+addressdetails:
+"1",
+namedetails:
+"1",
+limit:
+"10",
+countrycodes:
+"br"
+});
+const response =
+await fetch(
+"https://nominatim.openstreetmap.org/search?" +
+params.toString(),
+{
+signal:
+citySearchController.signal,
+headers: {
+"Accept":
+"application/json",
+"Accept-Language":
+"pt-BR,pt;q=0.9,es;q=0.8"
+}
+}
+);
+if (
+!response.ok
+) {
+throw new Error(
+`No se pudieron buscar ciudades (${response.status})`
+);
+}
+const data =
+await response.json();
+if (
+!Array.isArray(
+data
+)
+) {
+return [];
+}
+const uniqueCities =
+new Map();
+data.forEach(
+item => {
+const address =
+item.address ||
+{};
+const countryCode =
+String(
+address.country_code ||
+""
+).toLowerCase();
+if (
+countryCode &&
+countryCode !==
+"br"
+) {
+return;
+}
+const type =
+String(
+item.addresstype ||
+item.type ||
+""
+).toLowerCase();
+const cityName =
+String(
+address.city ||
+address.town ||
+address.municipality ||
+address.village ||
+(
+[
+"city",
+"town",
+"municipality",
+"village",
+"administrative"
+].includes(type)
+? (
+item.namedetails?.name ||
+item.name ||
+""
+)
+: ""
+)
+).trim();
+const state =
+String(
+address.state ||
+""
+).trim();
+const lat =
+Number(
+item.lat
+);
+const lng =
+Number(
+item.lon
+);
+if (
+!cityName ||
+!Number.isFinite(
+lat
+) ||
+!Number.isFinite(
+lng
+)
+) {
+return;
+}
+const key =
+normalize(
+`${cityName}-${state}`
+);
+if (
+uniqueCities.has(
+key
+)
+) {
+return;
+}
+uniqueCities.set(
+key,
+{
+name:
+cityName,
+state,
+country:
+"Brasil",
+lat,
+lng
+}
+);
+}
+);
+return Array.from(
+uniqueCities.values()
+)
+.slice(
+0,
+5
+);
+}
+// =========================================================
 // MOSTRAR RESULTADOS DE BÚSQUEDA
 // =========================================================
 function renderSearchResults(
-results
+localResults,
+cityResults = [],
+{
+searchingCities = false,
+citySearchError = false
+} = {}
 ) {
 const query =
 searchInput.value.trim();
@@ -1784,30 +1972,18 @@ return;
 clearSearch.classList.remove(
 "hidden"
 );
-if (
-results.length === 0
-) {
-searchResults.innerHTML = `
-<div class="no-results">
-<span>n</span>
-<strong>
-Sin resultados
-</strong>
-<p>
-Prueba con otra palabra.
-</p>
+const localHTML =
+localResults.length
+? `
+<div class="search-results-group">
+<div class="search-results-label">
+Mundo Infinito
 </div>
-`;
-searchResults.classList.remove(
-"hidden"
-);
-return;
-}
-searchResults.innerHTML =
-results
+${
+localResults
 .slice(
 0,
-8
+6
 )
 .map(
 place => `
@@ -1818,9 +1994,12 @@ data-place-id="${escapeHTML(place.id)}"
 >
 <div class="search-result-icon">
 ${
-categoryIcons[
+typeof resolveCategoryIcon ===
+"function"
+? resolveCategoryIcon(
 place.category
-] || "n"
+)
+: "&#128205;"
 }
 </div>
 <div>
@@ -1832,6 +2011,7 @@ ${
 escapeHTML(
 [
 place.zone,
+place.city,
 place.category
 ]
 .filter(Boolean)
@@ -1843,12 +2023,115 @@ place.category
 </button>
 `
 )
-.join("");
+.join("")
+}
+</div>
+`
+: "";
+const cityHTML =
+cityResults.length
+? `
+<div class="search-results-group">
+<div class="search-results-label">
+Ir a una ciudad
+</div>
+${
+cityResults
+.map(
+(city, index) => `
+<button
+class="search-result search-city-result"
+type="button"
+data-city-index="${index}"
+>
+<div class="search-result-icon">
+&#128506;
+</div>
+<div>
+<strong>
+${escapeHTML(city.name)}
+</strong>
+<small>
+${
+escapeHTML(
+[
+city.state,
+city.country
+]
+.filter(Boolean)
+.join(" · ")
+)
+}
+</small>
+</div>
+</button>
+`
+)
+.join("")
+}
+</div>
+`
+: "";
+let statusHTML =
+"";
+if (
+searchingCities
+) {
+statusHTML = `
+<div class="no-results search-city-status">
+<span>
+&#8987;
+</span>
+<strong>
+Buscando ciudades de Brasil...
+</strong>
+</div>
+`;
+} else if (
+citySearchError &&
+localResults.length === 0
+) {
+statusHTML = `
+<div class="no-results">
+<span>
+&#128269;
+</span>
+<strong>
+No se pudo buscar la ciudad
+</strong>
+<p>
+Prueba de nuevo en unos segundos.
+</p>
+</div>
+`;
+} else if (
+localResults.length === 0 &&
+cityResults.length === 0
+) {
+statusHTML = `
+<div class="no-results">
+<span>
+&#128269;
+</span>
+<strong>
+Sin resultados
+</strong>
+<p>
+Prueba con otro lugar o ciudad de Brasil.
+</p>
+</div>
+`;
+}
+searchResults.innerHTML =
+localHTML +
+cityHTML +
+statusHTML;
 searchResults
 .querySelectorAll(
 "[data-place-id]"
 )
-.forEach(button => {
+.forEach(
+button => {
 button.addEventListener(
 "click",
 () => {
@@ -1881,16 +2164,149 @@ place.id
 );
 }
 );
-});
+}
+);
+searchResults
+.querySelectorAll(
+"[data-city-index]"
+)
+.forEach(
+button => {
+button.addEventListener(
+"click",
+() => {
+const city =
+cityResults[
+Number(
+button.dataset.cityIndex
+)
+];
+if (!city) {
+return;
+}
+searchInput.value =
+city.name;
+searchResults.classList.add(
+"hidden"
+);
+closePlace();
+closeContent();
+map.flyTo(
+[
+city.lat,
+city.lng
+],
+12,
+{
+duration:
+1.2
+}
+);
+showToast(
+`Explorando ${city.name}`
+);
+}
+);
+}
+);
 searchResults.classList.remove(
 "hidden"
 );
 }
+// =========================================================
+// ACTUALIZAR BÚSQUEDA
+// =========================================================
 function updateSearch() {
-renderSearchResults(
+const query =
+searchInput.value.trim();
+const localResults =
 searchPlaces(
-searchInput.value
-)
+query
+);
+citySearchRun +=
+1;
+const runId =
+citySearchRun;
+if (
+citySearchTimer
+) {
+window.clearTimeout(
+citySearchTimer
+);
+}
+if (
+citySearchController
+) {
+citySearchController.abort();
+citySearchController =
+null;
+}
+if (
+query.length <
+2
+) {
+renderSearchResults(
+localResults,
+[]
+);
+return;
+}
+renderSearchResults(
+localResults,
+[],
+{
+searchingCities:
+true
+}
+);
+citySearchTimer =
+window.setTimeout(
+async () => {
+try {
+const cityResults =
+await searchBrazilCities(
+query
+);
+if (
+runId !==
+citySearchRun
+) {
+return;
+}
+renderSearchResults(
+localResults,
+cityResults
+);
+} catch (
+error
+) {
+if (
+error?.name ===
+"AbortError"
+) {
+return;
+}
+console.warn(
+"No se pudieron buscar ciudades:",
+error
+);
+if (
+runId !==
+citySearchRun
+) {
+return;
+}
+renderSearchResults(
+localResults,
+[],
+{
+citySearchError:
+true
+}
+);
+}
+},
+350
 );
 }
 searchInput.addEventListener(
@@ -1900,6 +2316,22 @@ updateSearch
 clearSearch.addEventListener(
 "click",
 () => {
+citySearchRun +=
+1;
+if (
+citySearchTimer
+) {
+window.clearTimeout(
+citySearchTimer
+);
+}
+if (
+citySearchController
+) {
+citySearchController.abort();
+citySearchController =
+null;
+}
 searchInput.value =
 "";
 searchResults.innerHTML =
@@ -1934,7 +2366,8 @@ searchResults.classList.add(
 );
 }
 }
-); // =========================================================
+);
+// =========================================================
 // APP.JS v0.5.0 · BLOQUE 4
 // n compartido con Supabase
 // =========================================================
@@ -3877,6 +4310,4 @@ console.log(
 // ARRANCAR
 // =========================================================
 init();
-// =========================================================
-// FIN · MUNDO INFINITO v0.6.0
 // ====================
