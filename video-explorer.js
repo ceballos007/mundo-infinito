@@ -1911,7 +1911,29 @@ function detailsFromTranscript(
         await requestAutomaticAnalysis(
           source
         );
+// =======================================================
+// USAR LA TRANSCRIPCIÓN LOCAL SI LA EDGE FUNCTION
+// NO HA DEVUELTO DETALLES
+// =======================================================
 
+if (
+  (!automaticDetails ||const transcriptDetails =
+   automaticDetails.length === 0) &&
+  source.transcript &&
+  typeof detailsFromTranscript === "function"
+) {
+
+  automaticDetails =
+    detailsFromTranscript(
+      source.transcript
+    );
+
+  console.log(
+    "✨ Detalles obtenidos de la transcripción:",
+    automaticDetails
+  );
+
+}
     } catch (
       error
     ) {
