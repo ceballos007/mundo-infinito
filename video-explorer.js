@@ -1230,93 +1230,8 @@
           );
 
 
-          // =============================================
-          // TRANSCRIPCIÓN LOCAL GRATUITA
-          // =============================================
-
-          let localTranscript =
-            null;
-
-
-          if (
-            window.MundoInfinitoAnalyzer &&
-            typeof window
-              .MundoInfinitoAnalyzer
-              .transcribeVideoFile ===
-              "function"
-          ) {
-
-            try {
-
-              showToast?.(
-                "🎧 Escuchando el vídeo…"
-              );
-
-
-              setProgress(
-                25,
-                "Escuchando lo que cuentan…"
-              );
-
-
-              console.log(
-                "🧠 Iniciando análisis local del vídeo…"
-              );
-
-
-              localTranscript =
-                await window
-                  .MundoInfinitoAnalyzer
-                  .transcribeVideoFile(
-                    file,
-                    progress => {
-
-                      console.log(
-                        "Whisper:",
-                        progress
-                      );
-
-                    }
-                  );
-
-
-              console.log(
-                "📝 TRANSCRIPCIÓN DEL VÍDEO:",
-                localTranscript
-              );
-
-
-              if (
-                localTranscript?.text
-              ) {
-
-                console.log(
-                  "💬 Texto:",
-                  localTranscript.text
-                );
-
-              }
-
-
-              if (
-                Array.isArray(
-                  localTranscript?.chunks
-                )
-              ) {
-
-                console.log(
-                  "⏱️ Fragmentos con tiempos:",
-                  localTranscript.chunks
-                );
-
-              }
-          showToast?.(
-            "✅ Vídeo guardado"
-          );
-
-
-          // =============================================
-          // ANALIZAR EN SERVIDOR
+                    // =============================================
+          // ANALIZAR EN SERVIDOR CON GEMINI
           // =============================================
 
           setProgress(
@@ -1330,10 +1245,6 @@
             uploadedVideoUrl
           );
 
-
-          // -----------------------------------------------
-          // CONTINUAR EXPLORACIÓN
-          // -----------------------------------------------
 
           await exploreVideo({
 
@@ -1352,6 +1263,12 @@
               null
 
           });
+
+
+        } catch (
+          error
+        ) {
+
           console.error(
             "Mundo Infinito v0.6.2 · Error subiendo vídeo:",
             error
@@ -1359,24 +1276,8 @@
 
 
           showToast?.(
-            "No se pudo subir el vídeo"
+            "No se pudo subir o analizar el vídeo"
           );
-
-
-          await exploreVideo({
-
-            type:
-              "file",
-
-            file,
-
-            url:
-              selectedFileUrl,
-
-            transcript:
-              null
-
-          });
 
 
         } finally {
@@ -1388,8 +1289,6 @@
 
       }
     );
-
-
   // =======================================================
   // CONVERTIR TRANSCRIPCIÓN EN DETALLES
   // =======================================================
