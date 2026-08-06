@@ -403,7 +403,16 @@
   }
 
 
-  function sourceUrl() {
+    function sourceUrl() {
+
+    return String(
+      videoLink.value ||
+      ""
+    ).trim();
+
+  }
+
+
   // =======================================================
   // INFORMACIÓN DEL ENLACE SOCIAL
   // =======================================================
@@ -460,11 +469,13 @@
 
 
     return matches
+
       ? Array.from(
           new Set(
             matches
           )
         )
+
       : [];
 
   }
@@ -513,13 +524,6 @@
     }
 
 
-    /*
-     * transcript.text en la v0.5 ya puede contener
-     * principalmente OCR.
-     *
-     * Evitamos repetirlo si visualText es idéntico.
-     */
-
     if (
       transcript?.text &&
       transcript.text !==
@@ -554,14 +558,6 @@
       .trim();
 
   }
-    return String(
-      videoLink.value ||
-      ""
-    ).trim();
-
-  }
-
-
   // =======================================================
   // RESET
   // =======================================================
