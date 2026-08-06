@@ -1,22 +1,8 @@
 // =========================================================
-// MUNDO INFINITO · ANALIZADOR LOCAL v0.4
-// Whisper local sin cargar el MP4 completo en RAM
-//
-// Vídeo local
-//   ↓
-// reproducción interna silenciosa
-//   ↓
-// AudioWorklet captura únicamente el audio
-//   ↓
-// fragmentos pequeños
-//   ↓
-// Whisper
-//   ↓
-// texto + timestamps
-//
-// NO usa:
-// file.arrayBuffer()
-// decodeAudioData() sobre el vídeo completo
+// MUNDO INFINITO · ANALIZADOR LOCAL v0.4.1
+// Whisper Tiny q4 · CPU/WASM
+// Sin WebGPU
+// Sin decodeAudioData() del vídeo completo
 // =========================================================
 
 "use strict";
@@ -24,7 +10,7 @@
 (() => {
 
   console.log(
-    "🧠 Analizador local de Mundo Infinito v0.4 cargado"
+    "🧠 Analizador local de Mundo Infinito v0.4.1 cargado"
   );
 
 
@@ -35,15 +21,11 @@
   const TARGET_SAMPLE_RATE =
     16000;
 
-  // Cada fragmento de audio que mandamos a Whisper.
-  // 10 segundos mantiene el consumo de RAM muy bajo.
   const CHUNK_SECONDS =
     10;
 
-  // Máximo de fragmentos esperando a Whisper.
-  // Si Whisper tarda, pausamos temporalmente el vídeo.
   const MAX_QUEUE =
-    2;
+    1;
 
 
   // =======================================================
@@ -55,21 +37,6 @@
 
   let loadingModel =
     false;
-
-
-  // =======================================================
-  // WEBGPU
-  // =======================================================
-
-  function hasWebGPU() {
-
-    return (
-      typeof navigator !==
-        "undefined" &&
-      "gpu" in navigator
-    );
-
-  }
 
 
   // =======================================================
@@ -87,6 +54,7 @@
 
   // =======================================================
   // CARGAR WHISPER
+  // CPU/WASM + Q4
   // =======================================================
 
   async function getTranscriber(
@@ -144,7 +112,7 @@
     try {
 
       console.log(
-        "📦 Cargando Whisper Tiny…"
+        "📦 Cargando Whisper Tiny q4…"
       );
 
 
@@ -156,8 +124,10 @@
 
       const options = {
 
+        // Menor consumo de memoria que q8
         dtype:
-          "q8",
+          "q4",
+
 
         progress_callback:
           progress => {
@@ -168,10 +138,12 @@
             ) {
 
               onProgress({
+
                 stage:
                   "model",
 
                 ...progress
+
               });
 
             }
@@ -181,22 +153,19 @@
       };
 
 
-      if (
-        hasWebGPU()
-      ) {
-
-        options.device =
-          "webgpu";
-
-      }
-
+      /*
+       * IMPORTANTE:
+       *
+       * No ponemos:
+       *
+       * options.device = "webgpu"
+       *
+       * De esta forma evitamos reservar memoria
+       * adicional en la GPU.
+       */
 
       console.log(
-        hasWebGPU()
-
-          ? "⚡ Whisper usando WebGPU"
-
-          : "🧠 Whisper usando WASM/CPU"
+        "🧠 Whisper usando CPU/WASM q4"
       );
 
 
@@ -209,7 +178,7 @@
 
 
       console.log(
-        "✅ Whisper preparado"
+        "✅ Whisper Tiny q4 preparado"
       );
 
 
@@ -221,7 +190,7 @@
     ) {
 
       console.error(
-        "❌ Error cargando Whisper:",
+        "❌ Error cargando Whisper q4:",
         error
       );
 
@@ -450,7 +419,8 @@
           (
             1 - fraction
           )
-        ) +
+        )
+        +
         (
           input[right] *
           fraction
@@ -479,10 +449,13 @@
     ) {
 
       return {
+
         text:
           "",
+
         chunks:
           []
+
       };
 
     }
@@ -579,10 +552,12 @@
               ""
             ).trim(),
 
+
           timestamp: [
 
             offsetSeconds +
             localStart,
+
 
             localEnd ==
               null
@@ -601,10 +576,8 @@
 
 
     /*
-     * Algunos resultados pueden venir con text
-     * pero sin chunks.
-     *
-     * Creamos uno para no perder el timestamp.
+     * Si Whisper devuelve texto pero no chunks,
+     * conservamos igualmente el instante aproximado.
      */
 
     if (
@@ -646,14 +619,6 @@
     audioContext
   ) {
 
-    /*
-     * Este procesador recibe el audio que el navegador
-     * ya está reproduciendo.
-     *
-     * Solo envía PCM.
-     * Nunca copia el MP4 completo.
-     */
-
     const workletCode =
       `
         class MundoInfinitoCaptureProcessor
@@ -679,16 +644,20 @@
 
             }
 
+
             const length =
               input[0].length;
 
+
             const channels =
               input.length;
+
 
             const mono =
               new Float32Array(
                 length
               );
+
 
             for (
               let channel = 0;
@@ -699,9 +668,15 @@
               const source =
                 input[channel];
 
-              if (!source) {
+
+              if (
+                !source
+              ) {
+
                 continue;
+
               }
+
 
               for (
                 let i = 0;
@@ -717,6 +692,7 @@
 
             }
 
+
             this.port.postMessage(
               mono,
               [
@@ -724,11 +700,13 @@
               ]
             );
 
+
             return true;
 
           }
 
         }
+
 
         registerProcessor(
           "mundo-infinito-capture",
@@ -782,7 +760,7 @@
 
 
   // =======================================================
-  // TRANSCRIBIR VÍDEO SIN CARGARLO ENTERO EN RAM
+  // ANALIZAR ARCHIVO DE VÍDEO
   // =======================================================
 
   async function transcribeVideoFile(
@@ -805,9 +783,16 @@
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     );
 
+
     console.log(
-      "🧠 MUNDO INFINITO · ANALIZADOR v0.4"
+      "🧠 MUNDO INFINITO · ANALIZADOR v0.4.1"
     );
+
+
+    console.log(
+      "CPU/WASM q4 · memoria reducida"
+    );
+
 
     console.log(
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -817,6 +802,7 @@
     console.log(
       "📄 Vídeo:",
       {
+
         name:
           file.name,
 
@@ -831,13 +817,14 @@
               1024
             ) * 10
           ) / 10
+
       }
     );
 
 
-    // -----------------------------------------------------
-    // WHISPER
-    // -----------------------------------------------------
+    // =====================================================
+    // 1. CARGAR WHISPER
+    // =====================================================
 
     const whisper =
       await getTranscriber(
@@ -845,9 +832,9 @@
       );
 
 
-    // -----------------------------------------------------
-    // AUDIO CONTEXT
-    // -----------------------------------------------------
+    // =====================================================
+    // 2. AUDIO CONTEXT
+    // =====================================================
 
     const AudioContextClass =
       window.AudioContext ||
@@ -869,9 +856,9 @@
       new AudioContextClass();
 
 
-    // -----------------------------------------------------
-    // VÍDEO INTERNO
-    // -----------------------------------------------------
+    // =====================================================
+    // 3. VÍDEO INTERNO
+    // =====================================================
 
     const video =
       document.createElement(
@@ -901,11 +888,6 @@
       false;
 
 
-    /*
-     * No conectamos sonido audible.
-     * Lo enviaremos a un GainNode con ganancia 0.
-     */
-
     video.volume =
       1;
 
@@ -913,17 +895,22 @@
     video.style.position =
       "fixed";
 
+
     video.style.left =
       "-99999px";
+
 
     video.style.top =
       "-99999px";
 
+
     video.style.width =
       "1px";
 
+
     video.style.height =
       "1px";
+
 
     video.style.opacity =
       "0";
@@ -934,15 +921,17 @@
     );
 
 
-    // -----------------------------------------------------
-    // VARIABLES DE CAPTURA
-    // -----------------------------------------------------
+    // =====================================================
+    // ESTADO DE CAPTURA
+    // =====================================================
 
     let sourceNode =
       null;
 
+
     let workletNode =
       null;
+
 
     let silentGain =
       null;
@@ -1006,6 +995,7 @@
           resolveFinished =
             resolve;
 
+
           rejectFinished =
             reject;
 
@@ -1013,9 +1003,9 @@
       );
 
 
-    // -----------------------------------------------------
-    // LIMPIEZA
-    // -----------------------------------------------------
+    // =====================================================
+    // LIMPIAR
+    // =====================================================
 
     async function cleanup() {
 
@@ -1071,9 +1061,9 @@
     }
 
 
-    // -----------------------------------------------------
-    // COMPROBAR FINAL
-    // -----------------------------------------------------
+    // =====================================================
+    // FINAL
+    // =====================================================
 
     function checkFinished() {
 
@@ -1109,11 +1099,20 @@
     }
 
 
-    // -----------------------------------------------------
-    // PAUSAR SI WHISPER SE RETRASA
-    // -----------------------------------------------------
+    // =====================================================
+    // CONTROL DE MEMORIA
+    // =====================================================
 
     function updateBackpressure() {
+
+      /*
+       * MAX_QUEUE = 1:
+       *
+       * si Whisper todavía está trabajando,
+       * dejamos de reproducir temporalmente.
+       *
+       * Esto evita acumular audio en RAM.
+       */
 
       if (
         queue.length >=
@@ -1129,17 +1128,13 @@
 
 
         console.log(
-          "⏸️ Pausa temporal para liberar memoria"
+          "⏸️ Esperando a Whisper para ahorrar memoria"
         );
 
       }
 
     }
 
-
-    // -----------------------------------------------------
-    // REANUDAR
-    // -----------------------------------------------------
 
     async function resumeIfPossible() {
 
@@ -1181,7 +1176,7 @@
 
 
         console.log(
-          "▶️ Continuando análisis"
+          "▶️ Continuando captura"
         );
 
 
@@ -1190,7 +1185,7 @@
       ) {
 
         console.warn(
-          "No se pudo reanudar automáticamente:",
+          "No se pudo reanudar:",
           error
         );
 
@@ -1199,9 +1194,9 @@
     }
 
 
-    // -----------------------------------------------------
+    // =====================================================
     // PROCESAR COLA
-    // -----------------------------------------------------
+    // =====================================================
 
     async function processQueue() {
 
@@ -1228,9 +1223,6 @@
             queue.shift();
 
 
-          await resumeIfPossible();
-
-
           const audio16k =
             resampleFloat32(
               item.audio,
@@ -1239,13 +1231,20 @@
             );
 
 
-          const chunkNumber =
-            finalChunks.length +
-            1;
+          /*
+           * Eliminamos inmediatamente la referencia
+           * al PCM original.
+           */
+
+          item.audio =
+            null;
+
+
+          await resumeIfPossible();
 
 
           console.log(
-            `🎧 Whisper · fragmento desde ${item.startSecond.toFixed(1)} s`
+            `🎧 Whisper desde ${item.startSecond.toFixed(1)} s`
           );
 
 
@@ -1309,17 +1308,8 @@
           );
 
 
-          /*
-           * Dejamos referencias locales libres.
-           * El GC podrá recuperar este bloque.
-           */
-
-          item.audio =
-            null;
-
-
           console.log(
-            `✅ Fragmento ${chunkNumber} terminado`
+            "✅ Fragmento procesado"
           );
 
 
@@ -1327,7 +1317,7 @@
             resolve =>
               window.setTimeout(
                 resolve,
-                20
+                50
               )
           );
 
@@ -1362,9 +1352,9 @@
     }
 
 
-    // -----------------------------------------------------
-    // ENVIAR FRAGMENTO A LA COLA
-    // -----------------------------------------------------
+    // =====================================================
+    // AÑADIR FRAGMENTO A COLA
+    // =====================================================
 
     function enqueueChunk(
       audio,
@@ -1398,6 +1388,10 @@
     }
 
 
+    // =====================================================
+    // EJECUTAR
+    // =====================================================
+
     try {
 
       // ---------------------------------------------------
@@ -1405,7 +1399,8 @@
       // ---------------------------------------------------
 
       if (
-        video.readyState < 1
+        video.readyState <
+        1
       ) {
 
         await waitForEvent(
@@ -1423,7 +1418,7 @@
           video.duration
         )
 
-          ? `${video.duration.toFixed(1)} s`
+          ? `${video.duration.toFixed(1)} segundos`
 
           : "desconocida"
       );
@@ -1473,7 +1468,7 @@
 
 
       // ---------------------------------------------------
-      // BUFFER DE SOLO 10 SEGUNDOS
+      // SOLO 10 SEGUNDOS DE AUDIO EN MEMORIA
       // ---------------------------------------------------
 
       const chunkSamples =
@@ -1493,7 +1488,7 @@
 
 
       // ---------------------------------------------------
-      // AUDIO RECIBIDO DEL WORKLET
+      // DATOS DEL AUDIOWORKLET
       // ---------------------------------------------------
 
       workletNode
@@ -1506,7 +1501,10 @@
 
 
             if (
-              !(incoming instanceof Float32Array) ||
+              !(
+                incoming instanceof
+                Float32Array
+              ) ||
               !incoming.length
             ) {
 
@@ -1564,7 +1562,7 @@
 
 
               // -------------------------------------------
-              // TENEMOS UN FRAGMENTO COMPLETO
+              // FRAGMENTO COMPLETO
               // -------------------------------------------
 
               if (
@@ -1607,7 +1605,7 @@
 
 
       // ---------------------------------------------------
-      // PROGRESO DE CAPTURA
+      // PROGRESO
       // ---------------------------------------------------
 
       video.addEventListener(
@@ -1643,6 +1641,7 @@
             current_second:
               current,
 
+
             duration:
               Number.isFinite(
                 duration
@@ -1651,6 +1650,7 @@
                 ? duration
 
                 : null,
+
 
             progress:
               Number.isFinite(
@@ -1684,14 +1684,9 @@
 
 
           console.log(
-            "🎬 Captura del vídeo terminada"
+            "🎬 Captura terminada"
           );
 
-
-          /*
-           * Pequeño margen para que AudioWorklet
-           * entregue sus últimas muestras.
-           */
 
           window.setTimeout(
             () => {
@@ -1751,11 +1746,11 @@
 
 
       // ---------------------------------------------------
-      // REPRODUCIR INTERNAMENTE
+      // EMPEZAR
       // ---------------------------------------------------
 
       console.log(
-        "🎙️ Capturando únicamente el audio…"
+        "🎙️ Capturando audio sin cargar el vídeo completo…"
       );
 
 
@@ -1769,18 +1764,18 @@
       ) {
 
         throw new Error(
-          "Chrome bloqueó la reproducción interna del vídeo. Vuelve a pulsar Seleccionar vídeo."
+          "Chrome bloqueó la reproducción interna. Selecciona otra vez el vídeo."
         );
 
       }
 
 
-      // ---------------------------------------------------
-      // ESPERAR CAPTURA + WHISPER
-      // ---------------------------------------------------
-
       await finishedPromise;
 
+
+      // ===================================================
+      // RESULTADO FINAL
+      // ===================================================
 
       const finalResult = {
 
@@ -1793,6 +1788,7 @@
             )
             .trim(),
 
+
         chunks:
           finalChunks
 
@@ -1803,13 +1799,16 @@
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       );
 
+
       console.log(
-        "✅ TRANSCRIPCIÓN v0.4 TERMINADA"
+        "✅ TRANSCRIPCIÓN v0.4.1 TERMINADA"
       );
+
 
       console.log(
         finalResult
       );
+
 
       console.log(
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -1845,7 +1844,7 @@
     ) {
 
       console.error(
-        "❌ Error del analizador v0.4:",
+        "❌ Error del analizador v0.4.1:",
         error
       );
 
@@ -1863,7 +1862,7 @@
 
 
   // =======================================================
-  // COMPATIBILIDAD: transcribeAudio
+  // TRANSCRIBIR PCM DIRECTAMENTE
   // =======================================================
 
   async function transcribeAudio(
@@ -1909,12 +1908,6 @@
 
   // =======================================================
   // TRANSCRIBIR DESDE URL
-  // =======================================================
-  //
-  // IMPORTANTE:
-  // Esta función puede necesitar descargar un Blob completo.
-  // Para los MP4 seleccionados desde el dispositivo,
-  // Mundo Infinito usa transcribeVideoFile().
   // =======================================================
 
   async function transcribeVideoUrl(
@@ -1987,8 +1980,6 @@
 
   window.MundoInfinitoAnalyzer = {
 
-    hasWebGPU,
-
     getTranscriber,
 
     transcribeAudio,
@@ -2001,7 +1992,7 @@
 
 
   console.log(
-    "✅ MundoInfinitoAnalyzer v0.4 preparado"
+    "✅ MundoInfinitoAnalyzer v0.4.1 preparado · CPU/WASM q4"
   );
 
 
