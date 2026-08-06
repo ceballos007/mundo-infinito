@@ -3255,19 +3255,20 @@
       !supabaseOnline
     ) {
 
+      console.warn(
+        "⚠️ Supabase no está disponible."
+      );
+
       return [];
 
     }
 
 
-    /*
-     * Si es un archivo local, solo podemos enviarlo
-     * cuando ya tiene una URL pública de Storage.
-     */
+    // Un archivo local necesita primero
+    // una URL pública de Supabase Storage.
 
     if (
-      source.type ===
-        "file" &&
+      source.type === "file" &&
       (
         !source.url ||
         String(
@@ -3277,6 +3278,10 @@
         )
       )
     ) {
+
+      console.warn(
+        "⚠️ El vídeo todavía no tiene URL pública."
+      );
 
       return [];
 
@@ -3294,6 +3299,12 @@
 
     try {
 
+      console.log(
+        "🚀 Llamando a analyze-video:",
+        source.url
+      );
+
+
       const {
         data,
         error
@@ -3305,7 +3316,7 @@
             "analyze-video",
             {
 
-                           body: {
+              body: {
 
                 video_url:
                   source.url,
@@ -3321,26 +3332,18 @@
                   source.type ||
                   null,
 
-
-                // -----------------------------------------
-                // RED SOCIAL
-                // -----------------------------------------
-
                 platform:
                   detectSocialPlatform(
                     source.url
                   ),
 
-
                 caption:
                   source.caption ||
                   "",
 
-
                 author:
                   source.author ||
                   "",
-
 
                 hashtags:
                   source.hashtags ||
@@ -3349,31 +3352,19 @@
                     ""
                   ),
 
-
-                // -----------------------------------------
-                // OCR / AUDIO
-                // -----------------------------------------
-
                 transcript:
                   source.transcript ||
                   null,
-
 
                 visual_text:
                   source.transcript
                     ?.visualText ||
                   "",
 
-
                 audio_text:
                   source.transcript
                     ?.audioText ||
                   "",
-
-
-                // -----------------------------------------
-                // TODO EL CONTEXTO JUNTO
-                // -----------------------------------------
 
                 combined_context:
                   buildCombinedContext({
@@ -3394,30 +3385,6 @@
 
                   }),
 
-
-                city:
-                  CONFIG?.city ||
-                  "Río de Janeiro",
-
-
-                country:
-                  CONFIG?.country ||
-                  "Brasil"
-
-              }
-
-                storage_path:
-                  source.storagePath ||
-                  null,
-
-                source_type:
-                  source.type ||
-                  null,
-
-                transcript:
-                  source.transcript ||
-                  null,
-
                 city:
                   CONFIG?.city ||
                   "Río de Janeiro",
@@ -3436,14 +3403,20 @@
         error
       ) {
 
-        console.info(
-          "Analizador automático todavía no conectado."
+        console.error(
+          "❌ Error de analyze-video:",
+          error
         );
-
 
         return [];
 
       }
+
+
+      console.log(
+        "📦 Respuesta completa de analyze-video:",
+        data
+      );
 
 
       if (
@@ -3495,8 +3468,8 @@
       error
     ) {
 
-      console.info(
-        "Exploración automática pendiente:",
+      console.error(
+        "❌ Fallo llamando a analyze-video:",
         error
       );
 
@@ -3506,7 +3479,6 @@
     }
 
   }
-
 
   // =======================================================
   // NORMALIZAR RESULTADOS AUTOMÁTICOS
