@@ -1,5 +1,5 @@
 // =========================================================
-// MUNDO INFINITO · video-explorer v0.6.1
+// MUNDO INFINITO · video-explorer v0.6.2
 // Extensión segura sobre app.js v0.5 estable
 // Un vídeo -> varios detalles -> revisión -> Supabase
 // =========================================================
@@ -101,7 +101,7 @@
   ) {
 
     console.warn(
-      "Mundo Infinito v0.6.1: interfaz de exploración no disponible."
+      "Mundo Infinito v0.6.2: interfaz de exploración no disponible."
     );
 
     return;
@@ -109,20 +109,22 @@
 
 
   // -------------------------------------------------------
-  // El formulario nuevo valida los detalles en JavaScript
+  // Evitar que required bloquee campos ocultos
   // -------------------------------------------------------
 
   [
     titleInput,
     placeInput,
     categoryInput
-  ].forEach((el) => {
+  ].forEach(
+    el => {
 
-    if (el) {
-      el.required = false;
+      if (el) {
+        el.required = false;
+      }
+
     }
-
-  });
+  );
 
 
   // =======================================================
@@ -135,19 +137,12 @@
 
   let selectedFile = null;
 
-  // URL temporal para reproducir inmediatamente
-  // el vídeo seleccionado en este dispositivo.
   let selectedFileUrl = null;
 
-  // URL definitiva después de subir el archivo
-  // al bucket "videos" de Supabase Storage.
   let uploadedVideoUrl = null;
 
-  // Ruta interna del archivo dentro de Storage.
   let uploadedVideoPath = null;
 
-  // Evita guardar mientras el vídeo todavía
-  // se está subiendo.
   let uploadingVideo = false;
 
   let explorationRun = 0;
@@ -192,32 +187,51 @@
   // UTILIDADES DE TIEMPO
   // =======================================================
 
-  function toSeconds(value) {
+  function toSeconds(
+    value
+  ) {
 
     const text =
-      String(value ?? "").trim();
+      String(
+        value ?? ""
+      ).trim();
+
 
     if (!text) {
+
       return 0;
+
     }
 
-    if (/^\d+$/.test(text)) {
+
+    if (
+      /^\d+$/.test(
+        text
+      )
+    ) {
 
       return Math.max(
         0,
-        Number(text)
+        Number(
+          text
+        )
       );
 
     }
+
 
     const parts =
       text
         .split(":")
         .map(Number);
 
+
     if (
       parts.some(
-        n => !Number.isFinite(n)
+        number =>
+          !Number.isFinite(
+            number
+          )
       )
     ) {
 
@@ -225,78 +239,132 @@
 
     }
 
-    if (parts.length === 2) {
+
+    if (
+      parts.length === 2
+    ) {
 
       return Math.max(
         0,
-        parts[0] * 60 +
+        (
+          parts[0] * 60
+        ) +
         parts[1]
       );
 
     }
 
-    if (parts.length === 3) {
+
+    if (
+      parts.length === 3
+    ) {
 
       return Math.max(
         0,
-        parts[0] * 3600 +
-        parts[1] * 60 +
+        (
+          parts[0] * 3600
+        ) +
+        (
+          parts[1] * 60
+        ) +
         parts[2]
       );
 
     }
 
+
     return 0;
+
   }
 
 
-  function toTime(value) {
+  function toTime(
+    value
+  ) {
 
     const total =
       Math.max(
         0,
         Math.floor(
-          Number(value) || 0
+          Number(
+            value
+          ) || 0
         )
       );
 
-    const h =
-      Math.floor(total / 3600);
 
-    const m =
+    const hours =
       Math.floor(
-        (total % 3600) / 60
+        total / 3600
       );
 
-    const s =
+
+    const minutes =
+      Math.floor(
+        (
+          total % 3600
+        ) / 60
+      );
+
+
+    const seconds =
       total % 60;
 
-    return h > 0
 
-      ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+    if (
+      hours > 0
+    ) {
 
-      : `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      return (
+        `${hours}:` +
+        `${String(minutes).padStart(2, "0")}:` +
+        `${String(seconds).padStart(2, "0")}`
+      );
+
+    }
+
+
+    return (
+      `${String(minutes).padStart(2, "0")}:` +
+      `${String(seconds).padStart(2, "0")}`
+    );
+
   }
 
 
-  function iconFor(detail) {
+  function iconFor(
+    detail
+  ) {
 
     return (
-      ICONS[detail.type] ||
-      categoryIcons?.[detail.category] ||
+      ICONS[
+        detail.type
+      ] ||
+      categoryIcons?.[
+        detail.category
+      ] ||
       "📍"
     );
 
   }
 
 
-  function safeText(value) {
+  function safeText(
+    value
+  ) {
 
-    return typeof escapeHTML === "function"
+    return (
+      typeof escapeHTML ===
+      "function"
+    )
 
-      ? escapeHTML(value)
+      ? escapeHTML(
+          value
+        )
 
-      : String(value ?? "");
+      : String(
+          value ?? ""
+        );
 
   }
 
@@ -306,7 +374,9 @@
     message
   ) {
 
-    if (progressBar) {
+    if (
+      progressBar
+    ) {
 
       progressBar.style.width =
         `${Math.max(
@@ -318,6 +388,7 @@
         )}%`;
 
     }
+
 
     if (
       explorationMessage &&
@@ -335,22 +406,29 @@
   function sourceUrl() {
 
     return String(
-      videoLink.value || ""
+      videoLink.value ||
+      ""
     ).trim();
 
-  }  // =======================================================
-  // RESET Y ESTADOS VISUALES
+  }
+
+
+  // =======================================================
+  // RESET
   // =======================================================
 
   function clearObjectUrl() {
 
-    if (selectedFileUrl) {
+    if (
+      selectedFileUrl
+    ) {
 
       URL.revokeObjectURL(
         selectedFileUrl
       );
 
-      selectedFileUrl = null;
+      selectedFileUrl =
+        null;
 
     }
 
@@ -359,49 +437,74 @@
 
   function resetEditor() {
 
-    editingIndex = null;
+    editingIndex =
+      null;
+
 
     if (detailType) {
-      detailType.value = "Lugar";
+      detailType.value =
+        "Lugar";
     }
+
 
     if (titleInput) {
-      titleInput.value = "";
+      titleInput.value =
+        "";
     }
+
 
     if (placeInput) {
-      placeInput.value = "";
+      placeInput.value =
+        "";
     }
+
 
     if (categoryInput) {
-      categoryInput.value = "";
+      categoryInput.value =
+        "";
     }
+
 
     if (commentInput) {
-      commentInput.value = "";
+      commentInput.value =
+        "";
     }
+
 
     if (startInput) {
-      startInput.value = "00:00";
+      startInput.value =
+        "00:00";
     }
+
 
     if (endInput) {
-      endInput.value = "";
+      endInput.value =
+        "";
     }
+
 
     if (discoveryLat) {
-      discoveryLat.value = "";
+      discoveryLat.value =
+        "";
     }
 
+
     if (discoveryLng) {
-      discoveryLng.value = "";
+      discoveryLng.value =
+        "";
     }
+
 
     cancelEditButton
       ?.classList
-      .add("hidden");
+      .add(
+        "hidden"
+      );
 
-    if (addDetailButton) {
+
+    if (
+      addDetailButton
+    ) {
 
       addDetailButton.textContent =
         "＋ Añadir detalle";
@@ -413,68 +516,125 @@
 
   function resetFlow() {
 
-    explorationRun += 1;
+    explorationRun +=
+      1;
+
 
     clearTimeout(
       linkDebounce
     );
 
-    draftDetails = [];
 
-    selectedFile = null;
+    draftDetails =
+      [];
 
-    uploadedVideoUrl = null;
 
-    uploadedVideoPath = null;
+    selectedFile =
+      null;
 
-    uploadingVideo = false;
+
+    uploadedVideoUrl =
+      null;
+
+
+    uploadedVideoPath =
+      null;
+
+
+    uploadingVideo =
+      false;
+
 
     clearObjectUrl();
 
+
     resetEditor();
+
 
     modalCard.classList.remove(
       "is-exploring",
       "has-results"
     );
 
+
     explorationStatus
       ?.classList
-      .remove("active");
+      .remove(
+        "active"
+      );
+
 
     resultsSection
       ?.classList
-      .remove("active");
+      .remove(
+        "active"
+      );
+
 
     draftSection
       ?.classList
-      .remove("active");
+      .remove(
+        "active"
+      );
+
 
     manualEditor
       ?.classList
-      .remove("open");
+      .remove(
+        "open"
+      );
+
 
     saveAllButton
       ?.classList
-      .remove("visible");
+      .remove(
+        "visible"
+      );
 
-    if (detailsList) {
-      detailsList.innerHTML = "";
+
+    if (
+      detailsList
+    ) {
+
+      detailsList.innerHTML =
+        "";
+
     }
 
-    if (draftList) {
-      draftList.innerHTML = "";
+
+    if (
+      draftList
+    ) {
+
+      draftList.innerHTML =
+        "";
+
     }
 
-    if (detailsCount) {
-      detailsCount.textContent = "0";
+
+    if (
+      detailsCount
+    ) {
+
+      detailsCount.textContent =
+        "0";
+
     }
 
-    if (draftCount) {
-      draftCount.textContent = "0";
+
+    if (
+      draftCount
+    ) {
+
+      draftCount.textContent =
+        "0";
+
     }
 
-    if (videoPreview) {
+
+    if (
+      videoPreview
+    ) {
 
       videoPreview.classList.add(
         "hidden"
@@ -482,7 +642,10 @@
 
     }
 
-    if (previewPlayer) {
+
+    if (
+      previewPlayer
+    ) {
 
       previewPlayer.pause();
 
@@ -493,6 +656,7 @@
       previewPlayer.load();
 
     }
+
 
     setProgress(
       0,
@@ -508,25 +672,38 @@
       "has-results"
     );
 
+
     modalCard.classList.add(
       "is-exploring"
     );
 
+
     explorationStatus
       ?.classList
-      .add("active");
+      .add(
+        "active"
+      );
+
 
     resultsSection
       ?.classList
-      .remove("active");
+      .remove(
+        "active"
+      );
+
 
     manualEditor
       ?.classList
-      .remove("open");
+      .remove(
+        "open"
+      );
+
 
     saveAllButton
       ?.classList
-      .remove("visible");
+      .remove(
+        "visible"
+      );
 
   }
 
@@ -537,17 +714,25 @@
       "is-exploring"
     );
 
+
     modalCard.classList.add(
       "has-results"
     );
 
+
     explorationStatus
       ?.classList
-      .remove("active");
+      .remove(
+        "active"
+      );
+
 
     resultsSection
       ?.classList
-      .add("active");
+      .add(
+        "active"
+      );
+
 
     renderDetails();
 
@@ -555,7 +740,7 @@
 
 
   // =======================================================
-  // APERTURA / CIERRE DEL MODAL
+  // APERTURA DEL MODAL
   // =======================================================
 
   openDiscoveryModal
@@ -565,8 +750,13 @@
 
         resetFlow();
 
+
         window.setTimeout(
-          () => videoLink.focus(),
+          () => {
+
+            videoLink.focus();
+
+          },
           120
         );
 
@@ -579,7 +769,9 @@
       "click",
       () => {
 
-        explorationRun += 1;
+        explorationRun +=
+          1;
+
 
         clearObjectUrl();
 
@@ -591,32 +783,44 @@
   // SUPABASE STORAGE
   // =======================================================
 
-  function safeVideoExtension(file) {
+  function safeVideoExtension(
+    file
+  ) {
 
     const byName =
       String(
-        file?.name || ""
+        file?.name ||
+        ""
       )
         .split(".")
         .pop()
         ?.toLowerCase();
 
+
     const known = {
 
-      "video/mp4": "mp4",
+      "video/mp4":
+        "mp4",
 
-      "video/quicktime": "mov",
+      "video/quicktime":
+        "mov",
 
-      "video/webm": "webm",
+      "video/webm":
+        "webm",
 
-      "video/x-m4v": "m4v"
+      "video/x-m4v":
+        "m4v"
 
     };
 
 
     return (
 
-      known[file?.type] ||
+      known[
+        file?.type
+      ]
+
+      ||
 
       (
         byName &&
@@ -687,7 +891,9 @@
 
       await supabaseClient
         .storage
-        .from("videos")
+        .from(
+          "videos"
+        )
         .upload(
           filePath,
           file,
@@ -707,7 +913,9 @@
         );
 
 
-    if (error) {
+    if (
+      error
+    ) {
 
       throw error;
 
@@ -715,22 +923,28 @@
 
 
     const {
-      data: publicData
+      data:
+        publicData
     } =
 
       supabaseClient
         .storage
-        .from("videos")
+        .from(
+          "videos"
+        )
         .getPublicUrl(
           data.path
         );
 
 
     const publicUrl =
-      publicData?.publicUrl;
+      publicData
+        ?.publicUrl;
 
 
-    if (!publicUrl) {
+    if (
+      !publicUrl
+    ) {
 
       throw new Error(
         "Supabase no devolvió la URL pública del vídeo."
@@ -755,13 +969,6 @@
   // =======================================================
   // SELECCIONAR VÍDEO
   // =======================================================
-  //
-  // 1. El usuario elige el vídeo.
-  // 2. Lo mostramos inmediatamente.
-  // 3. Lo subimos a Supabase.
-  // 4. Obtenemos su URL pública.
-  // 5. Iniciamos la exploración.
-  // =======================================================
 
   videoFile
     ?.addEventListener(
@@ -769,7 +976,8 @@
       async () => {
 
         const file =
-          videoFile.files?.[0];
+          videoFile
+            .files?.[0];
 
 
         if (!file) {
@@ -804,10 +1012,13 @@
           );
 
 
-        if (previewPlayer) {
+        if (
+          previewPlayer
+        ) {
 
           previewPlayer.src =
             selectedFileUrl;
+
 
           previewPlayer.load();
 
@@ -822,7 +1033,7 @@
 
 
         // -----------------------------------------------
-        // SUBIDA A STORAGE
+        // SUBIR A STORAGE
         // -----------------------------------------------
 
         try {
@@ -843,7 +1054,6 @@
 
 
           const uploaded =
-
             await uploadVideoToStorage(
               file
             );
@@ -874,9 +1084,123 @@
           );
 
 
-          // ---------------------------------------------
-          // YA TENEMOS UN MP4 ACCESIBLE DESDE INTERNET
-          // ---------------------------------------------
+          // =============================================
+          // TRANSCRIPCIÓN LOCAL GRATUITA
+          // =============================================
+
+          let localTranscript =
+            null;
+
+
+          if (
+            window.MundoInfinitoAnalyzer &&
+            typeof window
+              .MundoInfinitoAnalyzer
+              .transcribeVideoFile ===
+              "function"
+          ) {
+
+            try {
+
+              showToast?.(
+                "🎧 Escuchando el vídeo…"
+              );
+
+
+              setProgress(
+                25,
+                "Escuchando lo que cuentan…"
+              );
+
+
+              console.log(
+                "🧠 Iniciando análisis local del vídeo…"
+              );
+
+
+              localTranscript =
+                await window
+                  .MundoInfinitoAnalyzer
+                  .transcribeVideoFile(
+                    file,
+                    progress => {
+
+                      console.log(
+                        "Whisper:",
+                        progress
+                      );
+
+                    }
+                  );
+
+
+              console.log(
+                "📝 TRANSCRIPCIÓN DEL VÍDEO:",
+                localTranscript
+              );
+
+
+              if (
+                localTranscript
+                  ?.text
+              ) {
+
+                console.log(
+                  "💬 Texto:",
+                  localTranscript.text
+                );
+
+              }
+
+
+              if (
+                Array.isArray(
+                  localTranscript
+                    ?.chunks
+                )
+              ) {
+
+                console.log(
+                  "⏱️ Fragmentos con tiempos:",
+                  localTranscript.chunks
+                );
+
+              }
+
+
+              showToast?.(
+                "✅ Audio explorado"
+              );
+
+
+              setProgress(
+                65,
+                "Organizando lo encontrado…"
+              );
+
+
+            } catch (
+              transcriptionError
+            ) {
+
+              console.warn(
+                "No se pudo transcribir el vídeo localmente:",
+                transcriptionError
+              );
+
+
+              showToast?.(
+                "Vídeo guardado · análisis de audio no disponible"
+              );
+
+            }
+
+          }
+
+
+          // -----------------------------------------------
+          // CONTINUAR EXPLORACIÓN
+          // -----------------------------------------------
 
           await exploreVideo({
 
@@ -889,16 +1213,20 @@
               uploadedVideoUrl,
 
             storagePath:
-              uploadedVideoPath
+              uploadedVideoPath,
+
+            transcript:
+              localTranscript
 
           });
 
 
-        } catch (error) {
-
+        } catch (
+          error
+        ) {
 
           console.error(
-            "Mundo Infinito v0.6.1 · Error subiendo vídeo:",
+            "Mundo Infinito v0.6.2 · Error subiendo vídeo:",
             error
           );
 
@@ -909,10 +1237,8 @@
 
 
           /*
-           * Aunque falle Storage, mantenemos
+           * Si Storage falla, mantenemos
            * la previsualización local.
-           *
-           * Así no dejamos el formulario roto.
            */
 
           await exploreVideo({
@@ -923,7 +1249,10 @@
             file,
 
             url:
-              selectedFileUrl
+              selectedFileUrl,
+
+            transcript:
+              null
 
           });
 
@@ -948,28 +1277,38 @@
         linkDebounce
       );
 
+
       const url =
         sourceUrl();
 
+
       if (!url) {
+
         return;
+
       }
+
 
       if (
         url.length < 8
       ) {
+
         return;
+
       }
+
 
       linkDebounce =
         window.setTimeout(
           () => {
 
             exploreVideo({
+
               type:
                 "url",
 
               url
+
             });
 
           },
@@ -981,7 +1320,7 @@
 
 
   // =======================================================
-  // FASES VISUALES DE EXPLORACIÓN
+  // FASES DE EXPLORACIÓN
   // =======================================================
 
   const explorationPhases = [
@@ -1046,7 +1385,7 @@
 
 
   // =======================================================
-  // ANIMAR EXPLORACIÓN
+  // ANIMACIÓN
   // =======================================================
 
   async function animateExploration(
@@ -1120,11 +1459,6 @@
     );
 
 
-    /*
-     * Mientras mostramos la animación,
-     * intentamos obtener resultados automáticos.
-     */
-
     const animation =
       animateExploration(
         runId
@@ -1142,10 +1476,12 @@
           source
         );
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       console.warn(
-        "Mundo Infinito v0.6.1: análisis automático no disponible.",
+        "Mundo Infinito v0.6.2: análisis automático no disponible.",
         error
       );
 
@@ -1166,7 +1502,7 @@
 
 
     // -----------------------------------------------------
-    // RESULTADOS AUTOMÁTICOS
+    // SI HAY RESULTADOS
     // -----------------------------------------------------
 
     if (
@@ -1181,7 +1517,9 @@
           .map(
             normalizeAutomaticDetail
           )
-          .filter(Boolean);
+          .filter(
+            Boolean
+          );
 
 
       setProgress(
@@ -1211,7 +1549,7 @@
 
 
     // -----------------------------------------------------
-    // SI TODAVÍA NO HAY ANALIZADOR REAL
+    // SIN RESULTADOS AUTOMÁTICOS
     // -----------------------------------------------------
 
     setProgress(
@@ -1228,27 +1566,18 @@
     );
 
 
-openEditor();
+    openEditor();
 
   }
 
 
   // =======================================================
-  // PEDIR ANÁLISIS AUTOMÁTICO
+  // ANALIZADOR AUTOMÁTICO / EDGE FUNCTION
   // =======================================================
 
   async function requestAutomaticAnalysis(
     source
   ) {
-
-    /*
-     * Este punto queda preparado para una
-     * Edge Function de Supabase.
-     *
-     * Más adelante podremos sustituirla
-     * por análisis local gratuito en el navegador.
-     */
-
 
     if (
       !supabaseClient ||
@@ -1261,14 +1590,8 @@ openEditor();
 
 
     /*
-     * IMPORTANTE:
-     *
-     * Ahora los vídeos seleccionados desde el móvil
-     * YA pueden llegar aquí porque antes se han
-     * subido a Supabase Storage.
-     *
-     * Lo único que no podemos enviar es una blob:
-     * local del navegador.
+     * Si es un archivo local, solo podemos enviarlo
+     * cuando ya tiene una URL pública de Storage.
      */
 
     if (
@@ -1321,7 +1644,12 @@ openEditor();
                   null,
 
                 source_type:
-                  source.type,
+                  source.type ||
+                  null,
+
+                transcript:
+                  source.transcript ||
+                  null,
 
                 city:
                   CONFIG?.city ||
@@ -1337,18 +1665,23 @@ openEditor();
           );
 
 
-      if (error) {
+      if (
+        error
+      ) {
 
         console.info(
           "Analizador automático todavía no conectado."
         );
+
 
         return [];
 
       }
 
 
-      if (!data) {
+      if (
+        !data
+      ) {
 
         return [];
 
@@ -1391,7 +1724,9 @@ openEditor();
       return [];
 
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       console.info(
         "Exploración automática pendiente:",
@@ -1407,7 +1742,7 @@ openEditor();
 
 
   // =======================================================
-  // NORMALIZAR DETALLE AUTOMÁTICO
+  // NORMALIZAR RESULTADOS AUTOMÁTICOS
   // =======================================================
 
   function normalizeAutomaticDetail(
@@ -1433,7 +1768,9 @@ openEditor();
       ).trim();
 
 
-    if (!title) {
+    if (
+      !title
+    ) {
 
       return null;
 
@@ -1652,7 +1989,10 @@ openEditor();
 
     };
 
-  }  // =======================================================
+  }
+
+
+  // =======================================================
   // EDITOR MANUAL
   // =======================================================
 
@@ -1663,6 +2003,7 @@ openEditor();
     editingIndex =
       index;
 
+
     manualEditor
       ?.classList
       .add(
@@ -1671,7 +2012,8 @@ openEditor();
 
 
     if (
-      index === null
+      index ===
+      null
     ) {
 
       resetEditor();
@@ -1684,12 +2026,18 @@ openEditor();
         ];
 
 
-      if (!detail) {
+      if (
+        !detail
+      ) {
+
         return;
+
       }
 
 
-      if (detailType) {
+      if (
+        detailType
+      ) {
 
         detailType.value =
           detail.type ||
@@ -1698,7 +2046,9 @@ openEditor();
       }
 
 
-      if (titleInput) {
+      if (
+        titleInput
+      ) {
 
         titleInput.value =
           detail.title ||
@@ -1707,7 +2057,9 @@ openEditor();
       }
 
 
-      if (placeInput) {
+      if (
+        placeInput
+      ) {
 
         placeInput.value =
           detail.place ||
@@ -1716,7 +2068,9 @@ openEditor();
       }
 
 
-      if (categoryInput) {
+      if (
+        categoryInput
+      ) {
 
         categoryInput.value =
           detail.category ||
@@ -1725,7 +2079,9 @@ openEditor();
       }
 
 
-      if (commentInput) {
+      if (
+        commentInput
+      ) {
 
         commentInput.value =
           detail.comment ||
@@ -1734,7 +2090,9 @@ openEditor();
       }
 
 
-      if (startInput) {
+      if (
+        startInput
+      ) {
 
         startInput.value =
           toTime(
@@ -1744,9 +2102,12 @@ openEditor();
       }
 
 
-      if (endInput) {
+      if (
+        endInput
+      ) {
 
         endInput.value =
+
           detail.timestampEnd ==
           null
 
@@ -1759,7 +2120,9 @@ openEditor();
       }
 
 
-      if (discoveryLat) {
+      if (
+        discoveryLat
+      ) {
 
         discoveryLat.value =
           detail.lat ??
@@ -1768,7 +2131,9 @@ openEditor();
       }
 
 
-      if (discoveryLng) {
+      if (
+        discoveryLng
+      ) {
 
         discoveryLng.value =
           detail.lng ??
@@ -1784,7 +2149,9 @@ openEditor();
         );
 
 
-      if (addDetailButton) {
+      if (
+        addDetailButton
+      ) {
 
         addDetailButton.textContent =
           "✓ Guardar cambios";
@@ -1799,11 +2166,13 @@ openEditor();
 
         manualEditor
           ?.scrollIntoView({
+
             behavior:
               "smooth",
 
             block:
               "start"
+
           });
 
       },
@@ -1820,6 +2189,7 @@ openEditor();
       .remove(
         "open"
       );
+
 
     resetEditor();
 
@@ -1849,7 +2219,7 @@ openEditor();
 
 
   // =======================================================
-  // USAR MOMENTO ACTUAL DEL VÍDEO
+  // MINUTO ACTUAL DEL REPRODUCTOR
   // =======================================================
 
   useCurrentTimeButton
@@ -1869,7 +2239,8 @@ openEditor();
 
         const current =
           Number(
-            previewPlayer.currentTime ||
+            previewPlayer
+              .currentTime ||
             0
           );
 
@@ -1889,7 +2260,7 @@ openEditor();
 
 
   // =======================================================
-  // TIPO → CATEGORÍA
+  // TIPO -> CATEGORÍA
   // =======================================================
 
   detailType
@@ -1897,8 +2268,12 @@ openEditor();
       "change",
       () => {
 
-        if (!categoryInput) {
+        if (
+          !categoryInput
+        ) {
+
           return;
+
         }
 
 
@@ -1946,7 +2321,9 @@ openEditor();
           ];
 
 
-        if (suggested) {
+        if (
+          suggested
+        ) {
 
           categoryInput.value =
             suggested;
@@ -1958,7 +2335,7 @@ openEditor();
 
 
   // =======================================================
-  // NORMALIZAR TIEMPOS
+  // NORMALIZAR TIMESTAMPS
   // =======================================================
 
   startInput
@@ -1989,7 +2366,9 @@ openEditor();
           ).trim();
 
 
-        if (!value) {
+        if (
+          !value
+        ) {
 
           return;
 
@@ -2004,10 +2383,7 @@ openEditor();
           );
 
       }
-    );
-
-
-  // =======================================================
+    );  // =======================================================
   // LEER DATOS DEL EDITOR
   // =======================================================
 
@@ -2040,7 +2416,8 @@ openEditor();
 
       id:
 
-        editingIndex === null
+        editingIndex ===
+        null
 
           ? (
               crypto.randomUUID
@@ -2116,7 +2493,9 @@ openEditor();
 
       lat:
 
-        Number.isFinite(lat) &&
+        Number.isFinite(
+          lat
+        ) &&
         lat !== 0
 
           ? lat
@@ -2126,7 +2505,9 @@ openEditor();
 
       lng:
 
-        Number.isFinite(lng) &&
+        Number.isFinite(
+          lng
+        ) &&
         lng !== 0
 
           ? lng
@@ -2136,7 +2517,8 @@ openEditor();
 
       confidence:
 
-        editingIndex === null
+        editingIndex ===
+        null
 
           ? 1
 
@@ -2147,7 +2529,8 @@ openEditor();
 
       automatic:
 
-        editingIndex === null
+        editingIndex ===
+        null
 
           ? false
 
@@ -2279,7 +2662,9 @@ openEditor();
       draftDetails.length;
 
 
-    if (detailsCount) {
+    if (
+      detailsCount
+    ) {
 
       detailsCount.textContent =
         String(
@@ -2289,7 +2674,9 @@ openEditor();
     }
 
 
-    if (draftCount) {
+    if (
+      draftCount
+    ) {
 
       draftCount.textContent =
         String(
@@ -2300,16 +2687,22 @@ openEditor();
 
 
     // -----------------------------------------------------
-    // VACÍO
+    // SIN DETALLES
     // -----------------------------------------------------
 
-    if (!count) {
+    if (
+      count === 0
+    ) {
 
-      if (detailsList) {
+      if (
+        detailsList
+      ) {
 
         detailsList.innerHTML =
           `
-            <div class="empty-state">
+            <div
+              class="empty-state"
+            >
 
               <span>
                 ✨
@@ -2328,6 +2721,16 @@ openEditor();
 
             </div>
           `;
+
+      }
+
+
+      if (
+        draftList
+      ) {
+
+        draftList.innerHTML =
+          "";
 
       }
 
@@ -2352,7 +2755,7 @@ openEditor();
 
 
     // -----------------------------------------------------
-    // TARJETAS
+    // TARJETAS PRINCIPALES
     // -----------------------------------------------------
 
     const cards =
@@ -2364,25 +2767,40 @@ openEditor();
             index
           ) => {
 
-            const confidence =
-              detail.confidence != null &&
+            let confidence =
+              null;
+
+
+            if (
+              detail.confidence !==
+                null &&
+              detail.confidence !==
+                undefined &&
               detail.automatic
+            ) {
 
-                ? Math.round(
-                    Number(
-                      detail.confidence
-                    ) <= 1
+              const raw =
+                Number(
+                  detail.confidence
+                );
 
-                      ? Number(
-                          detail.confidence
-                        ) * 100
 
-                      : Number(
-                          detail.confidence
-                        )
-                  )
+              if (
+                Number.isFinite(
+                  raw
+                )
+              ) {
 
-                : null;
+                confidence =
+                  Math.round(
+                    raw <= 1
+                      ? raw * 100
+                      : raw
+                  );
+
+              }
+
+            }
 
 
             return `
@@ -2393,7 +2811,9 @@ openEditor();
                 <div
                   class="detected-detail-icon"
                 >
-                  ${iconFor(detail)}
+                  ${iconFor(
+                    detail
+                  )}
                 </div>
 
 
@@ -2444,7 +2864,8 @@ openEditor();
 
 
                     ${
-                      confidence !== null
+                      confidence !==
+                        null
 
                         ? `
                             <span>
@@ -2456,6 +2877,21 @@ openEditor();
                     }
 
                   </div>
+
+
+                  ${
+                    detail.comment
+
+                      ? `
+                          <p>
+                            ${safeText(
+                              detail.comment
+                            )}
+                          </p>
+                        `
+
+                      : ""
+                  }
 
                 </div>
 
@@ -2491,7 +2927,9 @@ openEditor();
         .join("");
 
 
-    if (detailsList) {
+    if (
+      detailsList
+    ) {
 
       detailsList.innerHTML =
         cards;
@@ -2500,12 +2938,15 @@ openEditor();
 
 
     // -----------------------------------------------------
-    // RESUMEN FINAL
+    // RESUMEN DEL BORRADOR
     // -----------------------------------------------------
 
-    if (draftList) {
+    if (
+      draftList
+    ) {
 
       draftList.innerHTML =
+
         draftDetails
           .map(
             detail => `
@@ -2516,7 +2957,9 @@ openEditor();
                 <div
                   class="detected-detail-icon"
                 >
-                  ${iconFor(detail)}
+                  ${iconFor(
+                    detail
+                  )}
                 </div>
 
 
@@ -2540,6 +2983,7 @@ openEditor();
                         detail.place
                       )}
                     </span>
+
 
                     <span
                       class="detail-time"
@@ -2590,11 +3034,15 @@ openEditor();
             "click",
             () => {
 
-              openEditor(
+              const index =
                 Number(
                   button.dataset
                     .v06Edit
-                )
+                );
+
+
+              openEditor(
+                index
               );
 
             }
@@ -2626,6 +3074,20 @@ openEditor();
                 );
 
 
+              if (
+                !Number.isInteger(
+                  index
+                ) ||
+                !draftDetails[
+                  index
+                ]
+              ) {
+
+                return;
+
+              }
+
+
               draftDetails.splice(
                 index,
                 1
@@ -2645,7 +3107,10 @@ openEditor();
         }
       );
 
-  }  // =======================================================
+  }
+
+
+  // =======================================================
   // TÍTULO GENERAL DEL VÍDEO
   // =======================================================
 
@@ -2655,17 +3120,21 @@ openEditor();
       !draftDetails.length
     ) {
 
-      return "Vídeo de Mundo Infinito";
+      return (
+        "Vídeo de Mundo Infinito"
+      );
 
     }
 
 
     if (
-      draftDetails.length === 1
+      draftDetails.length ===
+      1
     ) {
 
       return (
-        draftDetails[0].title ||
+        draftDetails[0]
+          .title ||
         "Vídeo de Mundo Infinito"
       );
 
@@ -2673,12 +3142,15 @@ openEditor();
 
 
     const zone =
-      draftDetails[0].place ||
+      draftDetails[0]
+        .place ||
       CONFIG.city ||
       "Brasil";
 
 
-    return `Descubrimientos en ${zone}`;
+    return (
+      `Descubrimientos en ${zone}`
+    );
 
   }
 
@@ -2696,8 +3168,8 @@ openEditor();
           5
         )
         .map(
-          item =>
-            item.title
+          detail =>
+            detail.title
         )
         .filter(
           Boolean
@@ -2727,15 +3199,19 @@ openEditor();
 
 
   // =======================================================
-  // ACTUALIZAR LA APP SIN RECARGAR
+  // ACTUALIZAR LUGAR EN MEMORIA
   // =======================================================
 
   function addPlaceToApp(
     place
   ) {
 
-    if (!place) {
+    if (
+      !place
+    ) {
+
       return;
+
     }
 
 
@@ -2796,12 +3272,20 @@ openEditor();
   }
 
 
+  // =======================================================
+  // ACTUALIZAR VÍDEO EN MEMORIA
+  // =======================================================
+
   function addVideoToApp(
     video
   ) {
 
-    if (!video) {
+    if (
+      !video
+    ) {
+
       return;
+
     }
 
 
@@ -2856,12 +3340,20 @@ openEditor();
   }
 
 
+  // =======================================================
+  // ACTUALIZAR DESCUBRIMIENTO EN MEMORIA
+  // =======================================================
+
   function addDiscoveryToApp(
     discovery
   ) {
 
-    if (!discovery) {
+    if (
+      !discovery
+    ) {
+
       return;
+
     }
 
 
@@ -2878,7 +3370,9 @@ openEditor();
       );
 
 
-    if (!exists) {
+    if (
+      !exists
+    ) {
 
       discoveries.push(
         discovery
@@ -2886,16 +3380,8 @@ openEditor();
 
     }
 
-  }
-
-
-  // =======================================================
+  }  // =======================================================
   // GUARDAR TODO
-  // =======================================================
-  //
-  // app.js v0.5 ya tiene un submit.
-  // Este listener en capture:true se ejecuta primero
-  // y evita que el formulario antiguo guarde duplicado.
   // =======================================================
 
   discoveryForm.addEventListener(
@@ -2903,11 +3389,12 @@ openEditor();
     async event => {
 
       event.preventDefault();
-
       event.stopImmediatePropagation();
 
 
-      if (saving) {
+      if (
+        saving
+      ) {
 
         return;
 
@@ -2926,9 +3413,7 @@ openEditor();
           "Añade al menos un detalle"
         );
 
-
         openEditor();
-
 
         return;
 
@@ -2938,18 +3423,9 @@ openEditor();
       // ---------------------------------------------------
       // URL DEL VÍDEO
       // ---------------------------------------------------
-      //
-      // Si seleccionamos MP4:
-      // usamos la URL pública de Storage.
-      //
-      // Si pegamos Reel/TikTok:
-      // usamos el enlace pegado.
-      // ---------------------------------------------------
 
       const url =
-
         uploadedVideoUrl ||
-
         sourceUrl();
 
 
@@ -2962,14 +3438,13 @@ openEditor();
           "Añade primero un vídeo o Reel"
         );
 
-
         return;
 
       }
 
 
       // ---------------------------------------------------
-      // ESPERAR A STORAGE
+      // SI EL ARCHIVO SIGUE SUBIENDO
       // ---------------------------------------------------
 
       if (
@@ -2981,14 +3456,13 @@ openEditor();
           "Espera a que termine de subir el vídeo"
         );
 
-
         return;
 
       }
 
 
       // ---------------------------------------------------
-      // EL MP4 TIENE QUE ESTAR EN STORAGE
+      // SI HAY ARCHIVO LOCAL, DEBE TENER URL DE STORAGE
       // ---------------------------------------------------
 
       if (
@@ -2999,7 +3473,6 @@ openEditor();
         showToast?.(
           "El vídeo todavía no está guardado en Mundo Infinito"
         );
-
 
         return;
 
@@ -3019,7 +3492,6 @@ openEditor();
           "No hay conexión con la base compartida"
         );
 
-
         return;
 
       }
@@ -3034,10 +3506,8 @@ openEditor();
 
 
       const oldButtonHTML =
-
         saveAllButton
           ?.innerHTML ||
-
         "✓ Guardar todo";
 
 
@@ -3064,11 +3534,10 @@ openEditor();
       try {
 
         // =================================================
-        // 1. CREAR / REUTILIZAR VÍDEO
+        // 1. CREAR EL VÍDEO
         // =================================================
 
         const savedVideo =
-
           await createSupabaseVideo({
 
             title:
@@ -3082,7 +3551,9 @@ openEditor();
           });
 
 
-        if (!savedVideo) {
+        if (
+          !savedVideo
+        ) {
 
           throw new Error(
             "No se pudo crear el vídeo"
@@ -3097,7 +3568,7 @@ openEditor();
 
 
         // =================================================
-        // 2. CREAR DETALLES
+        // 2. CREAR LOS DETALLES
         // =================================================
 
         const created =
@@ -3118,7 +3589,6 @@ openEditor();
 
 
           const lat =
-
             Number.isFinite(
               Number(
                 detail.lat
@@ -3133,7 +3603,6 @@ openEditor();
 
 
           const lng =
-
             Number.isFinite(
               Number(
                 detail.lng
@@ -3152,7 +3621,6 @@ openEditor();
           // -----------------------------------------------
 
           const savedPlace =
-
             await createOrGetPlace({
 
               name:
@@ -3177,7 +3645,9 @@ openEditor();
             });
 
 
-          if (!savedPlace) {
+          if (
+            !savedPlace
+          ) {
 
             throw new Error(
               `No se pudo guardar ${detail.title}`
@@ -3202,11 +3672,10 @@ openEditor();
 
 
           // -----------------------------------------------
-          // RELACIONAR DETALLE CON EL VÍDEO
+          // CREAR DESCUBRIMIENTO
           // -----------------------------------------------
 
           const savedDiscovery =
-
             await createSupabaseDiscovery({
 
               title:
@@ -3234,9 +3703,8 @@ openEditor();
                 ),
 
               timestampEnd:
-
                 detail.timestampEnd ==
-                null
+                  null
 
                   ? null
 
@@ -3267,7 +3735,7 @@ openEditor();
 
 
         // =================================================
-        // 4. MENSAJE
+        // 4. MENSAJE FINAL
         // =================================================
 
         const total =
@@ -3286,7 +3754,7 @@ openEditor();
 
 
         // =================================================
-        // 5. LIMPIAR
+        // 5. LIMPIAR ESTADO
         // =================================================
 
         draftDetails =
@@ -3309,11 +3777,18 @@ openEditor();
           null;
 
 
+        uploadingVideo =
+          false;
+
+
+        clearObjectUrl();
+
+
         closeAddDiscovery();
 
 
         // =================================================
-        // 6. IR AL PRIMER LUGAR
+        // 6. CENTRAR EN EL PRIMER LUGAR
         // =================================================
 
         if (
@@ -3353,10 +3828,12 @@ openEditor();
         }
 
 
-      } catch (error) {
+      } catch (
+        error
+      ) {
 
         console.error(
-          "Mundo Infinito v0.6.1 · Error guardando:",
+          "Mundo Infinito v0.6.2 · Error guardando:",
           error
         );
 
@@ -3393,7 +3870,7 @@ openEditor();
 
 
   // =======================================================
-  // ESCAPE
+  // CERRAR EDITOR CON ESCAPE
   // =======================================================
 
   document.addEventListener(
@@ -3402,7 +3879,7 @@ openEditor();
 
       if (
         event.key ===
-        "Escape" &&
+          "Escape" &&
         manualEditor
           ?.classList
           .contains(
@@ -3423,8 +3900,8 @@ openEditor();
   // =======================================================
 
   console.log(
-    "✨ Mundo Infinito · Explorador de vídeos v0.6.1 cargado"
+    "✨ Mundo Infinito · Explorador de vídeos v0.6.2 cargado"
   );
 
 
-})(); // FIN video-explorer v0.6.1
+})(); // FIN video-explorer v0.6.2
