@@ -65,7 +65,7 @@ document.getElementById("saveAllDiscoveriesButton");
 if (
 !discoveryForm ||
 !modalCard ||
-!videoFile
+!videoLink
 ) {
 console.warn(
 "Mundo Infinito v0.6.2: interfaz de exploración no disponible."
@@ -272,7 +272,7 @@ message;
 }
 function sourceUrl() {
 return String(
-videoLink?.value ||
+videoLink.value ||
 ""
 ).trim();
 }
@@ -546,7 +546,7 @@ openDiscoveryModal
 resetFlow();
 window.setTimeout(
 () => {
-videoFile?.focus?.();
+videoLink.focus();
 },
 120
 );
@@ -1454,8 +1454,35 @@ results
 return results;
 }
 // =======================================================
-// ENLACES DESACTIVADOS · SOLO SUBIDA DE VÍDEO
+// PEGAR ENLACE
 // =======================================================
+videoLink.addEventListener(
+"input",
+() => {
+clearTimeout(
+linkDebounce
+);
+const url =
+sourceUrl();
+if (
+!url ||
+url.length < 8
+) {
+return;
+}
+linkDebounce =
+window.setTimeout(
+() => {
+exploreVideo({
+type:
+"url",
+url
+});
+},
+750
+);
+}
+);
 // =======================================================
 // FASES DE EXPLORACIÓN
 // =======================================================
