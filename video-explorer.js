@@ -1915,14 +1915,12 @@ function detailsFromTranscript(
 // USAR LA TRANSCRIPCIÓN LOCAL SI LA EDGE FUNCTION
 // NO HA DEVUELTO DETALLES
 // =======================================================
-
 if (
-  (!automaticDetails ||const transcriptDetails =
+  (!automaticDetails ||
    automaticDetails.length === 0) &&
   source.transcript &&
   typeof detailsFromTranscript === "function"
 ) {
-
   automaticDetails =
     detailsFromTranscript(
       source.transcript
