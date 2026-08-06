@@ -667,11 +667,12 @@ function resolveCategoryIcon(category) {
       ""
     ).trim();
 
-  if (
-    categoryIcons[
+  const key =
+    normalize(
       raw
-    ]
-  ) {
+    );
+
+  const aliases = {
     return categoryIcons[
       raw
     ];
