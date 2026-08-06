@@ -359,10 +359,135 @@
   // IR A UN MOMENTO DEL VÍDEO
   // =======================================================
 
-  function seekVideo(
+   function seekVideo(
     video,
     second
   ) {
+
+    return new Promise(
+      (
+        resolve,
+        reject
+      ) => {
+
+        const safeSecond =
+          Math.max(
+            0,
+            Math.min(
+              second,
+              Math.max(
+                0,
+                video.duration - 0.05
+              )
+            )
+          );
+
+
+        // =================================================
+        // SI YA ESTAMOS EN ESE MOMENTO
+        // NO ESPERAR AL EVENTO seeked
+        // =================================================
+
+        if (
+          Math.abs(
+            video.currentTime -
+            safeSecond
+          ) < 0.05
+        ) {
+
+          resolve();
+
+          return;
+
+        }
+
+
+        const timeout =
+          window.setTimeout(
+            () => {
+
+              cleanup();
+
+              reject(
+                new Error(
+                  `No se pudo acceder al segundo ${safeSecond}`
+                )
+              );
+
+            },
+            10000
+          );
+
+
+        const cleanup =
+          () => {
+
+            clearTimeout(
+              timeout
+            );
+
+            video.removeEventListener(
+              "seeked",
+              done
+            );
+
+            video.removeEventListener(
+              "error",
+              failed
+            );
+
+          };
+
+
+        const done =
+          () => {
+
+            cleanup();
+
+            resolve();
+
+          };
+
+
+        const failed =
+          () => {
+
+            cleanup();
+
+            reject(
+              new Error(
+                `Error leyendo el fotograma ${safeSecond}`
+              )
+            );
+
+          };
+
+
+        video.addEventListener(
+          "seeked",
+          done,
+          {
+            once: true
+          }
+        );
+
+
+        video.addEventListener(
+          "error",
+          failed,
+          {
+            once: true
+          }
+        );
+
+
+        video.currentTime =
+          safeSecond;
+
+      }
+    );
+
+  }
 
     return new Promise(
       (
