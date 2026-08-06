@@ -1086,6 +1086,9 @@
           // =============================================
           // TRANSCRIPCIÓN LOCAL GRATUITA
           // =============================================
+          // =============================================
+          // TRANSCRIPCIÓN LOCAL GRATUITA
+          // =============================================
 
           let localTranscript =
             null;
@@ -1319,6 +1322,16 @@
       "Santa Teresa",
       "Botafogo",
       "Arpoador",
+      "Urca",
+      "Lagoa",
+      "Flamengo",
+      "Gávea",
+      "Gavea",
+      "São Conrado",
+      "Sao Conrado",
+      "Barra da Tijuca",
+      "Recreio",
+      "Centro",
 
       "Cristo Redentor",
       "Corcovado",
@@ -1336,18 +1349,7 @@
       "Jardim Botanico",
 
       "Ilha Grande",
-      "Lopes Mendes",
-
-      "Lagoa",
-      "Flamengo",
-      "Urca",
-      "Barra da Tijuca",
-      "Recreio",
-      "Centro",
-      "Gávea",
-      "Gavea",
-      "São Conrado",
-      "Sao Conrado"
+      "Lopes Mendes"
 
     ];
 
@@ -1395,21 +1397,13 @@
     // =====================================================
 
     function createDetail({
-
       title,
-
       place,
-
       type,
-
       category,
-
       comment,
-
       timestampStart = 0,
-
       confidence = 0.7
-
     }) {
 
       return {
@@ -1464,7 +1458,7 @@
 
 
     // =====================================================
-    // ANALIZAR CHUNKS DE WHISPER
+    // ANALIZAR FRAGMENTOS CON TIMESTAMP
     // =====================================================
 
     chunks.forEach(
@@ -1541,18 +1535,18 @@
 
             const exists =
               results.some(
-                item =>
+                detail =>
 
-                  item.type ===
+                  detail.type ===
                     "Lugar" &&
 
-                  item.title
+                  detail.title
                     .toLowerCase() ===
                     placeName
                       .toLowerCase() &&
 
                   Math.abs(
-                    item.timestampStart -
+                    detail.timestampStart -
                     timestamp
                   ) < 3
               );
@@ -1695,7 +1689,7 @@
 
 
     // =====================================================
-    // FALLBACK SOBRE EL TEXTO COMPLETO
+    // FALLBACK SI NO HAY CHUNKS
     // =====================================================
 
     if (
@@ -1706,6 +1700,10 @@
       const lowerFullText =
         fullText.toLowerCase();
 
+
+      // ---------------------------------------------------
+      // LUGARES
+      // ---------------------------------------------------
 
       knownPlaces.forEach(
         placeName => {
@@ -1752,6 +1750,10 @@
       );
 
 
+      // ---------------------------------------------------
+      // PRECIOS
+      // ---------------------------------------------------
+
       const prices =
         fullText.match(
           priceRegex
@@ -1792,6 +1794,10 @@
         }
       );
 
+
+      // ---------------------------------------------------
+      // CONSEJOS
+      // ---------------------------------------------------
 
       const hasAdvice =
         adviceWords.some(
@@ -1840,7 +1846,7 @@
 
 
     // =====================================================
-    // QUITAR DUPLICADOS
+    // ELIMINAR DUPLICADOS
     // =====================================================
 
     const unique =
@@ -1857,11 +1863,16 @@
         const key =
           [
             detail.type,
-            detail.title
-              .toLowerCase(),
+
+            String(
+              detail.title
+            ).toLowerCase(),
+
             Math.floor(
-              detail.timestampStart /
-              3
+              Number(
+                detail.timestampStart ||
+                0
+              ) / 3
             )
           ].join(
             "|"
@@ -1952,49 +1963,63 @@
 
 
   // =======================================================
-  // FASES VISUALES
+  // FASES DE EXPLORACIÓN
   // =======================================================
 
   const explorationPhases = [
 
     {
-      progress: 8,
+      progress:
+        8,
+
       message:
         "Preparando el vídeo…"
     },
 
     {
-      progress: 22,
+      progress:
+        22,
+
       message:
         "Escuchando lo que cuentan…"
     },
 
     {
-      progress: 38,
+      progress:
+        38,
+
       message:
         "Localizando lugares mencionados…"
     },
 
     {
-      progress: 54,
+      progress:
+        54,
+
       message:
         "Buscando restaurantes y recomendaciones…"
     },
 
     {
-      progress: 68,
+      progress:
+        68,
+
       message:
         "Identificando consejos útiles…"
     },
 
     {
-      progress: 82,
+      progress:
+        82,
+
       message:
         "Localizando momentos del vídeo…"
     },
 
     {
-      progress: 94,
+      progress:
+        94,
+
       message:
         "Organizando los detalles…"
     }
@@ -2003,7 +2028,7 @@
 
 
   // =======================================================
-  // ANIMACIÓN
+  // ANIMAR EXPLORACIÓN
   // =======================================================
 
   async function animateExploration(
@@ -2087,6 +2112,176 @@
 
 
     try {
+
+      // ---------------------------------------------------
+      // PRIMERO INTENTAMOS EDGE FUNCTION
+      // ---------------------------------------------------
+
+      automaticDetails =
+        await requestAutomaticAnalysis(
+          source
+        );
+
+
+      // ---------------------------------------------------
+      // SI EDGE NO DEVUELVE NADA:
+      // USAMOS LA TRANSCRIPCIÓN LOCAL
+      // ---------------------------------------------------
+
+      if (
+        (
+          !Array.isArray(
+            automaticDetails
+          ) ||
+          automaticDetails.length ===
+            0
+        ) &&
+        source.transcript
+      ) {
+
+        automaticDetails =
+          detailsFromTranscript(
+            source.transcript
+          );
+
+
+        console.log(
+          "✨ Detalles obtenidos de la transcripción:",
+          automaticDetails
+        );
+
+      }
+
+
+    } catch (
+      error
+    ) {
+
+      console.warn(
+        "Mundo Infinito v0.6.2: análisis automático no disponible.",
+        error
+      );
+
+
+      // ---------------------------------------------------
+      // SI FALLA EDGE, AÚN PODEMOS USAR WHISPER
+      // ---------------------------------------------------
+
+      if (
+        source.transcript
+      ) {
+
+        try {
+
+          automaticDetails =
+            detailsFromTranscript(
+              source.transcript
+            );
+
+
+          console.log(
+            "✨ Detalles locales tras error de Edge:",
+            automaticDetails
+          );
+
+
+        } catch (
+          transcriptError
+        ) {
+
+          console.warn(
+            "No se pudieron interpretar los detalles de la transcripción:",
+            transcriptError
+          );
+
+        }
+
+      }
+
+    }
+
+
+    await animation;
+
+
+    if (
+      runId !==
+      explorationRun
+    ) {
+
+      return;
+
+    }
+
+
+    // =====================================================
+    // HEMOS ENCONTRADO DETALLES
+    // =====================================================
+
+    if (
+      Array.isArray(
+        automaticDetails
+      ) &&
+      automaticDetails.length
+    ) {
+
+      draftDetails =
+        automaticDetails
+          .map(
+            normalizeAutomaticDetail
+          )
+          .filter(
+            Boolean
+          );
+
+
+      setProgress(
+        100,
+        "Detalles encontrados"
+      );
+
+
+      showResults();
+
+
+      showToast?.(
+
+        draftDetails.length ===
+        1
+
+          ? "✨ 1 detalle encontrado"
+
+          : `✨ ${draftDetails.length} detalles encontrados`
+
+      );
+
+
+      return;
+
+    }
+
+
+    // =====================================================
+    // NO HA ENCONTRADO DETALLES
+    // =====================================================
+
+    setProgress(
+      100,
+      "Vídeo preparado"
+    );
+
+
+    showResults();
+
+
+    showToast?.(
+      "✨ Vídeo preparado para revisar"
+    );
+
+
+    openEditor();
+
+  }
 
       // ---------------------------------------------------
       // PRIMERO EDGE FUNCTION
