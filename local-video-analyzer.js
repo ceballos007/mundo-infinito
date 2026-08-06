@@ -1,8 +1,17 @@
 // =========================================================
-// MUNDO INFINITO · ANALIZADOR LOCAL v0.4.1
-// Whisper Tiny q4 · CPU/WASM
-// Sin WebGPU
-// Sin decodeAudioData() del vídeo completo
+// MUNDO INFINITO · ANALIZADOR LOCAL v0.5
+// OCR visual ligero para vídeos
+//
+// Vídeo
+//   ↓
+// fotogramas cada 5 segundos
+//   ↓
+// OCR secuencial
+//   ↓
+// texto visible + timestamps
+//
+// Whisper queda desactivado por defecto
+// para evitar Out of Memory.
 // =========================================================
 
 "use strict";
@@ -10,7 +19,7 @@
 (() => {
 
   console.log(
-    "🧠 Analizador local de Mundo Infinito v0.4.1 cargado"
+    "👁️ Mundo Infinito · Analizador visual v0.5 cargado"
   );
 
 
@@ -18,209 +27,341 @@
   // CONFIGURACIÓN
   // =======================================================
 
-  const TARGET_SAMPLE_RATE =
-    16000;
+  const FRAME_INTERVAL_SECONDS =
+    5;
 
-  const CHUNK_SECONDS =
-    10;
+  const MAX_FRAME_WIDTH =
+    900;
 
-  const MAX_QUEUE =
-    1;
+  /*
+   * Lo dejamos en false porque Whisper estaba
+   * provocando problemas de memoria.
+   *
+   * Más adelante podemos volver a activarlo
+   * como complemento.
+   */
 
-
-  // =======================================================
-  // ESTADO WHISPER
-  // =======================================================
-
-  let transcriber =
-    null;
-
-  let loadingModel =
+  const ENABLE_WHISPER =
     false;
 
 
   // =======================================================
-  // CARGAR TRANSFORMERS.JS
+  // ESTADO
   // =======================================================
 
-  async function loadTransformers() {
+  let tesseractReady =
+    false;
 
-    return await import(
-      "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1"
+  let tesseractWorker =
+    null;
+
+
+  // =======================================================
+  // UTILIDAD
+  // =======================================================
+
+  function sleep(
+    milliseconds
+  ) {
+
+    return new Promise(
+      resolve =>
+        window.setTimeout(
+          resolve,
+          milliseconds
+        )
     );
 
   }
 
 
   // =======================================================
-  // CARGAR WHISPER
-  // CPU/WASM + Q4
+  // CARGAR TESSERACT.JS
   // =======================================================
 
-  async function getTranscriber(
-    onProgress = null
-  ) {
+  async function loadTesseract() {
 
     if (
-      transcriber
+      window.Tesseract
     ) {
 
-      return transcriber;
+      return window.Tesseract;
 
     }
 
 
-    if (
-      loadingModel
-    ) {
-
-      while (
-        loadingModel
-      ) {
-
-        await new Promise(
-          resolve =>
-            window.setTimeout(
-              resolve,
-              200
-            )
-        );
-
-      }
+    console.log(
+      "📦 Cargando lector de texto visual…"
+    );
 
 
-      if (
-        !transcriber
-      ) {
+    await new Promise(
+      (
+        resolve,
+        reject
+      ) => {
 
-        throw new Error(
-          "Whisper no pudo cargarse"
-        );
-
-      }
-
-
-      return transcriber;
-
-    }
+        const existing =
+          document.querySelector(
+            'script[data-mundo-tesseract="true"]'
+          );
 
 
-    loadingModel =
-      true;
+        if (
+          existing
+        ) {
 
-
-    try {
-
-      console.log(
-        "📦 Cargando Whisper Tiny q4…"
-      );
-
-
-      const {
-        pipeline
-      } =
-        await loadTransformers();
-
-
-      const options = {
-
-        // Menor consumo de memoria que q8
-        dtype:
-          "q4",
-
-
-        progress_callback:
-          progress => {
-
-            if (
-              typeof onProgress ===
-              "function"
-            ) {
-
-              onProgress({
-
-                stage:
-                  "model",
-
-                ...progress
-
-              });
-
+          existing.addEventListener(
+            "load",
+            resolve,
+            {
+              once:
+                true
             }
-
-          }
-
-      };
+          );
 
 
-      /*
-       * IMPORTANTE:
-       *
-       * No ponemos:
-       *
-       * options.device = "webgpu"
-       *
-       * De esta forma evitamos reservar memoria
-       * adicional en la GPU.
-       */
-
-      console.log(
-        "🧠 Whisper usando CPU/WASM q4"
-      );
+          existing.addEventListener(
+            "error",
+            reject,
+            {
+              once:
+                true
+            }
+          );
 
 
-      transcriber =
-        await pipeline(
-          "automatic-speech-recognition",
-          "onnx-community/whisper-tiny",
-          options
+          return;
+
+        }
+
+
+        const script =
+          document.createElement(
+            "script"
+          );
+
+
+        script.src =
+          "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+
+
+        script.async =
+          true;
+
+
+        script.dataset
+          .mundoTesseract =
+          "true";
+
+
+        script.onload =
+          resolve;
+
+
+        script.onerror =
+          () =>
+            reject(
+              new Error(
+                "No se pudo cargar Tesseract.js"
+              )
+            );
+
+
+        document.head.appendChild(
+          script
         );
 
-
-      console.log(
-        "✅ Whisper Tiny q4 preparado"
-      );
+      }
+    );
 
 
-      return transcriber;
-
-
-    } catch (
-      error
+    if (
+      !window.Tesseract
     ) {
 
-      console.error(
-        "❌ Error cargando Whisper q4:",
-        error
+      throw new Error(
+        "Tesseract.js no está disponible"
       );
 
-
-      transcriber =
-        null;
-
-
-      throw error;
-
-
-    } finally {
-
-      loadingModel =
-        false;
-
     }
+
+
+    return window.Tesseract;
 
   }
 
 
   // =======================================================
-  // ESPERAR EVENTO
+  // CREAR WORKER OCR
   // =======================================================
 
-  function waitForEvent(
-    element,
-    eventName,
-    timeout =
-      15000
+  async function getOCRWorker(
+    onProgress = null
+  ) {
+
+    if (
+      tesseractReady &&
+      tesseractWorker
+    ) {
+
+      return tesseractWorker;
+
+    }
+
+
+    const Tesseract =
+      await loadTesseract();
+
+
+    console.log(
+      "🧠 Preparando OCR portugués/español…"
+    );
+
+
+    tesseractWorker =
+      await Tesseract.createWorker(
+        [
+          "por",
+          "spa",
+          "eng"
+        ],
+        1,
+        {
+
+          logger:
+            message => {
+
+              if (
+                typeof onProgress ===
+                "function"
+              ) {
+
+                onProgress({
+
+                  stage:
+                    "ocr",
+
+                  status:
+                    message.status,
+
+                  progress:
+                    message.progress
+
+                });
+
+              }
+
+            }
+
+        }
+      );
+
+
+    tesseractReady =
+      true;
+
+
+    console.log(
+      "✅ OCR preparado"
+    );
+
+
+    return tesseractWorker;
+
+  }
+
+
+  // =======================================================
+  // ESPERAR METADATOS DEL VÍDEO
+  // =======================================================
+
+  function waitForMetadata(
+    video
+  ) {
+
+    if (
+      video.readyState >= 1
+    ) {
+
+      return Promise.resolve();
+
+    }
+
+
+    return new Promise(
+      (
+        resolve,
+        reject
+      ) => {
+
+        const timeout =
+          window.setTimeout(
+            () => {
+
+              reject(
+                new Error(
+                  "No se pudieron leer los datos del vídeo"
+                )
+              );
+
+            },
+            15000
+          );
+
+
+        video.addEventListener(
+          "loadedmetadata",
+          () => {
+
+            clearTimeout(
+              timeout
+            );
+
+            resolve();
+
+          },
+          {
+            once:
+              true
+          }
+        );
+
+
+        video.addEventListener(
+          "error",
+          () => {
+
+            clearTimeout(
+              timeout
+            );
+
+            reject(
+              new Error(
+                "El navegador no pudo abrir el vídeo"
+              )
+            );
+
+          },
+          {
+            once:
+              true
+          }
+        );
+
+      }
+    );
+
+  }
+
+
+  // =======================================================
+  // IR A UN MOMENTO DEL VÍDEO
+  // =======================================================
+
+  function seekVideo(
+    video,
+    second
   ) {
 
     return new Promise(
@@ -229,101 +370,59 @@
         reject
       ) => {
 
-        let timer =
-          null;
-
-
-        const cleanup =
-          () => {
-
-            element.removeEventListener(
-              eventName,
-              success
-            );
-
-
-            element.removeEventListener(
-              "error",
-              failure
-            );
-
-
-            if (
-              timer
-            ) {
-
-              clearTimeout(
-                timer
-              );
-
-            }
-
-          };
-
-
-        const success =
-          event => {
-
-            cleanup();
-
-            resolve(
-              event
-            );
-
-          };
-
-
-        const failure =
-          () => {
-
-            cleanup();
-
-
-            reject(
-              new Error(
-                "El navegador no pudo reproducir el vídeo"
+        const safeSecond =
+          Math.max(
+            0,
+            Math.min(
+              second,
+              Math.max(
+                0,
+                video.duration -
+                0.05
               )
-            );
-
-          };
-
-
-        element.addEventListener(
-          eventName,
-          success,
-          {
-            once:
-              true
-          }
-        );
+            )
+          );
 
 
-        element.addEventListener(
-          "error",
-          failure,
-          {
-            once:
-              true
-          }
-        );
-
-
-        timer =
+        const timeout =
           window.setTimeout(
             () => {
 
-              cleanup();
-
-
               reject(
                 new Error(
-                  `Tiempo agotado esperando ${eventName}`
+                  `No se pudo acceder al segundo ${safeSecond}`
                 )
               );
 
             },
-            timeout
+            10000
           );
+
+
+        const done =
+          () => {
+
+            clearTimeout(
+              timeout
+            );
+
+            resolve();
+
+          };
+
+
+        video.addEventListener(
+          "seeked",
+          done,
+          {
+            once:
+              true
+          }
+        );
+
+
+        video.currentTime =
+          safeSecond;
 
       }
     );
@@ -332,438 +431,248 @@
 
 
   // =======================================================
-  // REMUESTREAR PCM
+  // CREAR CANVAS REDUCIDO
   // =======================================================
 
-  function resampleFloat32(
-    input,
-    sourceRate,
-    targetRate =
-      TARGET_SAMPLE_RATE
+  function createFrameCanvas(
+    video
   ) {
 
-    if (
-      !input ||
-      !input.length
-    ) {
+    const naturalWidth =
+      video.videoWidth ||
+      720;
 
-      return new Float32Array(
-        0
+
+    const naturalHeight =
+      video.videoHeight ||
+      1280;
+
+
+    const scale =
+      Math.min(
+        1,
+        MAX_FRAME_WIDTH /
+        naturalWidth
       );
 
-    }
 
-
-    if (
-      sourceRate ===
-      targetRate
-    ) {
-
-      return input;
-
-    }
-
-
-    const ratio =
-      sourceRate /
-      targetRate;
-
-
-    const outputLength =
+    const width =
       Math.max(
         1,
         Math.round(
-          input.length /
-          ratio
+          naturalWidth *
+          scale
         )
       );
 
 
-    const output =
-      new Float32Array(
-        outputLength
+    const height =
+      Math.max(
+        1,
+        Math.round(
+          naturalHeight *
+          scale
+        )
       );
 
 
-    for (
-      let i = 0;
-      i < outputLength;
-      i++
-    ) {
-
-      const position =
-        i * ratio;
+    const canvas =
+      document.createElement(
+        "canvas"
+      );
 
 
-      const left =
-        Math.floor(
-          position
-        );
+    canvas.width =
+      width;
 
 
-      const right =
-        Math.min(
-          left + 1,
-          input.length - 1
-        );
+    canvas.height =
+      height;
 
 
-      const fraction =
-        position -
-        left;
-
-
-      output[i] =
-        (
-          input[left] *
-          (
-            1 - fraction
-          )
-        )
-        +
-        (
-          input[right] *
-          fraction
-        );
-
-    }
-
-
-    return output;
+    return canvas;
 
   }
 
 
   // =======================================================
-  // TRANSCRIBIR UN FRAGMENTO PCM
+  // CAPTURAR UN FOTOGRAMA
   // =======================================================
 
-  async function transcribePCMChunk(
-    whisper,
-    audio16k
+  function captureFrame(
+    video,
+    canvas
   ) {
 
-    if (
-      !audio16k ||
-      !audio16k.length
-    ) {
-
-      return {
-
-        text:
-          "",
-
-        chunks:
-          []
-
-      };
-
-    }
-
-
-    return await whisper(
-      audio16k,
-      {
-
-        return_timestamps:
-          true,
-
-        language:
-          "portuguese",
-
-        task:
-          "transcribe"
-
-      }
-    );
-
-  }
-
-
-  // =======================================================
-  // NORMALIZAR TIMESTAMPS
-  // =======================================================
-
-  function normalizeResult(
-    result,
-    offsetSeconds
-  ) {
-
-    const text =
-      String(
-        result?.text ||
-        ""
-      ).trim();
-
-
-    const normalizedChunks =
-      [];
-
-
-    const chunks =
-      Array.isArray(
-        result?.chunks
-      )
-
-        ? result.chunks
-
-        : [];
-
-
-    chunks.forEach(
-      chunk => {
-
-        const rawTimestamp =
-          Array.isArray(
-            chunk.timestamp
-          )
-
-            ? chunk.timestamp
-
-            : [
-                0,
-                null
-              ];
-
-
-        const localStart =
-          Number(
-            rawTimestamp[0] ||
-            0
-          );
-
-
-        const localEnd =
-          rawTimestamp[1] ==
-            null
-
-            ? null
-
-            : Number(
-                rawTimestamp[1]
-              );
-
-
-        normalizedChunks.push({
-
-          text:
-            String(
-              chunk.text ||
-              ""
-            ).trim(),
-
-
-          timestamp: [
-
-            offsetSeconds +
-            localStart,
-
-
-            localEnd ==
-              null
-
-              ? null
-
-              : offsetSeconds +
-                localEnd
-
-          ]
-
-        });
-
-      }
-    );
-
-
-    /*
-     * Si Whisper devuelve texto pero no chunks,
-     * conservamos igualmente el instante aproximado.
-     */
-
-    if (
-      text &&
-      !normalizedChunks.length
-    ) {
-
-      normalizedChunks.push({
-
-        text,
-
-        timestamp: [
-          offsetSeconds,
-          null
-        ]
-
-      });
-
-    }
-
-
-    return {
-
-      text,
-
-      chunks:
-        normalizedChunks
-
-    };
-
-  }
-
-
-  // =======================================================
-  // CREAR AUDIOWORKLET
-  // =======================================================
-
-  async function createCaptureWorklet(
-    audioContext
-  ) {
-
-    const workletCode =
-      `
-        class MundoInfinitoCaptureProcessor
-          extends AudioWorkletProcessor {
-
-          process(
-            inputs,
-            outputs,
-            parameters
-          ) {
-
-            const input =
-              inputs[0];
-
-            if (
-              !input ||
-              !input.length ||
-              !input[0] ||
-              !input[0].length
-            ) {
-
-              return true;
-
-            }
-
-
-            const length =
-              input[0].length;
-
-
-            const channels =
-              input.length;
-
-
-            const mono =
-              new Float32Array(
-                length
-              );
-
-
-            for (
-              let channel = 0;
-              channel < channels;
-              channel++
-            ) {
-
-              const source =
-                input[channel];
-
-
-              if (
-                !source
-              ) {
-
-                continue;
-
-              }
-
-
-              for (
-                let i = 0;
-                i < length;
-                i++
-              ) {
-
-                mono[i] +=
-                  source[i] /
-                  channels;
-
-              }
-
-            }
-
-
-            this.port.postMessage(
-              mono,
-              [
-                mono.buffer
-              ]
-            );
-
-
-            return true;
-
-          }
-
-        }
-
-
-        registerProcessor(
-          "mundo-infinito-capture",
-          MundoInfinitoCaptureProcessor
-        );
-      `;
-
-
-    const blob =
-      new Blob(
-        [
-          workletCode
-        ],
+    const context =
+      canvas.getContext(
+        "2d",
         {
-          type:
-            "text/javascript"
+          alpha:
+            false
         }
       );
 
 
-    const moduleUrl =
-      URL.createObjectURL(
-        blob
-      );
-
-
-    try {
-
-      await audioContext
-        .audioWorklet
-        .addModule(
-          moduleUrl
-        );
-
-
-    } finally {
-
-      URL.revokeObjectURL(
-        moduleUrl
-      );
-
-    }
-
-
-    return new AudioWorkletNode(
-      audioContext,
-      "mundo-infinito-capture"
+    context.drawImage(
+      video,
+      0,
+      0,
+      canvas.width,
+      canvas.height
     );
+
+
+    return canvas;
 
   }
 
 
   // =======================================================
-  // ANALIZAR ARCHIVO DE VÍDEO
+  // LIMPIAR TEXTO OCR
   // =======================================================
 
-  async function transcribeVideoFile(
+  function cleanOCRText(
+    text
+  ) {
+
+    return String(
+      text ||
+      ""
+    )
+      .replace(
+        /\r/g,
+        ""
+      )
+      .replace(
+        /[ \t]+/g,
+        " "
+      )
+      .replace(
+        /\n{3,}/g,
+        "\n\n"
+      )
+      .trim();
+
+  }
+
+
+  // =======================================================
+  // NORMALIZAR PARA COMPARAR
+  // =======================================================
+
+  function normalizeText(
+    text
+  ) {
+
+    return String(
+      text ||
+      ""
+    )
+      .normalize(
+        "NFD"
+      )
+      .replace(
+        /[\u0300-\u036f]/g,
+        ""
+      )
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9\s]/g,
+        " "
+      )
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .trim();
+
+  }
+
+
+  // =======================================================
+  // EVITAR TEXTO REPETIDO
+  // =======================================================
+
+  function isVerySimilar(
+    a,
+    b
+  ) {
+
+    const first =
+      normalizeText(
+        a
+      );
+
+
+    const second =
+      normalizeText(
+        b
+      );
+
+
+    if (
+      !first ||
+      !second
+    ) {
+
+      return false;
+
+    }
+
+
+    if (
+      first ===
+      second
+    ) {
+
+      return true;
+
+    }
+
+
+    if (
+      first.includes(
+        second
+      ) ||
+      second.includes(
+        first
+      )
+    ) {
+
+      const shortest =
+        Math.min(
+          first.length,
+          second.length
+        );
+
+
+      const longest =
+        Math.max(
+          first.length,
+          second.length
+        );
+
+
+      return (
+        shortest /
+        longest
+      ) >
+      0.72;
+
+    }
+
+
+    return false;
+
+  }
+
+
+  // =======================================================
+  // ANALIZAR TEXTO DEL VÍDEO
+  // =======================================================
+
+  async function analyzeVideoFrames(
     file,
     onProgress = null
   ) {
@@ -779,86 +688,11 @@
     }
 
 
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-
-    console.log(
-      "🧠 MUNDO INFINITO · ANALIZADOR v0.4.1"
-    );
-
-
-    console.log(
-      "CPU/WASM q4 · memoria reducida"
-    );
-
-
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-
-    console.log(
-      "📄 Vídeo:",
-      {
-
-        name:
-          file.name,
-
-        type:
-          file.type,
-
-        sizeMB:
-          Math.round(
-            (
-              file.size /
-              1024 /
-              1024
-            ) * 10
-          ) / 10
-
-      }
-    );
-
-
-    // =====================================================
-    // 1. CARGAR WHISPER
-    // =====================================================
-
-    const whisper =
-      await getTranscriber(
+    const worker =
+      await getOCRWorker(
         onProgress
       );
 
-
-    // =====================================================
-    // 2. AUDIO CONTEXT
-    // =====================================================
-
-    const AudioContextClass =
-      window.AudioContext ||
-      window.webkitAudioContext;
-
-
-    if (
-      !AudioContextClass
-    ) {
-
-      throw new Error(
-        "Este navegador no dispone de AudioContext"
-      );
-
-    }
-
-
-    const audioContext =
-      new AudioContextClass();
-
-
-    // =====================================================
-    // 3. VÍDEO INTERNO
-    // =====================================================
 
     const video =
       document.createElement(
@@ -880,16 +714,12 @@
       "metadata";
 
 
-    video.playsInline =
+    video.muted =
       true;
 
 
-    video.controls =
-      false;
-
-
-    video.volume =
-      1;
+    video.playsInline =
+      true;
 
 
     video.style.position =
@@ -897,10 +727,6 @@
 
 
     video.style.left =
-      "-99999px";
-
-
-    video.style.top =
       "-99999px";
 
 
@@ -912,146 +738,297 @@
       "1px";
 
 
-    video.style.opacity =
-      "0";
-
-
     document.body.appendChild(
       video
     );
 
 
-    // =====================================================
-    // ESTADO DE CAPTURA
-    // =====================================================
+    try {
 
-    let sourceNode =
-      null;
-
-
-    let workletNode =
-      null;
-
-
-    let silentGain =
-      null;
-
-
-    let ended =
-      false;
-
-
-    let captureFinished =
-      false;
-
-
-    let processing =
-      false;
-
-
-    let pausedByQueue =
-      false;
-
-
-    let accumulator =
-      null;
-
-
-    let accumulatorOffset =
-      0;
-
-
-    let capturedSamples =
-      0;
-
-
-    const queue =
-      [];
-
-
-    const textParts =
-      [];
-
-
-    const finalChunks =
-      [];
-
-
-    let resolveFinished =
-      null;
-
-
-    let rejectFinished =
-      null;
-
-
-    const finishedPromise =
-      new Promise(
-        (
-          resolve,
-          reject
-        ) => {
-
-          resolveFinished =
-            resolve;
-
-
-          rejectFinished =
-            reject;
-
-        }
+      await waitForMetadata(
+        video
       );
 
 
-    // =====================================================
-    // LIMPIAR
-    // =====================================================
-
-    async function cleanup() {
-
-      try {
-
-        video.pause();
-
-      } catch (_) {}
+      const duration =
+        Number(
+          video.duration ||
+          0
+        );
 
 
-      try {
+      if (
+        !Number.isFinite(
+          duration
+        ) ||
+        duration <= 0
+      ) {
 
-        workletNode
-          ?.disconnect();
+        throw new Error(
+          "No se pudo determinar la duración del vídeo"
+        );
 
-      } catch (_) {}
-
-
-      try {
-
-        sourceNode
-          ?.disconnect();
-
-      } catch (_) {}
+      }
 
 
-      try {
-
-        silentGain
-          ?.disconnect();
-
-      } catch (_) {}
+      console.log(
+        `🎬 Vídeo de ${duration.toFixed(1)} segundos`
+      );
 
 
-      try {
-
-        await audioContext.close();
-
-      } catch (_) {}
+      const times =
+        [];
 
 
-      try {
+      /*
+       * Siempre analizamos el principio.
+       */
 
-        video.remove();
+      times.push(
+        0
+      );
 
-      } catch (_) {}
+
+      for (
+        let second =
+          FRAME_INTERVAL_SECONDS;
+        second <
+          duration;
+        second +=
+          FRAME_INTERVAL_SECONDS
+      ) {
+
+        times.push(
+          second
+        );
+
+      }
+
+
+      /*
+       * Y también cerca del final.
+       */
+
+      if (
+        duration >
+        2
+      ) {
+
+        const last =
+          Math.max(
+            0,
+            duration -
+            1
+          );
+
+
+        if (
+          !times.some(
+            value =>
+              Math.abs(
+                value -
+                last
+              ) <
+              1
+          )
+        ) {
+
+          times.push(
+            last
+          );
+
+        }
+
+      }
+
+
+      const canvas =
+        createFrameCanvas(
+          video
+        );
+
+
+      const findings =
+        [];
+
+
+      let previousText =
+        "";
+
+
+      for (
+        let index = 0;
+        index <
+          times.length;
+        index++
+      ) {
+
+        const second =
+          times[index];
+
+
+        console.log(
+          `👁️ Leyendo fotograma ${index + 1}/${times.length} · ${second.toFixed(1)} s`
+        );
+
+
+        if (
+          typeof onProgress ===
+          "function"
+        ) {
+
+          onProgress({
+
+            stage:
+              "frames",
+
+            status:
+              "reading",
+
+            frame:
+              index + 1,
+
+            total_frames:
+              times.length,
+
+            current_second:
+              second,
+
+            progress:
+              (
+                index /
+                times.length
+              ) * 100
+
+          });
+
+        }
+
+
+        await seekVideo(
+          video,
+          second
+        );
+
+
+        /*
+         * Dejamos un instante para que el frame
+         * quede realmente renderizado.
+         */
+
+        await sleep(
+          80
+        );
+
+
+        captureFrame(
+          video,
+          canvas
+        );
+
+
+        const result =
+          await worker.recognize(
+            canvas
+          );
+
+
+        const text =
+          cleanOCRText(
+            result?.data?.text
+          );
+
+
+        console.log(
+          `📝 OCR ${second.toFixed(1)}s:`,
+          text
+        );
+
+
+        if (
+          text &&
+          !isVerySimilar(
+            text,
+            previousText
+          )
+        ) {
+
+          findings.push({
+
+            text,
+
+            timestamp: [
+              second,
+              null
+            ],
+
+            source:
+              "screen"
+
+          });
+
+
+          previousText =
+            text;
+
+        }
+
+
+        /*
+         * Tiempo para liberar referencias del
+         * proceso OCR anterior antes del siguiente.
+         */
+
+        await sleep(
+          50
+        );
+
+      }
+
+
+      const fullText =
+        findings
+          .map(
+            finding =>
+              finding.text
+          )
+          .join(
+            "\n"
+          )
+          .trim();
+
+
+      return {
+
+        text:
+          fullText,
+
+        chunks:
+          findings,
+
+        visualText:
+          fullText,
+
+        visualChunks:
+          findings
+
+      };
+
+
+    } finally {
+
+      video.pause();
+
+
+      video.removeAttribute(
+        "src"
+      );
+
+
+      video.load();
+
+
+      video.remove();
 
 
       URL.revokeObjectURL(
@@ -1060,854 +1037,205 @@
 
     }
 
-
-    // =====================================================
-    // FINAL
-    // =====================================================
-
-    function checkFinished() {
-
-      if (
-        !captureFinished
-      ) {
-
-        return;
-
-      }
-
-
-      if (
-        processing
-      ) {
-
-        return;
-
-      }
-
-
-      if (
-        queue.length
-      ) {
-
-        return;
-
-      }
-
-
-      resolveFinished?.();
-
-    }
-
-
-    // =====================================================
-    // CONTROL DE MEMORIA
-    // =====================================================
-
-    function updateBackpressure() {
-
-      /*
-       * MAX_QUEUE = 1:
-       *
-       * si Whisper todavía está trabajando,
-       * dejamos de reproducir temporalmente.
-       *
-       * Esto evita acumular audio en RAM.
-       */
-
-      if (
-        queue.length >=
-          MAX_QUEUE &&
-        !video.paused
-      ) {
-
-        pausedByQueue =
-          true;
-
-
-        video.pause();
-
-
-        console.log(
-          "⏸️ Esperando a Whisper para ahorrar memoria"
-        );
-
-      }
-
-    }
-
-
-    async function resumeIfPossible() {
-
-      if (
-        !pausedByQueue
-      ) {
-
-        return;
-
-      }
-
-
-      if (
-        queue.length >=
-        MAX_QUEUE
-      ) {
-
-        return;
-
-      }
-
-
-      if (
-        ended
-      ) {
-
-        return;
-
-      }
-
-
-      pausedByQueue =
-        false;
-
-
-      try {
-
-        await video.play();
-
-
-        console.log(
-          "▶️ Continuando captura"
-        );
-
-
-      } catch (
-        error
-      ) {
-
-        console.warn(
-          "No se pudo reanudar:",
-          error
-        );
-
-      }
-
-    }
-
-
-    // =====================================================
-    // PROCESAR COLA
-    // =====================================================
-
-    async function processQueue() {
-
-      if (
-        processing
-      ) {
-
-        return;
-
-      }
-
-
-      processing =
-        true;
-
-
-      try {
-
-        while (
-          queue.length
-        ) {
-
-          const item =
-            queue.shift();
-
-
-          const audio16k =
-            resampleFloat32(
-              item.audio,
-              audioContext.sampleRate,
-              TARGET_SAMPLE_RATE
-            );
-
-
-          /*
-           * Eliminamos inmediatamente la referencia
-           * al PCM original.
-           */
-
-          item.audio =
-            null;
-
-
-          await resumeIfPossible();
-
-
-          console.log(
-            `🎧 Whisper desde ${item.startSecond.toFixed(1)} s`
-          );
-
-
-          if (
-            typeof onProgress ===
-            "function"
-          ) {
-
-            onProgress({
-
-              status:
-                "transcribing",
-
-              stage:
-                "whisper",
-
-              current_second:
-                item.startSecond,
-
-              duration:
-                Number.isFinite(
-                  video.duration
-                )
-
-                  ? video.duration
-
-                  : null
-
-            });
-
-          }
-
-
-          const result =
-            await transcribePCMChunk(
-              whisper,
-              audio16k
-            );
-
-
-          const normalized =
-            normalizeResult(
-              result,
-              item.startSecond
-            );
-
-
-          if (
-            normalized.text
-          ) {
-
-            textParts.push(
-              normalized.text
-            );
-
-          }
-
-
-          finalChunks.push(
-            ...normalized.chunks
-          );
-
-
-          console.log(
-            "✅ Fragmento procesado"
-          );
-
-
-          await new Promise(
-            resolve =>
-              window.setTimeout(
-                resolve,
-                50
-              )
-          );
-
-
-          await resumeIfPossible();
-
-        }
-
-
-      } catch (
-        error
-      ) {
-
-        rejectFinished?.(
-          error
-        );
-
-
-      } finally {
-
-        processing =
-          false;
-
-
-        await resumeIfPossible();
-
-
-        checkFinished();
-
-      }
-
-    }
-
-
-    // =====================================================
-    // AÑADIR FRAGMENTO A COLA
-    // =====================================================
-
-    function enqueueChunk(
-      audio,
-      startSecond
-    ) {
-
-      if (
-        !audio ||
-        !audio.length
-      ) {
-
-        return;
-
-      }
-
-
-      queue.push({
-
-        audio,
-
-        startSecond
-
-      });
-
-
-      updateBackpressure();
-
-
-      processQueue();
-
-    }
-
-
-    // =====================================================
-    // EJECUTAR
-    // =====================================================
-
-    try {
-
-      // ---------------------------------------------------
-      // METADATA
-      // ---------------------------------------------------
-
-      if (
-        video.readyState <
-        1
-      ) {
-
-        await waitForEvent(
-          video,
-          "loadedmetadata",
-          20000
-        );
-
-      }
-
-
-      console.log(
-        "🎬 Duración:",
-        Number.isFinite(
-          video.duration
-        )
-
-          ? `${video.duration.toFixed(1)} segundos`
-
-          : "desconocida"
-      );
-
-
-      // ---------------------------------------------------
-      // AUDIO WORKLET
-      // ---------------------------------------------------
-
-      await audioContext.resume();
-
-
-      sourceNode =
-        audioContext
-          .createMediaElementSource(
-            video
-          );
-
-
-      workletNode =
-        await createCaptureWorklet(
-          audioContext
-        );
-
-
-      silentGain =
-        audioContext.createGain();
-
-
-      silentGain.gain.value =
-        0;
-
-
-      sourceNode.connect(
-        workletNode
-      );
-
-
-      workletNode.connect(
-        silentGain
-      );
-
-
-      silentGain.connect(
-        audioContext.destination
-      );
-
-
-      // ---------------------------------------------------
-      // SOLO 10 SEGUNDOS DE AUDIO EN MEMORIA
-      // ---------------------------------------------------
-
-      const chunkSamples =
-        Math.max(
-          1,
-          Math.round(
-            audioContext.sampleRate *
-            CHUNK_SECONDS
-          )
-        );
-
-
-      accumulator =
-        new Float32Array(
-          chunkSamples
-        );
-
-
-      // ---------------------------------------------------
-      // DATOS DEL AUDIOWORKLET
-      // ---------------------------------------------------
-
-      workletNode
-        .port
-        .onmessage =
-          event => {
-
-            const incoming =
-              event.data;
-
-
-            if (
-              !(
-                incoming instanceof
-                Float32Array
-              ) ||
-              !incoming.length
-            ) {
-
-              return;
-
-            }
-
-
-            let readOffset =
-              0;
-
-
-            while (
-              readOffset <
-              incoming.length
-            ) {
-
-              const available =
-                accumulator.length -
-                accumulatorOffset;
-
-
-              const remaining =
-                incoming.length -
-                readOffset;
-
-
-              const amount =
-                Math.min(
-                  available,
-                  remaining
-                );
-
-
-              accumulator.set(
-                incoming.subarray(
-                  readOffset,
-                  readOffset +
-                  amount
-                ),
-                accumulatorOffset
-              );
-
-
-              accumulatorOffset +=
-                amount;
-
-
-              capturedSamples +=
-                amount;
-
-
-              readOffset +=
-                amount;
-
-
-              // -------------------------------------------
-              // FRAGMENTO COMPLETO
-              // -------------------------------------------
-
-              if (
-                accumulatorOffset >=
-                accumulator.length
-              ) {
-
-                const startSecond =
-                  (
-                    capturedSamples -
-                    accumulator.length
-                  ) /
-                  audioContext.sampleRate;
-
-
-                const readyChunk =
-                  accumulator;
-
-
-                accumulator =
-                  new Float32Array(
-                    chunkSamples
-                  );
-
-
-                accumulatorOffset =
-                  0;
-
-
-                enqueueChunk(
-                  readyChunk,
-                  startSecond
-                );
-
-              }
-
-            }
-
-          };
-
-
-      // ---------------------------------------------------
-      // PROGRESO
-      // ---------------------------------------------------
-
-      video.addEventListener(
-        "timeupdate",
-        () => {
-
-          if (
-            typeof onProgress !==
-            "function"
-          ) {
-
-            return;
-
-          }
-
-
-          const duration =
-            video.duration;
-
-
-          const current =
-            video.currentTime;
-
-
-          onProgress({
-
-            status:
-              "capturing",
-
-            stage:
-              "audio",
-
-            current_second:
-              current,
-
-
-            duration:
-              Number.isFinite(
-                duration
-              )
-
-                ? duration
-
-                : null,
-
-
-            progress:
-              Number.isFinite(
-                duration
-              ) &&
-              duration > 0
-
-                ? (
-                    current /
-                    duration
-                  ) * 100
-
-                : null
-
-          });
-
-        }
-      );
-
-
-      // ---------------------------------------------------
-      // FINAL DEL VÍDEO
-      // ---------------------------------------------------
-
-      video.addEventListener(
-        "ended",
-        () => {
-
-          ended =
-            true;
-
-
-          console.log(
-            "🎬 Captura terminada"
-          );
-
-
-          window.setTimeout(
-            () => {
-
-              if (
-                accumulatorOffset >
-                0
-              ) {
-
-                const partial =
-                  accumulator.slice(
-                    0,
-                    accumulatorOffset
-                  );
-
-
-                const startSecond =
-                  (
-                    capturedSamples -
-                    accumulatorOffset
-                  ) /
-                  audioContext.sampleRate;
-
-
-                enqueueChunk(
-                  partial,
-                  startSecond
-                );
-
-
-                accumulatorOffset =
-                  0;
-
-              }
-
-
-              accumulator =
-                null;
-
-
-              captureFinished =
-                true;
-
-
-              checkFinished();
-
-            },
-            150
-          );
-
-        },
-        {
-          once:
-            true
-        }
-      );
-
-
-      // ---------------------------------------------------
-      // EMPEZAR
-      // ---------------------------------------------------
-
-      console.log(
-        "🎙️ Capturando audio sin cargar el vídeo completo…"
-      );
-
-
-      try {
-
-        await video.play();
-
-
-      } catch (
-        playError
-      ) {
-
-        throw new Error(
-          "Chrome bloqueó la reproducción interna. Selecciona otra vez el vídeo."
-        );
-
-      }
-
-
-      await finishedPromise;
-
-
-      // ===================================================
-      // RESULTADO FINAL
-      // ===================================================
-
-      const finalResult = {
-
-        text:
-          textParts
-            .join(" ")
-            .replace(
-              /\s+/g,
-              " "
-            )
-            .trim(),
-
-
-        chunks:
-          finalChunks
-
-      };
-
-
-      console.log(
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      );
-
-
-      console.log(
-        "✅ TRANSCRIPCIÓN v0.4.1 TERMINADA"
-      );
-
-
-      console.log(
-        finalResult
-      );
-
-
-      console.log(
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      );
-
-
-      if (
-        typeof onProgress ===
-        "function"
-      ) {
-
-        onProgress({
-
-          status:
-            "done",
-
-          stage:
-            "complete",
-
-          progress:
-            100
-
-        });
-
-      }
-
-
-      return finalResult;
-
-
-    } catch (
-      error
-    ) {
-
-      console.error(
-        "❌ Error del analizador v0.4.1:",
-        error
-      );
-
-
-      throw error;
-
-
-    } finally {
-
-      await cleanup();
-
-    }
-
   }
 
 
   // =======================================================
-  // TRANSCRIBIR PCM DIRECTAMENTE
+  // FUNCIÓN COMPATIBLE CON VIDEO-EXPLORER.JS
   // =======================================================
 
-  async function transcribeAudio(
-    audio,
+  async function transcribeVideoFile(
+    file,
     onProgress = null
   ) {
 
-    if (
-      !audio
-    ) {
-
-      throw new Error(
-        "No se recibió audio"
-      );
-
-    }
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
 
 
-    const whisper =
-      await getTranscriber(
+    console.log(
+      "👁️ MUNDO INFINITO · ANÁLISIS VISUAL v0.5"
+    );
+
+
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
+
+
+    /*
+     * En v0.5 usamos OCR como fuente principal.
+     *
+     * Conservamos el nombre transcribeVideoFile()
+     * porque video-explorer.js ya llama a esta función.
+     */
+
+    const visualResult =
+      await analyzeVideoFrames(
+        file,
         onProgress
       );
 
 
-    return await whisper(
-      audio,
-      {
+    let audioText =
+      "";
 
-        return_timestamps:
-          true,
 
-        language:
-          "portuguese",
+    let audioChunks =
+      [];
 
-        task:
-          "transcribe"
 
-      }
+    /*
+     * Whisper queda desactivado por defecto.
+     * Evitamos así el error Out of Memory.
+     */
+
+    if (
+      ENABLE_WHISPER
+    ) {
+
+      console.warn(
+        "Whisper está activado experimentalmente."
+      );
+
+      /*
+       * Aquí podremos reincorporar después
+       * una implementación ligera de audio.
+       */
+
+    }
+
+
+    // =====================================================
+    // UNIR AUDIO + TEXTO VISUAL
+    // =====================================================
+
+    const combinedText =
+      [
+        visualResult.text,
+        audioText
+      ]
+        .filter(
+          Boolean
+        )
+        .join(
+          "\n"
+        )
+        .trim();
+
+
+    const combinedChunks =
+      [
+        ...visualResult.chunks,
+        ...audioChunks
+      ]
+        .sort(
+          (
+            a,
+            b
+          ) => {
+
+            const aTime =
+              Array.isArray(
+                a.timestamp
+              )
+                ? Number(
+                    a.timestamp[0] ||
+                    0
+                  )
+                : 0;
+
+
+            const bTime =
+              Array.isArray(
+                b.timestamp
+              )
+                ? Number(
+                    b.timestamp[0] ||
+                    0
+                  )
+                : 0;
+
+
+            return (
+              aTime -
+              bTime
+            );
+
+          }
+        );
+
+
+    const result = {
+
+      text:
+        combinedText,
+
+      chunks:
+        combinedChunks,
+
+      visualText:
+        visualResult.text,
+
+      visualChunks:
+        visualResult.chunks,
+
+      audioText,
+
+      audioChunks
+
+    };
+
+
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     );
+
+
+    console.log(
+      "✅ ANÁLISIS VISUAL TERMINADO"
+    );
+
+
+    console.log(
+      result
+    );
+
+
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
+
+
+    if (
+      typeof onProgress ===
+      "function"
+    ) {
+
+      onProgress({
+
+        stage:
+          "complete",
+
+        status:
+          "done",
+
+        progress:
+          100
+
+      });
+
+    }
+
+
+    return result;
 
   }
 
 
   // =======================================================
-  // TRANSCRIBIR DESDE URL
+  // DESDE URL
   // =======================================================
 
   async function transcribeVideoUrl(
@@ -1924,11 +1252,6 @@
       );
 
     }
-
-
-    console.log(
-      "🌐 Obteniendo vídeo…"
-    );
 
 
     const response =
@@ -1957,11 +1280,13 @@
         [
           blob
         ],
-        "mundo-infinito.mp4",
+        "mundo-infinito-video.mp4",
         {
+
           type:
             blob.type ||
             "video/mp4"
+
         }
       );
 
@@ -1975,24 +1300,54 @@
 
 
   // =======================================================
+  // LIBERAR OCR
+  // =======================================================
+
+  async function dispose() {
+
+    if (
+      tesseractWorker
+    ) {
+
+      try {
+
+        await tesseractWorker
+          .terminate();
+
+      } catch (_) {}
+
+    }
+
+
+    tesseractWorker =
+      null;
+
+
+    tesseractReady =
+      false;
+
+  }
+
+
+  // =======================================================
   // API PÚBLICA
   // =======================================================
 
   window.MundoInfinitoAnalyzer = {
 
-    getTranscriber,
-
-    transcribeAudio,
+    analyzeVideoFrames,
 
     transcribeVideoFile,
 
-    transcribeVideoUrl
+    transcribeVideoUrl,
+
+    dispose
 
   };
 
 
   console.log(
-    "✅ MundoInfinitoAnalyzer v0.4.1 preparado · CPU/WASM q4"
+    "✅ MundoInfinitoAnalyzer v0.5 preparado · OCR visual"
   );
 
 
