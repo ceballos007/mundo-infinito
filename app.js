@@ -1,3101 +1,3326 @@
-// =========================================================
-// MUNDO INFINITO · v0.6.0
-// Mapa + Supabase + descubrimientos compartidos
-// Vídeos + favoritos + buscador
-// =========================================================
-
-"use strict";
-
-// =========================================================
-// CONFIGURACIÓN GENERAL
-// =========================================================
-
-const CONFIG = {
-  city: "Río de Janeiro",
-  country: "Brasil",
-
-  center: [
-    -22.94,
-    -43.22
-  ],
-
-  zoom: 11,
-
-  storage: {
-    discoveries:
-      "mundoInfinitoDescubrimientos",
-
-    savedPlaces:
-      "mundoInfinitoLugaresGuardados",
-
-    deviceId:
-      "mundoInfinitoDeviceId"
-  }
-};
-
-// =========================================================
-// CONEXIÓN CON SUPABASE
-// =========================================================
-
-let supabaseClient = null;
-
-function initializeSupabase() {
-
-  try {
-
-    if (
-      typeof window.supabase === "undefined"
-    ) {
-
-      console.warn(
-        "Supabase todavía no está disponible."
-      );
-
-      return false;
-    }
-
-    if (
-      typeof SUPABASE_URL === "undefined" ||
-      typeof SUPABASE_KEY === "undefined"
-    ) {
-
-      console.warn(
-        "No se encontró supabase-config.js"
-      );
-
-      return false;
-    }
-
-    supabaseClient =
-      window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-      );
-
-    console.log(
-      "☁️ Supabase conectado"
-    );
-
-    return true;
-
-  } catch (error) {
-
-    console.error(
-      "Error conectando Supabase:",
-      error
-    );
-
-    return false;
-  }
-}
-
-// =========================================================
-// IDENTIFICADOR DEL DISPOSITIVO
-// =========================================================
-
-function getDeviceId() {
-
-  let deviceId =
-    localStorage.getItem(
-      CONFIG.storage.deviceId
-    );
-
-  if (!deviceId) {
-
-    deviceId =
-      crypto.randomUUID
-        ? crypto.randomUUID()
-        : `device-${Date.now()}-${Math.random()
-            .toString(36)
-            .slice(2)}`;
-
-    localStorage.setItem(
-      CONFIG.storage.deviceId,
-      deviceId
-    );
-  }
-
-  return deviceId;
-}
-
-const DEVICE_ID =
-  getDeviceId();
-
-// =========================================================
-// LUGARES BASE
-// =========================================================
-
-const defaultPlaces = [];
-
-// =========================================================
-// ESTADO DE LA APLICACIÓN
-// =========================================================
-
-let places = [];
-
-let videos = [];
-
-let discoveries = [];
-
-let selectedPlace = null;
-
-let supabaseOnline = false;
-
-const markers =
-  new Map();
-
-// =========================================================
-// ELEMENTOS DE LA INTERFAZ
-// =========================================================
-
-const searchInput =
-  document.getElementById(
-    "searchInput"
-  );
-
-const clearSearch =
-  document.getElementById(
-    "clearSearch"
-  );
-
-const searchResults =
-  document.getElementById(
-    "searchResults"
-  );
-
-const openDiscoveryModal =
-  document.getElementById(
-    "openDiscoveryModal"
-  );
-
-const discoveryModal =
-  document.getElementById(
-    "discoveryModal"
-  );
-
-const closeDiscoveryModal =
-  document.getElementById(
-    "closeDiscoveryModal"
-  );
-
-const discoveryForm =
-  document.getElementById(
-    "discoveryForm"
-  );
-
-const useMapCenter =
-  document.getElementById(
-    "useMapCenter"
-  );
-
-const discoveryLat =
-  document.getElementById(
-    "discoveryLat"
-  );
-
-const discoveryLng =
-  document.getElementById(
-    "discoveryLng"
-  );
-
-const placePanel =
-  document.getElementById(
-    "placePanel"
-  );
-
-const closePlacePanel =
-  document.getElementById(
-    "closePlacePanel"
-  );
-
-const placeCoverIcon =
-  document.getElementById(
-    "placeCoverIcon"
-  );
-
-const placeCategory =
-  document.getElementById(
-    "placeCategory"
-  );
-
-const placeName =
-  document.getElementById(
-    "placeName"
-  );
-
-const placeZone =
-  document.getElementById(
-    "placeZone"
-  );
-
-const placeDescription =
-  document.getElementById(
-    "placeDescription"
-  );
-
-const placeLocationText =
-  document.getElementById(
-    "placeLocationText"
-  );
-
-const placeTip =
-  document.getElementById(
-    "placeTip"
-  );
-
-const placeVideosButton =
-  document.getElementById(
-    "placeVideosButton"
-  );
-
-const placeVideoActionText =
-  document.getElementById(
-    "placeVideoActionText"
-  );
-
-const placeVideoCount =
-  document.getElementById(
-    "placeVideoCount"
-  );
-
-const placeVideosList =
-  document.getElementById(
-    "placeVideosList"
-  );
-
-const savePlaceButton =
-  document.getElementById(
-    "savePlaceButton"
-  );
-
-const placeMapsButton =
-  document.getElementById(
-    "placeMapsButton"
-  );
-
-const contentPanel =
-  document.getElementById(
-    "contentPanel"
-  );
-
-const contentPanelTitle =
-  document.getElementById(
-    "contentPanelTitle"
-  );
-
-const contentPanelBody =
-  document.getElementById(
-    "contentPanelBody"
-  );
-
-const closeContentPanel =
-  document.getElementById(
-    "closeContentPanel"
-  );
-
-const toast =
-  document.getElementById(
-    "toast"
-  );
-
-const navButtons =
-  document.querySelectorAll(
-    ".nav-button"
-  );
-
-// =========================================================
-// REPRODUCTOR
-// =========================================================
-
-const videoModal =
-  document.getElementById(
-    "videoModal"
-  );
-
-const closeVideoModal =
-  document.getElementById(
-    "closeVideoModal"
-  );
-
-const videoPlayer =
-  document.getElementById(
-    "videoPlayer"
-  );
-
-const videoModalTitle =
-  document.getElementById(
-    "videoModalTitle"
-  );
-
-const videoModalPlace =
-  document.getElementById(
-    "videoModalPlace"
-  );
-
-// =========================================================
-// UTILIDADES
-// =========================================================
-
-function loadJSON(
-  key,
-  fallback
-) {
-
-  try {
-
-    const value =
-      localStorage.getItem(key);
-
-    if (!value) {
-      return fallback;    }
-
-    return JSON.parse(value);
-
-  } catch (error) {
-
-    console.error(
-      `No se pudo leer ${key}:`,
-      error
-    );
-
-    return fallback;
-  }
-}
-
-function saveJSON(
-  key,
-  value
-) {
-
-  try {
-
-    localStorage.setItem(
-      key,
-      JSON.stringify(value)
-    );
-
-  } catch (error) {
-
-    console.error(
-      `No se pudo guardar ${key}:`,
-      error
-    );
-  }
-}
-
-function normalize(text) {
-
-  return String(
-    text || ""
-  )
-    .normalize("NFD")
-    .replace(
-      /[\u0300-\u036f]/g,
-      ""
-    )
-    .toLowerCase();
-}
-
-function slug(text) {
-
-  return normalize(text)
-    .trim()
-    .replace(
-      /[^a-z0-9]+/g,
-      "-"
-    )
-    .replace(
-      /^-|-$/g,
-      ""
-    );
-}
-
-function escapeHTML(value) {
-
-  return String(
-    value || ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
-}
-
-function showToast(message) {
-
-  if (!toast) {
-    return;
-  }
-
-  toast.textContent =
-    message;
-
-  toast.classList.add(
-    "show"
-  );
-
-  window.clearTimeout(
-    showToast.timeout
-  );
-
-  showToast.timeout =
-    window.setTimeout(
-      () => {
-
-        toast.classList.remove(
-          "show"
-        );
-
-      },
-      2500
-    );
-}
-
-// =========================================================
-// CATEGORÍAS
-// =========================================================
-
-const categoryIcons = {
-
-  Lugar:
-    "📍",
-
-  Mirador:
-    "🌄",
-
-  Playa:
-    "🏖️",
-
-  Cultura:
-    "🎨",
-
-  Parque:
-    "🌿",
-
-  Compras:
-    "🛍️",
-
-  "Vida nocturna":
-    "🍹",
-
-  Transporte:
-    "✈️",
-
-  Restaurante:
-    "🍴",
-
-  Gastronomía:
-    "🥘",
-
-  Consejo:
-    "💡"
-};
-
-const categoryTips = {
-
-  Lugar:
-    "Comprueba horarios y entradas antes de ir.",
-
-  Mirador:
-    "El amanecer o el atardecer suelen ofrecer las mejores vistas.",
-
-  Playa:
-    "Lleva protección solar, agua y vigila tus pertenencias.",
-
-  Cultura:
-    "Ir temprano suele permitir disfrutarlo con más tranquilidad.",
-
-  Parque:
-    "Lleva agua y calzado cómodo.",
-
-  Compras:
-    "Compara precios antes de comprar y lleva algo de efectivo.",
-
-  "Vida nocturna":
-    "Planifica el transporte de vuelta antes de salir.",
-
-  Transporte:
-    "Confirma el punto exacto de recogida antes de desplazarte.",
-
-  Restaurante:
-    "Comprueba horarios y si es necesario reservar.",
-
-  Gastronomía:
-    "Pregunta por la especialidad de la casa.",
-
-  Consejo:
-    "Guárdalo para consultarlo durante el viaje."
-};// =========================================================
-// MAPA
-// =========================================================
-
-const map = L.map(
-  "map",
-  {
-    zoomControl: false
-  }
-).setView(
-  CONFIG.center,
-  CONFIG.zoom
-);
-
-L.control.zoom({
-  position: "bottomleft"
-}).addTo(map);
-
-L.tileLayer(
-  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {
-    attribution: "&copy; OpenStreetMap",
-    maxZoom: 19
-  }
-).addTo(map);
-
-// =========================================================
-// ICONOS DEL MAPA
-// =========================================================
-
-function markerClass(category) {
-
-  return normalize(category)
-    .replace(/\s+/g, "-");
-}
-
-function resolveCategoryIcon(category) {
-
-  const raw =
-    String(
-      category ||
-      ""
-    ).trim();
-
-  const key =
-    normalize(
-      raw
-    );
-
-  const aliases = {
-
-    lugar:
-      "\u{1F4CD}",
-
-    restaurante:
-      "\u{1F374}",
-
-    restaurant:
-      "\u{1F374}",
-
-    bar:
-      "\u{1F379}",
-
-    boteco:
-      "\u{1F379}",
-
-    gastronomia:
-      "\u{1F958}",
-
-    comida:
-      "\u{1F958}",
-
-    playa:
-      "\u{1F3D6}\u{FE0F}",
-
-    praia:
-      "\u{1F3D6}\u{FE0F}",
-
-    mirador:
-      "\u{1F304}",
-
-    viewpoint:
-      "\u{1F304}",
-
-    cultura:
-      "\u{1F3A8}",
-
-    parque:
-      "\u{1F33F}",
-
-    compras:
-      "\u{1F6CD}\u{FE0F}",
-
-    shopping:
-      "\u{1F6CD}\u{FE0F}",
-
-    "vida nocturna":
-      "\u{1F379}",
-
-    nightlife:
-      "\u{1F379}",
-
-    transporte:
-      "\u{1F695}",
-
-    transport:
-      "\u{1F695}",
-
-    consejo:
-      "\u{1F4A1}",
-
-    aviso:
-      "\u{26A0}\u{FE0F}",
-
-    evento:
-      "\u{1F389}",
-
-    precio:
-      "\u{1F4B0}",
-
-    otro:
-      "\u{2728}"
-
-  };
-
-  return (
-    aliases[
-      key
-    ] ||
-    "\u{1F4CD}"
-  );
-}
-
-
-// =========================================================
-// CREAR ICONO DEL MARCADOR
-// =========================================================
-
-function createMarkerIcon(place) {
-
-  const icon =
-    resolveCategoryIcon(
-      place.category
-    );
-
-  return L.divIcon({
-
-    className:
-      "",
-
-    html:
-      `
-        <div
-          class="custom-marker ${markerClass(place.category)}"
-        >
-          <span>${icon}</span>        </div>
-      `,
-
-    iconSize:
-      [
-        38,
-        38
-      ],
-
-    iconAnchor:
-      [
-        19,
-        38
-      ]
-
-  });
-}
-
-
-// =========================================================
-// AÑADIR MARCADOR AL MAPA
-// =========================================================
-
-function addMarker(place) {
-
-  if (
-    !Number.isFinite(
-      Number(
-        place.lat
-      )
-    ) ||
-    !Number.isFinite(
-      Number(
-        place.lng
-      )
-    )
-  ) {
-
-    return;
-  }
-
-  if (
-    markers.has(
-      place.id
-    )
-  ) {
-
-    return;
-  }
-
-  const marker =
-    L.marker(
-      [
-        Number(
-          place.lat
-        ),
-
-        Number(
-          place.lng
-        )
-      ],
-      {
-
-        icon:
-          createMarkerIcon(
-            place
-          ),
-
-        title:
-          place.name
-
-      }
-    )
-      .addTo(
-        map
-      );
-
-  marker.on(
-    "click",
-    () => {
-
-      openPlace(
-        place.id
-      );
-
-    }
-  );
-
-  markers.set(
-    place.id,
-    marker
-  );
-}
-
-
-function renderMarkers() {
-
-  markers.forEach(
-    marker => {
-
-      marker.remove();
-
-    }
-  );
-
-  markers.clear();
-
-  places.forEach(
-    place => {
-
-      addMarker(
-        place
-      );
-
-    }
-  );
-}
-
-
-// =========================================================
-// CARGAR JSON ANTIGUOS
-// Seguimos conservando places.json y videos.json
-// =========================================================
-
-async function fetchJSON(
-  path,
-  fallback = []
-) {
-
-  try {
-
-    const response =
-      await fetch(
-        path,
-        {
-          cache: "no-store"
-        }
-      );
-
-    if (!response.ok) {
-
-      throw new Error(
-        `Error ${response.status} cargando ${path}`
-      );
-    }
-
-    const data =
-      await response.json();
-
-    return Array.isArray(data)
-      ? data
-      : fallback;
-
-  } catch (error) {
-
-    console.warn(
-      `No se pudo cargar ${path}.`,
-      error
-    );
-
-    return fallback;
-  }
-}
-
-// =========================================================
-// NORMALIZAR LUGARES
-// Permite mezclar:
-// - lugares originales
-// - places.json
-// - Supabase
-// =========================================================
-
-function normalizePlace(place) {
-
-  return {
-
-    id:
-      place.id ||
-      slug(
-        place.name ||
-        place.nombre
-      ),
-
-    slug:
-      place.slug ||
-      slug(
-        place.name ||
-        place.nombre
-      ),
-
-    name:
-      place.name ||
-      place.nombre ||
-      "Lugar",
-
-    zone:
-      place.zone ||
-      place.zona ||
-      place.neighborhood ||
-      "",
-
-    city:
-      place.city ||
-      CONFIG.city,
-
-    country:
-      place.country ||
-      CONFIG.country,
-
-    category:
-      place.category ||
-      place.categoria ||
-      "Lugar",
-
-    description:
-      place.description ||
-      place.descripcion ||
-      "Descubrimiento guardado en Mundo Infinito.",
-
-    lat:
-      Number(
-        place.lat ??
-        place.latitude
-      ),
-
-    lng:
-      Number(
-        place.lng ??
-        place.longitude
-      ),
-
-    rating:
-      Number(
-        place.rating || 5
-      ),
-
-    image:
-      place.image ||
-      place.image_url ||
-      "",
-
-    source:
-      place.source ||
-      "local"
-  };
-}
-
-// =========================================================
-// NORMALIZAR VÍDEOS
-// =========================================================
-
-function normalizeVideo(video) {
-
-  return {
-
-    id:
-      video.id ||
-      `video-${Date.now()}-${Math.random()}`,
-
-    placeId:
-      video.placeId ||
-      video.place_id ||
-      "",
-
-    place:
-      video.place ||
-      video.lugar ||
-      "",
-
-    title:
-      video.title ||
-      video.titulo ||
-      "Vídeo",
-
-    description:
-      video.description ||
-      video.descripcion ||
-      "",
-
-    category:
-      video.category ||
-      "",
-
-    type:
-      video.type ||
-      video.tipo ||
-      video.source_type ||
-      "Vídeo",
-
-    url:
-      video.url ||
-      video.video_url ||
-      video.link ||
-      video.enlace ||
-      video.source_url ||
-      "",
-
-    sourceUrl:
-      video.source_url ||
-      video.url ||
-      video.link ||
-      "",
-
-    transcript:
-      video.transcript ||
-      "",
-
-    duration:
-      Number(
-        video.duration_seconds || 0
-      ),
-
-    source:
-      video.source ||
-      "local"
-  };
-}
-
-// =========================================================
-// NORMALIZAR DESCUBRIMIENTOS
-// =========================================================
-
-function normalizeDiscovery(
-  discovery
-) {
-
-  return {
-
-    id:
-      discovery.id,
-
-    videoId:
-      discovery.video_id ||
-      discovery.videoId ||
-      null,
-
-    placeId:
-      discovery.place_id ||
-      discovery.placeId ||
-      null,
-
-    title:
-      discovery.title ||
-      "Descubrimiento",
-
-    description:
-      discovery.description ||
-      "",
-
-    category:
-      discovery.category ||
-      "Lugar",
-
-    timestampStart:
-      Number(
-        discovery.timestamp_start || 0
-      ),
-
-    timestampEnd:
-      discovery.timestamp_end === null ||
-      discovery.timestamp_end === undefined
-        ? null
-        : Number(
-            discovery.timestamp_end
-          ),
-
-    confidence:
-      discovery.confidence === null ||
-      discovery.confidence === undefined
-        ? null
-        : Number(
-            discovery.confidence
-          ),
-
-    approved:
-      Boolean(
-        discovery.approved
-      )
-  };
-}
-
-// =========================================================
-// COMBINAR LUGARES
-// =========================================================
-
-function mergePlaces(
-  ...placeGroups
-) {
-
-  const combined =
-    new Map();
-
-  defaultPlaces
-    .map(normalizePlace)
-    .forEach(place => {
-
-      combined.set(
-        place.id,
-        place
-      );
-    });
-
-  placeGroups.forEach(group => {
-
-    if (!Array.isArray(group)) {
-      return;
-    }
-
-    group
-      .map(normalizePlace)
-      .forEach(place => {
-
-        /*
-         * Para los lugares de Supabase usamos
-         * primero su UUID.
-         */
-
-        const existingById =
-          combined.get(place.id);
-
-        /*
-         * También buscamos por slug para evitar
-         * duplicar visualmente un lugar.
-         */
-
-        const existingBySlug =
-          Array.from(
-            combined.values()
-          ).find(
-            item =>
-              item.slug ===
-              place.slug
-          );
-
-        const existing =
-          existingById ||
-          existingBySlug;        const existing =
-          existingById ||
-          existingBySlug;// COMPROBAR CONEXIÓN CON SUPABASE
-// =========================================================
-
-async function testSupabaseConnection() {
-
-  if (!supabaseClient) {
-
-    supabaseOnline = false;
-
-    return false;
-  }
-
-  try {
-
-    const {
-      error
-    } =
-      await supabaseClient
-        .from("places")
-        .select(
-          "id",
-          {
-            head: true,
-            count: "exact"
-          }
-        );
-
-    if (error) {
-      throw error;
-    }
-
-    supabaseOnline = true;
-
-    console.log(
-      "☁️ Base compartida disponible"
-    );
-
-    return true;
-
-  } catch (error) {
-
-    supabaseOnline = false;
-
-    console.warn(
-      "Mundo Infinito continuará sin conexión compartida:",
-      error
-    );
-
-    return false;
-  }
-}
-
-// =========================================================
-// MARCADORES
-// =========================================================
-
-function addMarker(place) {
-
-  if (
-    !Number.isFinite(
-      place.lat
-    ) ||
-    !Number.isFinite(
-      place.lng
-    )
-  ) {
-
-    return;
-  }
-
-  if (
-    markers.has(
-      place.id
-    )
-  ) {
-
-    return;
-  }
-
-  const marker =
-    L.marker(
-      [
-        place.lat,
-        place.lng
-      ],
-      {
-        icon:
-          createMarkerIcon(
-            place
-          ),
-
-        title:
-          place.name
-      }
-    ).addTo(map);
-
-  marker.on(
-    "click",
-    () => {
-
-      openPlace(
-        place.id
-      );
-    }
-  );
-
-  markers.set(
-    place.id,
-    marker
-  );
-}
-
-function renderMarkers() {
-
-  markers.forEach(
-    marker => {
-
-      marker.remove();
-    }
-  );
-
-  markers.clear();
-
-  places.forEach(
-    place => {
-
-      addMarker(
-        place
-      );
-    }
-  );
-}
-
-// =========================================================
-// BUSCAR LUGAR
-// =========================================================
-
-function getPlaceById(
-  placeId
-) {
-
-  return places.find(
-    place =>
-      place.id ===
-      placeId
-  );
-}
-
-// =========================================================
-// DESCUBRIMIENTOS DE UN LUGAR
-// =========================================================
-
-function getDiscoveriesForPlace(
-  place
-) {
-
-  if (!place) {
-    return [];
-  }
-
-  return discoveries.filter(
-    discovery =>
-      discovery.placeId ===
-      place.id
-  );
-}
-
-// =========================================================
-// VÍDEOS DE UN LUGAR
-// =========================================================
-
-function getVideosForPlace(
-  place
-) {
-
-  const placeNameNormalized =
-    normalize(
-      place.name
-    );
-
-  /*
-   * Primero obtenemos IDs de vídeos relacionados
-   * mediante la tabla discoveries.
-   */
-
-  const relatedVideoIds =
-    new Set(
-      getDiscoveriesForPlace(
-        place
-      )
-        .map(
-          discovery =>
-            discovery.videoId
-        )
-        .filter(Boolean)
-    );
-
-  return videos.filter(
-    video => {
-
-      /*
-       * Nueva relación Supabase.
-       */
-
-      if (
-        relatedVideoIds.has(
-          video.id
-        )
-      ) {
-
-        return true;
-      }
-
-      /*
-       * Compatibilidad con videos.json antiguo.
-       */
-
-      if (
-        video.placeId &&
-        video.placeId ===
-        place.id
-      ) {
-
-        return true;
-      }
-
-      /*
-       * Compatibilidad por nombre.
-       */
-
-      if (
-        video.place &&
-        normalize(
-          video.place
-        ) ===
-        placeNameNormalized
-      ) {
-
-        return true;
-      }
-
-      return false;
-    }
-  );
-}
-
-// =========================================================
-// TIMESTAMP DE UN VÍDEO PARA UN LUGAR
-// =========================================================
-
-function getVideoTimestampForPlace(
-  videoId,
-  placeId
-) {
-
-  const discovery =
-    discoveries.find(
-      item =>
-        item.videoId ===
-          videoId &&
-        item.placeId ===
-          placeId
-    );
-
-  if (!discovery) {
-    return 0;
-  }
-
-  return Number(
-    discovery.timestampStart || 0
-  );
-}
-
-// =========================================================
-// FORMATEAR TIMESTAMP
-// Ejemplo: 65 segundos → 01:05
-// =========================================================
-
-function formatTimestamp(
-  seconds
-) {
-
-  const total =
-    Math.max(
-      0,
-      Math.floor(
-        Number(seconds) || 0
-      )
-    );
-
-  const minutes =
-    Math.floor(
-      total / 60
-    );
-
-  const remainingSeconds =
-    total % 60;
-
-  return (
-    String(minutes)
-      .padStart(
-        2,
-        "0"
-      ) +
-    ":" +
-    String(remainingSeconds)
-      .padStart(
-        2,
-        "0"
-      )
-  );
-}// =========================================================
-// APP.JS v0.5.0 · BLOQUE 3
-// Fichas + vídeos + timestamps + favoritos
-// =========================================================
-
-// =========================================================
-// ABRIR FICHA DE LUGAR
-// =========================================================
-
-function openPlace(placeId) {
-
-  const place =
-    getPlaceById(
-      placeId
-    );
-
-  if (!place) {
-    return;
-  }  selectedPlace =
-    place;
-
-  closeContent();
-
-  placeCoverIcon.textContent =
-    categoryIcons[
-      place.category
-    ] || "📍";
-
-  placeCategory.textContent =
-    place.category;
-
-  placeName.textContent =
-    place.name;
-
-  placeZone.textContent =
-    [
-      place.zone,
-      place.city
-    ]
-      .filter(Boolean)
-      .join(" · ");
-
-  placeDescription.textContent =
-    place.description;
-
-  placeLocationText.textContent =
-    [
-      place.zone,
-      place.city,
-      place.country ||
-        CONFIG.country
-    ]
-      .filter(Boolean)
-      .join(", ");
-
-  placeTip.textContent =
-    categoryTips[
-      place.category
-    ] ||
-    "Consulta tus descubrimientos antes de visitar este lugar.";
-
-  const mapsQuery =
-    encodeURIComponent(
-      `${place.name}, ${place.zone}, ${place.city}, ${place.country || CONFIG.country}`
-    );
-
-  placeMapsButton.href =
-    `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
-
-  renderPlaceVideos(
-    place
-  );
-
-  updateSavedButton();
-
-  placePanel.classList.add(
-    "open"
-  );
-
-  placePanel.setAttribute(
-    "aria-hidden",
-    "false"
-  );
-}
-
-// =========================================================
-// CERRAR FICHA
-// =========================================================
-
-function closePlace() {
-
-  placePanel.classList.remove(
-    "open"
-  );
-
-  placePanel.setAttribute(
-    "aria-hidden",
-    "true"
-  );
-
-  selectedPlace =
-    null;
-}
-
-closePlacePanel.addEventListener(
-  "click",
-  closePlace
-);
-
-// =========================================================
-// MOSTRAR VÍDEOS DEL LUGAR
-// =========================================================
-
-function renderPlaceVideos(
-  place
-) {
-
-  const relatedVideos =
-    getVideosForPlace(
-      place
-    );
-
-  placeVideoCount.textContent =
-    relatedVideos.length;
-
-  placeVideoActionText.textContent =
-    relatedVideos.length === 1
-      ? "1 vídeo"
-      : `${relatedVideos.length} vídeos`;
-
-  if (
-    relatedVideos.length === 0
-  ) {
-
-    placeVideosList.innerHTML = `
-      <div class="empty-state">
-
-        <span>🎥</span>
-
-        <strong>
-          Todavía no hay vídeos
-        </strong>
-
-        <p>
-          Los vídeos relacionados con este lugar aparecerán aquí.
-        </p>
-
-      </div>
-    `;
-
-    return;
-  }
-
-  placeVideosList.innerHTML =
-    relatedVideos
-      .map(video => {
-
-        const timestamp =
-          getVideoTimestampForPlace(
-            video.id,
-            place.id
-          );
-
-        const timestampHTML =
-          timestamp > 0
-            ? `
-              <span class="video-source">
-                ▶ ${formatTimestamp(timestamp)}
-              </span>
-            `
-            : `
-              <span class="video-source">
-                ${escapeHTML(video.type || "Vídeo")}
-              </span>
-            `;
-
-        return `
-          <button
-            class="video-card"
-            type="button"
-            data-video-id="${escapeHTML(video.id)}"
-            data-video-time="${timestamp}"
-          >
-
-            <div class="video-thumb"></div>
-
-            <div class="video-info">
-
-              <strong>
-                ${escapeHTML(video.title)}
-              </strong>
-
-              <p>
-                ${
-                  escapeHTML(
-                    video.description ||
-                    place.name
-                  )
-                }
-              </p>
-
-              ${timestampHTML}
-
-            </div>
-
-          </button>
-        `;
-      })
-      .join("");
-
-  placeVideosList
-    .querySelectorAll(
-      "[data-video-id]"
-    )
-    .forEach(button => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          const video =
-            videos.find(
-              item =>
-                item.id ===
-                button.dataset.videoId
-            );
-
-          const timestamp =
-            Number(
-              button.dataset.videoTime ||
-              0
-            );
-
-          openVideo(
-            video,
-            timestamp
-          );
-        }
-      );
-    });
-}
-
-// =========================================================
-// BOTÓN "VÍDEOS" DE LA FICHA
-// =========================================================
-
-placeVideosButton.addEventListener(
-  "click",
-  () => {
-
-    if (!selectedPlace) {
-      return;
-    }
-
-    const relatedVideos =
-      getVideosForPlace(
-        selectedPlace
-      );
-
-    if (
-      relatedVideos.length === 0
-    ) {
-
-      showToast(
-        "Todavía no hay vídeos para este lugar"
-      );
-
-      return;
-    }
-
-    placeVideosList.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  }
-);
-
-// =========================================================
-// REPRODUCTOR DE VÍDEO
-// Permite comenzar en un segundo concreto
-// =========================================================
-
-function openVideo(
-  video,
-  startAt = 0
-) {
-
-  if (
-    !video ||
-    !video.url
-  ) {
-
-    showToast(
-      "Este vídeo todavía no tiene archivo"
-    );
-
-    return;
-  }
-
-  /*
-   * Instagram, TikTok, YouTube, etc.
-   * se siguen abriendo fuera si no son un MP4 directo.
-   */
-
-  const externalURL =
-    /^https?:\/\//i.test(
-      video.url
-    );
-
-  const directVideo =
-    /\.(mp4|webm|ogg)(\?.*)?$/i.test(
-      video.url
-    );
-
-  if (
-    externalURL &&
-    !directVideo
-  ) {
-
-    window.open(
-      video.url,
-      "_blank",
-      "noopener,noreferrer"
-    );
-
-    return;
-  }
-
-  if (
-    !videoModal ||
-    !videoPlayer
-  ) {
-
-    window.open(
-      video.url,
-      "_blank"
-    );
-
-    return;
-  }
-
-  videoModalTitle.textContent =
-    video.title ||
-    "Vídeo";
-
-  videoModalPlace.textContent =
-    video.place ||
-    "Brasil";
-
-  videoPlayer.src =
-    video.url;
-
-  videoModal.classList.add(
-    "open"
-  );
-
-  videoModal.setAttribute(
-    "aria-hidden",
-    "false"
-  );
-
-  /*
-   * Esperamos a que el navegador conozca
-   * la duración antes de saltar al timestamp.
-   */
-
-  videoPlayer.onloadedmetadata =
-    () => {
-
-      const safeStart =
-        Math.max(
-          0,
-          Number(startAt) || 0
-        );
-
-      if (
-        safeStart > 0 &&
-        Number.isFinite(
-          videoPlayer.duration
-        )
-      ) {
-
-        videoPlayer.currentTime =
-          Math.min(
-            safeStart,
-            Math.max(
-              0,
-              videoPlayer.duration - 0.2
-            )
-          );
-      }
-
-      videoPlayer
-        .play()
-        .catch(() => {
-          // Algunos navegadores requieren pulsar Play.
-        });
-    };
-}
-
-// =========================================================
-// CERRAR VÍDEO
-// =========================================================
-
-function closeVideo() {
-
-  if (!videoPlayer) {
-    return;
-  }
-
-  videoPlayer.pause();
-
-  videoPlayer.onloadedmetadata =
-    null;
-
-  videoPlayer.removeAttribute(
-    "src"
-  );
-
-  videoPlayer.load();
-
-  videoModal.classList.remove(
-    "open"
-  );
-
-  videoModal.setAttribute(
-    "aria-hidden",
-    "true"
-  );
-}
-
-if (
-  closeVideoModal
-) {
-
-  closeVideoModal.addEventListener(
-    "click",
-    closeVideo
-  );
-}
-
-if (
-  videoModal
-) {
-
-  videoModal.addEventListener(
-    "click",
-    event => {
-
-      if (
-        event.target ===
-        videoModal
-      ) {
-
-        closeVideo();
-      }
-    }
-  );
-}
-
-// =========================================================
-// FAVORITOS
-// Por ahora siguen siendo personales en el dispositivo.
-// =========================================================
-
-function getSavedPlaces() {
-
-  const saved =
-    loadJSON(
-      CONFIG.storage.savedPlaces,
-      []
-    );
-
-  return Array.isArray(saved)
-    ? saved
-    : [];
-}
-
-function isPlaceSaved(
-  placeId
-) {
-
-  return getSavedPlaces()
-    .includes(
-      placeId
-    );
-}
-
-function updateSavedButton() {
-
-  if (!selectedPlace) {
-    return;
-  }
-
-  const saved =
-    isPlaceSaved(
-      selectedPlace.id
-    );
-
-  savePlaceButton
-    .classList
-    .toggle(
-      "saved",
-      saved
-    );
-
-  savePlaceButton.innerHTML =
-    saved
-      ? `
-          <span>♥</span>
-          <b>Guardado</b>
-        `
-      : `
-          <span>♡</span>
-          <b>Guardar</b>
-        `;
-}
-
-savePlaceButton.addEventListener(
-  "click",
-  () => {
-
-    if (!selectedPlace) {
-      return;
-    }
-
-    const saved =
-      getSavedPlaces();
-
-    const index =
-      saved.indexOf(
-        selectedPlace.id
-      );
-
-    if (
-      index >= 0
-    ) {
-
-      saved.splice(
-        index,
-        1
-      );
-
-      showToast(
-        "Eliminado de Guardados"
-      );
-
-    } else {
-
-      saved.push(
-        selectedPlace.id
-      );
-
-      showToast(
-        "Guardado en Mundo Infinito"
-      );
-    }
-
-    saveJSON(
-      CONFIG.storage.savedPlaces,
-      saved
-    );
-
-    updateSavedButton();
-  }
-);// BUSCADOR
-// Lugares de Mundo Infinito + ciudades de Brasil
-// =========================================================
-
-function searchPlaces(
-  query
-) {
-
-  const words =
-    normalize(query)
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-
-  if (
-    words.length === 0
-  ) {
-
-    return [];
-  }
-
-  return places.filter(
-    place => {
-
-      const searchable =
-        normalize(
-          [
-            place.name,
-            place.zone,
-            place.city,
-            place.category,
-            place.description
-          ].join(" ")
-        );
-
-      return words.every(
-        word =>
-          searchable.includes(
-            word
-          )
-      );
-    }
-  );
-}
-
-
-// =========================================================
-// BÚSQUEDA DE CIUDADES DE BRASIL
-// No crea marcadores ni guarda nada.
-// Solo mueve el mapa.
-// =========================================================
-
-let citySearchTimer =
-  null;
-
-let citySearchController =
-  null;
-
-let citySearchRun =
-  0;
-
-
-async function searchBrazilCities(
-  query
-) {
-
-  const text =
-    String(
-      query ||
-      ""
-    ).trim();
-
-  if (
-    text.length <
-    2
-  ) {
-
-    return [];
-  }
-
-
-  if (
-    citySearchController
-  ) {
-
-    citySearchController.abort();
-
-  }
-
-
-  citySearchController =
-    new AbortController();
-
-
-  const params =
-    new URLSearchParams({
-
-      q:
-        text,
-
-      format:
-        "jsonv2",
-
-      addressdetails:
-        "1",
-
-      namedetails:
-        "1",
-
-      limit:
-        "10",
-
-      countrycodes:
-        "br"
-
-    });
-
-
-  const response =
-    await fetch(
-      "https://nominatim.openstreetmap.org/search?" +
-      params.toString(),
-      {
-
-        signal:
-          citySearchController.signal,
-
-        headers: {
-
-          "Accept":
-            "application/json",
-
-          "Accept-Language":
-            "pt-BR,pt;q=0.9,es;q=0.8"
-
-        }
-
-      }
-    );
-
-
-  if (
-    !response.ok
-  ) {
-
-    throw new Error(
-      `No se pudieron buscar ciudades (${response.status})`
-    );
-
-  }
-
-
-  const data =
-    await response.json();
-
-
-  if (
-    !Array.isArray(
-      data
-    )
-  ) {
-
-    return [];
-
-  }
-
-
-  const uniqueCities =
-    new Map();
-
-
-  data.forEach(
-    item => {
-
-      const address =
-        item.address ||
-        {};
-
-
-      const countryCode =
-        String(
-          address.country_code ||
-          ""
-        ).toLowerCase();
-
-
-      if (
-        countryCode &&
-        countryCode !==
-          "br"
-      ) {
-
-        return;
-
-      }
-
-
-      const type =
-        String(
-          item.addresstype ||
-          item.type ||
-          ""
-        ).toLowerCase();
-
-
-      const cityName =
-        String(
-
-          address.city ||
-
-          address.town ||
-
-          address.municipality ||
-
-          address.village ||
-
-          (
-            [
-              "city",
-              "town",
-              "municipality",
-              "village",
-              "administrative"
-            ].includes(type)
-
-              ? (
-                  item.namedetails?.name ||
-                  item.name ||
-                  ""
-                )
-
-              : ""
-          )
-
-        ).trim();
-
-
-      const state =
-        String(
-          address.state ||
-          ""
-        ).trim();
-
-
-      const lat =
-        Number(
-          item.lat
-        );
-
-
-      const lng =
-        Number(
-          item.lon
-        );
-
-
-      if (
-        !cityName ||
-        !Number.isFinite(
-          lat
-        ) ||
-        !Number.isFinite(
-          lng
-        )
-      ) {
-
-        return;
-
-      }
-
-
-      const key =
-        normalize(
-          `${cityName}-${state}`
-        );
-
-
-      if (
-        uniqueCities.has(
-          key
-        )
-      ) {
-
-        return;      }
-
-
-      uniqueCities.set(
-        key,
-        {
-
-          name:
-            cityName,
-
-          state,
-
-          country:
-            "Brasil",
-
-          lat,
-
-          lng
-
-        }
-      );
-
-    }
-  );
-
-
-  return Array.from(
-    uniqueCities.values()
-  )
-    .slice(
-      0,
-      5
-    );
-}
-
-
-// =========================================================
-// MOSTRAR RESULTADOS DE BÚSQUEDA
-// =========================================================
-
-function renderSearchResults(
-  localResults,
-  cityResults = [],
-  {
-    searchingCities = false,
-    citySearchError = false
-  } = {}
-) {
-
-  const query =
-    searchInput.value.trim();
-
-
-  if (!query) {
-
-    searchResults.innerHTML =
-      "";
-
-    searchResults.classList.add(
-      "hidden"
-    );
-
-    clearSearch.classList.add(
-      "hidden"
-    );
-
-    return;
-
-  }
-
-
-  clearSearch.classList.remove(
-    "hidden"
-  );
-
-
-  const localHTML =
-
-    localResults.length
-
-      ? `
-        <div class="search-results-group">
-
-          <div class="search-results-label">
-            Mundo Infinito
-          </div>
-
-          ${
-            localResults
-              .slice(
-                0,
-                6
-              )
-              .map(
-                place => `
-                  <button
-                    class="search-result"
-                    type="button"
-                    data-place-id="${escapeHTML(place.id)}"
-                  >
-
-                    <div class="search-result-icon">
-                      ${
-                        typeof resolveCategoryIcon ===
-                        "function"
-
-                          ? resolveCategoryIcon(
-                              place.category
-                            )
-
-                          : "&#128205;"
-                      }
-                    </div>
-
-                    <div>
-
-                      <strong>
-                        ${escapeHTML(place.name)}
-                      </strong>
-
-                      <small>
-                        ${
-                          escapeHTML(
-                            [
-                              place.zone,
-                              place.city,
-                              place.category
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")
-                          )
-                        }
-                      </small>
-
-                    </div>
-
-                  </button>
-                `
-              )
-              .join("")
-          }
-
-        </div>
-      `
-
-      : "";
-
-
-  const cityHTML =
-
-    cityResults.length
-
-      ? `
-        <div class="search-results-group">
-
-          <div class="search-results-label">
-            Ir a una ciudad
-          </div>
-
-          ${
-            cityResults
-              .map(
-                (city, index) => `
-                  <button
-                    class="search-result search-city-result"
-                    type="button"
-                    data-city-index="${index}"
-                  >
-
-                    <div class="search-result-icon">
-                      &#128506;
-                    </div>
-
-                    <div>
-
-                      <strong>
-                        ${escapeHTML(city.name)}
-                      </strong>
-
-                      <small>
-                        ${
-                          escapeHTML(
-                            [
-                              city.state,
-                              city.country
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")
-                          )
-                        }
-                      </small>
-
-                    </div>
-
-                  </button>
-                `
-              )
-              .join("")
-          }
-
-        </div>
-      `
-
-      : "";
-
-
-  let statusHTML =
-    "";
-
-
-  if (
-    searchingCities
-  ) {
-
-    statusHTML = `
-      <div class="no-results search-city-status">
-
-        <span>
-          &#8987;
-        </span>
-
-        <strong>
-          Buscando ciudades de Brasil...
-        </strong>
-
-      </div>
-    `;
-
-  } else if (
-    citySearchError &&
-    localResults.length === 0
-  ) {
-
-    statusHTML = `
-      <div class="no-results">
-
-        <span>
-          &#128269;
-        </span>
-
-        <strong>
-          No se pudo buscar la ciudad
-        </strong>
-
-        <p>
-          Prueba de nuevo en unos segundos.
-        </p>
-
-      </div>
-    `;
-
-  } else if (
-    localResults.length === 0 &&
-    cityResults.length === 0
-  ) {
-
-    statusHTML = `
-      <div class="no-results">
-
-        <span>
-          &#128269;
-        </span>
-
-        <strong>
-          Sin resultados
-        </strong>
-
-        <p>
-          Prueba con otro lugar o ciudad de Brasil.
-        </p>
-
-      </div>
-    `;
-
-  }
-
-
-  searchResults.innerHTML =
-    localHTML +
-    cityHTML +
-    statusHTML;
-
-
-  searchResults
-    .querySelectorAll(
-      "[data-place-id]"
-    )
-    .forEach(
-      button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            const place =
-              getPlaceById(
-                button.dataset.placeId
-              );
-
-
-            if (!place) {
-
-              return;
-
-            }
-
-
-            searchInput.value =
-              place.name;
-
-
-            searchResults.classList.add(
-              "hidden"
-            );
-
-
-            map.setView(
-              [
-                place.lat,
-                place.lng
-              ],
-              16
-            );
-
-
-            window.setTimeout(
-              () => {
-
-                openPlace(
-                  place.id
-                );
-
-              },
-              250
-            );
-
-          }
-        );
-
-      }
-    );
-
-
-  searchResults
-    .querySelectorAll(
-      "[data-city-index]"
-    )
-    .forEach(
-      button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            const city =
-              cityResults[
-                Number(
-                  button.dataset.cityIndex
-                )
-              ];
-
-
-            if (!city) {
-
-              return;
-
-            }
-
-
-            searchInput.value =
-              city.name;
-
-
-            searchResults.classList.add(
-              "hidden"
-            );
-
-
-            closePlace();
-
-            closeContent();
-
-
-            map.flyTo(
-              [
-                city.lat,
-                city.lng
-              ],
-              12,
-              {
-
-                duration:
-                  1.2
-
-              }
-            );
-
-
-            showToast(
-              `Explorando ${city.name}`
-            );
-
-          }
-        );
-
-      }
-    );
-
-
-  searchResults.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-// =========================================================
-// ACTUALIZAR BÚSQUEDA
-// =========================================================
-
-function updateSearch() {
-
-  const query =
-    searchInput.value.trim();
-
-
-  const localResults =
-    searchPlaces(
-      query
-    );
-
-
-  citySearchRun +=
-    1;
-
-
-  const runId =
-    citySearchRun;
-
-
-  if (
-    citySearchTimer
-  ) {
-
-    window.clearTimeout(
-      citySearchTimer
-    );
-
-  }
-
-
-  if (
-    citySearchController
-  ) {
-
-    citySearchController.abort();
-
-    citySearchController =
-      null;
-
-  }
-
-
-  if (
-    query.length <
-    2
-  ) {
-
-    renderSearchResults(
-      localResults,
-      []
-    );
-
-    return;
-
-  }
-
-
-  renderSearchResults(
-    localResults,
-    [],
-    {
-      searchingCities:
-        true
-    }
-  );
-
-
-  citySearchTimer =
-    window.setTimeout(
-      async () => {
-
-        try {
-
-          const cityResults =
-            await searchBrazilCities(
-              query
-            );
-
-
-          if (
-            runId !==
-            citySearchRun
-          ) {
-
-            return;
-
-          }
-
-
-          renderSearchResults(
-            localResults,
-            cityResults
-          );
-
-
-        } catch (
-          error
-        ) {
-
-          if (
-            error?.name ===
-            "AbortError"
-          ) {
-
-            return;
-
-          }
-
-
-          console.warn(
-            "No se pudieron buscar ciudades:",
-            error
-          );
-
-
-          if (
-            runId !==
-            citySearchRun
-          ) {
-
-            return;
-
-          }
-
-
-          renderSearchResults(
-            localResults,
-            [],
-            {
-              citySearchError:
-                true
-            }
-          );
-
-        }
-
-      },
-      350
-    );
-
-}
-
-
-searchInput.addEventListener(
-  "input",
-  updateSearch
-);
-
-
-clearSearch.addEventListener(
-  "click",
-  () => {
-
-    citySearchRun +=
-      1;
-
-
-    if (
-      citySearchTimer
-    ) {
-
-      window.clearTimeout(
-        citySearchTimer
-      );
-
-    }
-
-
-    if (
-      citySearchController
-    ) {
-
-      citySearchController.abort();
-
-      citySearchController =
-        null;
-
-    }
-
-
-    searchInput.value =
-      "";
-
-
-    searchResults.innerHTML =
-      "";
-
-
-    searchResults.classList.add(
-      "hidden"
-    );
-
-
-    clearSearch.classList.add(
-      "hidden"
-    );
-
-
-    searchInput.focus();
-
-
-    closePlace();
-
-
-    map.setView(
-      CONFIG.center,
-      CONFIG.zoom
-    );
-
-  }
-);
-
-
-document.addEventListener(
-  "click",
-  event => {
-
-    if (
-      !event.target.closest(
-        ".search-wrap"
-      ) &&
-      !event.target.closest(
-        "#searchResults"
-      )
-    ) {
-
-      searchResults.classList.add(
-        "hidden"
-      );
-
-    }
-
-  }
-);
-
-
-// =========================================================
-// APP.JS v0.5.0 · BLOQUE 4
-// ➕ compartido con Supabase
-// =========================================================
-
-// =========================================================
-// ABRIR / CERRAR FORMULARIO
-// =========================================================
-
-function openAddDiscovery() {
-
-  closePlace();
-  closeContent();
-
-  discoveryModal.classList.add(
-    "open"
-  );
-
-  discoveryModal.setAttribute(
-    "aria-hidden",
-    "false"
-  );
-
-  window.setTimeout(
-    () => {
-
-      const input =
-        document.getElementById(
-          "discoveryTitle"
-        );
-
-      if (input) {
-        input.focus();
-      }
-
-    },
-    200
-  );
-}
-
-function closeAddDiscovery() {
-
-  discoveryModal.classList.remove(
-    "open"
-  );
-
-  discoveryModal.setAttribute(
-    "aria-hidden",
-    "true"
-  );
-}
-
-openDiscoveryModal.addEventListener(
-  "click",
-  openAddDiscovery
-);
-
-closeDiscoveryModal.addEventListener(
-  "click",
-  closeAddDiscovery
-);
-
-discoveryModal.addEventListener(
-  "click",
-  event => {
-
-    if (
-      event.target ===
-      discoveryModal
-    ) {
-
-      closeAddDiscovery();
-    }
-  }
-);
-
-// =========================================================
-// USAR CENTRO DEL MAPA
-// =========================================================
-
-useMapCenter.addEventListener(
-  "click",
-  () => {
-
-    const center =
-      map.getCenter();
-
-    discoveryLat.value =
-      center.lat.toFixed(6);
-
-    discoveryLng.value =
-      center.lng.toFixed(6);
-
-    showToast(
-      "Coordenadas del mapa añadidas"
-    );
-  }
-);
-
-// =========================================================
-// BUSCAR SI EL LUGAR YA EXISTE EN SUPABASE
-// =========================================================
-
-async function findSupabasePlaceBySlug(
-  placeSlug
-) {
-
-  if (!supabaseClient) {
-    return null;
-  }
-
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("places")
-        .select("*")
-        .eq(
-          "slug",
-          placeSlug
-        )
-        .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    return data || null;
-
-  } catch (error) {
-
-    console.error(
-      "Error buscando el lugar:",
-      error
-    );
-
-    return null;
-  }
-}
-
-// =========================================================
-// CREAR O REUTILIZAR LUGAR
-// =========================================================3323 // =========================================================
+0001 // =========================================================
+0002 // MUNDO INFINITO · v0.6.0
+0003 // Mapa + Supabase + descubrimientos compartidos
+0004 // Vídeos + favoritos + buscador
+0005 // =========================================================
+0006
+0007 "use strict";
+0008
+0009 // =========================================================
+0010 // CONFIGURACIÓN GENERAL
+0011 // =========================================================
+0012
+0013 const CONFIG = {
+0014 city: "Río de Janeiro",
+0015 country: "Brasil",
+0016
+0017 center: [
+0018 -22.94,
+0019 -43.22
+0020 ],
+0021
+0022 zoom: 11,
+0023
+0024 storage: {
+0025 discoveries:
+0026 "mundoInfinitoDescubrimientos",
+0027
+0028 savedPlaces:
+0029 "mundoInfinitoLugaresGuardados",
+0030
+0031 deviceId:
+0032 "mundoInfinitoDeviceId"
+0033 }
+0034 };
+0035
+0036 // =========================================================
+0037 // CONEXIÓN CON SUPABASE
+0038 // =========================================================
+0039
+0040 let supabaseClient = null;
+0041
+0042 function initializeSupabase() {
+0043
+0044 try {
+0045
+0046 if (
+0047 typeof window.supabase === "undefined"
+0048 ) {
+0049
+0050 console.warn(
+0051 "Supabase todavía no está disponible."
+0052 );
+0053
+0054 return false;
+0055 }
+0056
+0057 if (
+0058 typeof SUPABASE_URL === "undefined" ||
+0059 typeof SUPABASE_KEY === "undefined"
+0060 ) {
+0061
+0062 console.warn(
+0063 "No se encontró supabase-config.js"
+0064 );
+0065
+0066 return false;
+0067 }
+0068
+0069 supabaseClient =
+0070 window.supabase.createClient(
+0071 SUPABASE_URL,
+0072 SUPABASE_KEY
+0073 );
+0074
+0075 console.log(
+0076 "☁ Supabase conectado"
+0077 );
+0078
+0079 return true;
+0080
+0081 } catch (error) {
+0082
+0083 console.error(
+0084 "Error conectando Supabase:",
+0085 error
+0086 );
+0087
+0088 return false;
+0089 }
+0090 }
+0091
+0092 // =========================================================
+0093 // IDENTIFICADOR DEL DISPOSITIVO
+0094 // =========================================================
+0095
+0096 function getDeviceId() {
+0097
+0098 let deviceId =
+0099 localStorage.getItem(
+0100 CONFIG.storage.deviceId
+0101 );
+0102
+0103 if (!deviceId) {
+0104
+0105 deviceId =
+0106 crypto.randomUUID
+0107 ? crypto.randomUUID()
+0108 : `device-${Date.now()}-${Math.random()
+0109 .toString(36)
+0110 .slice(2)}`;
+0111
+0112 localStorage.setItem(
+0113 CONFIG.storage.deviceId,
+0114 deviceId
+0115 );
+0116 }
+0117
+0118 return deviceId;
+0119 }
+0120
+0121 const DEVICE_ID =
+0122 getDeviceId();
+0123
+0124 // =========================================================
+0125 // LUGARES BASE
+0126 // =========================================================
+0127
+0128 const defaultPlaces = [];
+0129
+0130 // =========================================================
+0131 // ESTADO DE LA APLICACIÓN
+0132 // =========================================================
+0133
+0134 let places = [];
+0135
+0136 let videos = [];
+0137
+0138 let discoveries = [];
+0139
+0140 let selectedPlace = null;
+0141
+0142 let supabaseOnline = false;
+0143
+0144 const markers =
+0145 new Map();
+0146
+0147 // =========================================================
+0148 // ELEMENTOS DE LA INTERFAZ
+0149 // =========================================================
+0150
+0151 const searchInput =
+0152 document.getElementById(
+0153 "searchInput"
+0154 );
+0155
+0156 const clearSearch =
+0157 document.getElementById(
+0158 "clearSearch"
+0159 );
+0160
+0161 const searchResults =
+0162 document.getElementById(
+0163 "searchResults"
+0164 );
+0165
+0166 const openDiscoveryModal =
+0167 document.getElementById(
+0168 "openDiscoveryModal"
+0169 );
+0170
+0171 const discoveryModal =
+0172 document.getElementById(
+0173 "discoveryModal"
+0174 );
+0175
+0176 const closeDiscoveryModal =
+0177 document.getElementById(
+0178 "closeDiscoveryModal"
+0179 );
+0180
+0181 const discoveryForm =
+0182 document.getElementById(
+0183 "discoveryForm"
+0184 );
+0185
+0186 const useMapCenter =
+0187 document.getElementById(
+0188 "useMapCenter"
+0189 );
+0190
+0191 const discoveryLat =
+0192 document.getElementById(
+0193 "discoveryLat"
+0194 );
+0195
+0196 const discoveryLng =
+0197 document.getElementById(
+0198 "discoveryLng"
+0199 );
+0200
+0201 const placePanel =
+0202 document.getElementById(
+0203 "placePanel"
+0204 );
+0205
+0206 const closePlacePanel =
+0207 document.getElementById(
+0208 "closePlacePanel"
+0209 );
+0210
+0211 const placeCoverIcon =
+0212 document.getElementById(
+0213 "placeCoverIcon"
+0214 );
+0215
+0216 const placeCategory =
+0217 document.getElementById(
+0218 "placeCategory"
+0219 );
+0220
+0221 const placeName =
+0222 document.getElementById(
+0223 "placeName"
+0224 );
+0225
+0226 const placeZone =
+0227 document.getElementById(
+0228 "placeZone"
+0229 );
+0230
+0231 const placeDescription =
+0232 document.getElementById(
+0233 "placeDescription"
+0234 );
+0235
+0236 const placeLocationText =
+0237 document.getElementById(
+0238 "placeLocationText"
+0239 );
+0240
+0241 const placeTip =
+0242 document.getElementById(
+0243 "placeTip"
+0244 );
+0245
+0246 const placeVideosButton =
+0247 document.getElementById(
+0248 "placeVideosButton"
+0249 );
+0250
+0251 const placeVideoActionText =
+0252 document.getElementById(
+0253 "placeVideoActionText"
+0254 );
+0255
+0256 const placeVideoCount =
+0257 document.getElementById(
+0258 "placeVideoCount"
+0259 );
+0260
+0261 const placeVideosList =
+0262 document.getElementById(
+0263 "placeVideosList"
+0264 );
+0265
+0266 const savePlaceButton =
+0267 document.getElementById(
+0268 "savePlaceButton"
+0269 );
+0270
+0271 const placeMapsButton =
+0272 document.getElementById(
+0273 "placeMapsButton"
+0274 );
+0275
+0276 const contentPanel =
+0277 document.getElementById(
+0278 "contentPanel"
+0279 );
+0280
+0281 const contentPanelTitle =
+0282 document.getElementById(
+0283 "contentPanelTitle"
+0284 );
+0285
+0286 const contentPanelBody =
+0287 document.getElementById(
+0288 "contentPanelBody"
+0289 );
+0290
+0291 const closeContentPanel =
+0292 document.getElementById(
+0293 "closeContentPanel"
+0294 );
+0295
+0296 const toast =
+0297 document.getElementById(
+0298 "toast"
+0299 );
+0300
+0301 const navButtons =
+0302 document.querySelectorAll(
+0303 ".nav-button"
+0304 );
+0305
+0306 // =========================================================
+0307 // REPRODUCTOR
+0308 // =========================================================
+0309
+0310 const videoModal =
+0311 document.getElementById(
+0312 "videoModal"
+0313 );
+0314
+0315 const closeVideoModal =
+0316 document.getElementById(
+0317 "closeVideoModal"
+0318 );
+0319
+0320 const videoPlayer =
+0321 document.getElementById(
+0322 "videoPlayer"
+0323 );
+0324
+0325 const videoModalTitle =
+0326 document.getElementById(
+0327 "videoModalTitle"
+0328 );
+0329
+0330 const videoModalPlace =
+0331 document.getElementById(
+0332 "videoModalPlace"
+0333 );
+0334
+0335 // =========================================================
+0336 // UTILIDADES
+0337 // =========================================================
+0338
+0339 function loadJSON(
+0340 key,
+0341 fallback
+0342 ) {
+0343
+0344 try {
+0345
+0346 const value =
+0347 localStorage.getItem(key);
+0348
+0349 if (!value) {
+0350 return fallback;
+0351 }
+0352
+0353 return JSON.parse(value);
+0354
+0355 } catch (error) {
+0356
+0357 console.error(
+0358 `No se pudo leer ${key}:`,
+0359 error
+0360 );
+0361
+0362 return fallback;
+0363 }
+0364 }
+0365
+0366 function saveJSON(
+0367 key,
+0368 value
+0369 ) {
+0370
+0371 try {
+0372
+0373 localStorage.setItem(
+0374 key,
+0375 JSON.stringify(value)
+0376 );
+0377
+0378 } catch (error) {
+0379
+0380 console.error(
+0381 `No se pudo guardar ${key}:`,
+0382 error
+0383 );
+0384 }
+0385 }
+0386
+0387 function normalize(text) {
+0388
+0389 return String(
+0390 text || ""
+0391 )
+0392 .normalize("NFD")
+0393 .replace(
+0394 /[\u0300-\u036f]/g,
+0395 ""
+0396 )
+0397 .toLowerCase();
+0398 }
+0399
+0400 function slug(text) {
+0401
+0402 return normalize(text)
+0403 .trim()
+0404 .replace(
+0405 /[^a-z0-9]+/g,
+0406 "-"
+0407 )
+0408 .replace(
+0409 /^-|-$/g,
+0410 ""
+0411 );
+0412 }
+0413
+0414 function escapeHTML(value) {
+0415
+0416 return String(
+0417 value || ""
+0418 )
+0419 .replaceAll(
+0420 "&",
+0421 "&amp;"
+0422 )
+0423 .replaceAll(
+0424 "<",
+0425 "&lt;"
+0426 )
+0427 .replaceAll(
+0428 ">",
+0429 "&gt;"
+0430 )
+0431 .replaceAll(
+0432 '"',
+0433 "&quot;"
+0434 )
+0435 .replaceAll(
+0436 "'",
+0437 "&#039;"
+0438 );
+0439 }
+0440
+0441 function showToast(message) {
+0442
+0443 if (!toast) {
+0444 return;
+0445 }
+0446
+0447 toast.textContent =
+0448 message;
+0449
+0450 toast.classList.add(
+0451 "show"
+0452 );
+0453
+0454 window.clearTimeout(
+0455 showToast.timeout
+0456 );
+0457
+0458 showToast.timeout =
+0459 window.setTimeout(
+0460 () => {
+0461
+0462 toast.classList.remove(
+0463 "show"
+0464 );
+0465
+0466 },
+0467 2500
+0468 );
+0469 }
+0470
+0471 // =========================================================
+0472 // CATEGORÍAS
+0473 // =========================================================
+0474
+0475 const categoryIcons = {
+0476
+0477 Lugar:
+0478 "",
+0479
+0480 Mirador:
+0481 "",
+0482
+0483 Playa:
+0484 "",
+0485
+0486 Cultura:
+0487 "",
+0488
+0489 Parque:
+0490 "",
+0491
+0492 Compras:
+0493 "",
+0494
+0495 "Vida nocturna":
+0496 "",
+0497
+0498 Transporte:
+0499 "✈",
+0500
+0501 Restaurante:
+0502 "",
+0503
+0504 Gastronomía:
+0505 "",
+0506
+0507 Consejo:
+0508 ""
+0509 };
+0510
+0511 const categoryTips = {
+0512
+0513 Lugar:
+0514 "Comprueba horarios y entradas antes de ir.",
+0515
+0516 Mirador:
+0517 "El amanecer o el atardecer suelen ofrecer las mejores vistas.",
+0518
+0519 Playa:
+0520 "Lleva protección solar, agua y vigila tus pertenencias.",
+0521
+0522 Cultura:
+0523 "Ir temprano suele permitir disfrutarlo con más tranquilidad.",
+0524
+0525 Parque:
+0526 "Lleva agua y calzado cómodo.",
+0527
+0528 Compras:
+0529 "Compara precios antes de comprar y lleva algo de efectivo.",
+0530
+0531 "Vida nocturna":
+0532 "Planifica el transporte de vuelta antes de salir.",
+0533
+0534 Transporte:
+0535 "Confirma el punto exacto de recogida antes de desplazarte.",
+0536
+0537 Restaurante:
+0538 "Comprueba horarios y si es necesario reservar.",
+0539
+0540 Gastronomía:
+0541 "Pregunta por la especialidad de la casa.",
+0542
+0543 Consejo:
+0544 "Guárdalo para consultarlo durante el viaje."
+0545 };// =========================================================
+0546 // MAPA
+0547 // =========================================================
+0548
+0549 const map = L.map(
+0550 "map",
+0551 {
+0552 zoomControl: false
+0553 }
+0554 ).setView(
+0555 CONFIG.center,
+0556 CONFIG.zoom
+0557 );
+0558
+0559 L.control.zoom({
+0560 position: "bottomleft"
+0561 }).addTo(map);
+0562
+0563 L.tileLayer(
+0564 "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+0565 {
+0566 attribution: "&copy; OpenStreetMap",
+0567 maxZoom: 19
+0568 }
+0569 ).addTo(map);
+0570
+0571 // =========================================================
+0572 // ICONOS DEL MAPA
+0573 // =========================================================
+0574
+0575 function markerClass(category) {
+0576
+0577 return normalize(category)
+0578 .replace(/\s+/g, "-");
+0579 }
+0580
+0581 function resolveCategoryIcon(category) {
+0582
+0583 const raw =
+0584 String(
+0585 category ||
+0586 ""
+0587 ).trim();
+0588
+0589 const key =
+0590 normalize(
+0591 raw
+0592 );
+0593
+0594 const aliases = {
+0595
+0596 lugar:
+0597 "\u{1F4CD}",
+0598
+0599 restaurante:
+0600 "\u{1F374}",
+0601
+0602 restaurant:
+0603 "\u{1F374}",
+0604
+0605 bar:
+0606 "\u{1F379}",
+0607
+0608 boteco:
+0609 "\u{1F379}",
+0610
+0611 gastronomia:
+0612 "\u{1F958}",
+0613
+0614 comida:
+0615 "\u{1F958}",
+0616
+0617 playa:
+0618 "\u{1F3D6}\u{FE0F}",
+0619
+0620 praia:
+0621 "\u{1F3D6}\u{FE0F}",
+0622
+0623 mirador:
+0624 "\u{1F304}",
+0625
+0626 viewpoint:
+0627 "\u{1F304}",
+0628
+0629 cultura:
+0630 "\u{1F3A8}",
+0631
+0632 parque:
+0633 "\u{1F33F}",
+0634
+0635 compras:
+0636 "\u{1F6CD}\u{FE0F}",
+0637
+0638 shopping:
+0639 "\u{1F6CD}\u{FE0F}",
+0640
+0641 "vida nocturna":
+0642 "\u{1F379}",
+0643
+0644 nightlife:
+0645 "\u{1F379}",
+0646
+0647 transporte:
+0648 "\u{1F695}",
+0649
+0650 transport:
+0651 "\u{1F695}",
+0652
+0653 consejo:
+0654 "\u{1F4A1}",
+0655
+0656 aviso:
+0657 "\u{26A0}\u{FE0F}",
+0658
+0659 evento:
+0660 "\u{1F389}",
+0661
+0662 precio:
+0663 "\u{1F4B0}",
+0664
+0665 otro:
+0666 "\u{2728}"
+0667
+0668 };
+0669
+0670 return (
+0671 aliases[
+0672 key
+0673 ] ||
+0674 "\u{1F4CD}"
+0675 );
+0676 }
+0677
+0678
+0679 // =========================================================
+0680 // CREAR ICONO DEL MARCADOR
+0681 // =========================================================
+0682
+0683 function createMarkerIcon(place) {
+0684
+0685 const icon =
+0686 resolveCategoryIcon(
+0687 place.category
+0688 );
+0689
+0690 return L.divIcon({
+0691
+0692 className:
+0693 "",
+0694
+0695 html:
+0696 `
+0697 <div
+0698 class="custom-marker ${markerClass(place.category)}"
+0699 >
+0700 <span>${icon}</span>
+0701 </div>
+0702 `,
+0703
+0704 iconSize:
+0705 [
+0706 38,
+0707 38
+0708 ],
+0709
+0710 iconAnchor:
+0711 [
+0712 19,
+0713 38
+0714 ]
+0715
+0716 });
+0717 }
+0718
+0719
+0720 // =========================================================
+0721 // AÑADIR MARCADOR AL MAPA
+0722 // =========================================================
+0723
+0724 function addMarker(place) {
+0725
+0726 if (
+0727 !Number.isFinite(
+0728 Number(
+0729 place.lat
+0730 )
+0731 ) ||
+0732 !Number.isFinite(
+0733 Number(
+0734 place.lng
+0735 )
+0736 )
+0737 ) {
+0738
+0739 return;
+0740 }
+0741
+0742 if (
+0743 markers.has(
+0744 place.id
+0745 )
+0746 ) {
+0747
+0748 return;
+0749 }
+0750
+0751 const marker =
+0752 L.marker(
+0753 [
+0754 Number(
+0755 place.lat
+0756 ),
+0757
+0758 Number(
+0759 place.lng
+0760 )
+0761 ],
+0762 {
+0763
+0764 icon:
+0765 createMarkerIcon(
+0766 place
+0767 ),
+0768
+0769 title:
+0770 place.name
+0771
+0772 }
+0773 )
+0774 .addTo(
+0775 map
+0776 );
+0777
+0778 marker.on(
+0779 "click",
+0780 () => {
+0781
+0782 openPlace(
+0783 place.id
+0784 );
+0785
+0786 }
+0787 );
+0788
+0789 markers.set(
+0790 place.id,
+0791 marker
+0792 );
+0793 }
+0794
+0795
+0796 function renderMarkers() {
+0797
+0798 markers.forEach(
+0799 marker => {
+0800
+0801 marker.remove();
+0802
+0803 }
+0804 );
+0805
+0806 markers.clear();
+0807
+0808 places.forEach(
+0809 place => {
+0810
+0811 addMarker(
+0812 place
+0813 );
+0814
+0815 }
+0816 );
+0817 }
+0818
+0819
+0820 // =========================================================
+0821 // CARGAR JSON ANTIGUOS
+0822 // Seguimos conservando places.json y videos.json
+0823 // =========================================================
+0824
+0825 async function fetchJSON(
+0826 path,
+0827 fallback = []
+0828 ) {
+0829
+0830 try {
+0831
+0832 const response =
+0833 await fetch(
+0834 path,
+0835 {
+0836 cache: "no-store"
+0837 }
+0838 );
+0839
+0840 if (!response.ok) {
+0841
+0842 throw new Error(
+0843 `Error ${response.status} cargando ${path}`
+0844 );
+0845 }
+0846
+0847 const data =
+0848 await response.json();
+0849
+0850 return Array.isArray(data)
+0851 ? data
+0852 : fallback;
+0853
+0854 } catch (error) {
+0855
+0856 console.warn(
+0857 `No se pudo cargar ${path}.`,
+0858 error
+0859 );
+0860
+0861 return fallback;
+0862 }
+0863 }
+0864
+0865 // =========================================================
+0866 // NORMALIZAR LUGARES
+0867 // Permite mezclar:
+0868 // - lugares originales
+0869 // - places.json
+0870 // - Supabase
+0871 // =========================================================
+0872
+0873 function normalizePlace(place) {
+0874
+0875 return {
+0876
+0877 id:
+0878 place.id ||
+0879 slug(
+0880 place.name ||
+0881 place.nombre
+0882 ),
+0883
+0884 slug:
+0885 place.slug ||
+0886 slug(
+0887 place.name ||
+0888 place.nombre
+0889 ),
+0890
+0891 name:
+0892 place.name ||
+0893 place.nombre ||
+0894 "Lugar",
+0895
+0896 zone:
+0897 place.zone ||
+0898 place.zona ||
+0899 place.neighborhood ||
+0900 "",
+0901
+0902 city:
+0903 place.city ||
+0904 CONFIG.city,
+0905
+0906 country:
+0907 place.country ||
+0908 CONFIG.country,
+0909
+0910 category:
+0911 place.category ||
+0912 place.categoria ||
+0913 "Lugar",
+0914
+0915 description:
+0916 place.description ||
+0917 place.descripcion ||
+0918 "Descubrimiento guardado en Mundo Infinito.",
+0919
+0920 lat:
+0921 Number(
+0922 place.lat ??
+0923 place.latitude
+0924 ),
+0925
+0926 lng:
+0927 Number(
+0928 place.lng ??
+0929 place.longitude
+0930 ),
+0931
+0932 rating:
+0933 Number(
+0934 place.rating || 5
+0935 ),
+0936
+0937 image:
+0938 place.image ||
+0939 place.image_url ||
+0940 "",
+0941
+0942 source:
+0943 place.source ||
+0944 "local"
+0945 };
+0946 }
+0947
+0948 // =========================================================
+0949 // NORMALIZAR VÍDEOS
+0950 // =========================================================
+0951
+0952 function normalizeVideo(video) {
+0953
+0954 return {
+0955
+0956 id:
+0957 video.id ||
+0958 `video-${Date.now()}-${Math.random()}`,
+0959
+0960 placeId:
+0961 video.placeId ||
+0962 video.place_id ||
+0963 "",
+0964
+0965 place:
+0966 video.place ||
+0967 video.lugar ||
+0968 "",
+0969
+0970 title:
+0971 video.title ||
+0972 video.titulo ||
+0973 "Vídeo",
+0974
+0975 description:
+0976 video.description ||
+0977 video.descripcion ||
+0978 "",
+0979
+0980 category:
+0981 video.category ||
+0982 "",
+0983
+0984 type:
+0985 video.type ||
+0986 video.tipo ||
+0987 video.source_type ||
+0988 "Vídeo",
+0989
+0990 url:
+0991 video.url ||
+0992 video.video_url ||
+0993 video.link ||
+0994 video.enlace ||
+0995 video.source_url ||
+0996 "",
+0997
+0998 sourceUrl:
+0999 video.source_url ||
+1000 video.url ||
+1001 video.link ||
+1002 "",
+1003
+1004 transcript:
+1005 video.transcript ||
+1006 "",
+1007
+1008 duration:
+1009 Number(
+1010 video.duration_seconds || 0
+1011 ),
+1012
+1013 source:
+1014 video.source ||
+1015 "local"
+1016 };
+1017 }
+1018
+1019 // =========================================================
+1020 // NORMALIZAR DESCUBRIMIENTOS
+1021 // =========================================================
+1022
+1023 function normalizeDiscovery(
+1024 discovery
+1025 ) {
+1026
+1027 return {
+1028
+1029 id:
+1030 discovery.id,
+1031
+1032 videoId:
+1033 discovery.video_id ||
+1034 discovery.videoId ||
+1035 null,
+1036
+1037 placeId:
+1038 discovery.place_id ||
+1039 discovery.placeId ||
+1040 null,
+1041
+1042 title:
+1043 discovery.title ||
+1044 "Descubrimiento",
+1045
+1046 description:
+1047 discovery.description ||
+1048 "",
+1049
+1050 category:
+1051 discovery.category ||
+1052 "Lugar",
+1053
+1054 timestampStart:
+1055 Number(
+1056 discovery.timestamp_start || 0
+1057 ),
+1058
+1059 timestampEnd:
+1060 discovery.timestamp_end === null ||
+1061 discovery.timestamp_end === undefined
+1062 ? null
+1063 : Number(
+1064 discovery.timestamp_end
+1065 ),
+1066
+1067 confidence:
+1068 discovery.confidence === null ||
+1069 discovery.confidence === undefined
+1070 ? null
+1071 : Number(
+1072 discovery.confidence
+1073 ),
+1074
+1075 approved:
+1076 Boolean(
+1077 discovery.approved
+1078 )
+1079 };
+1080 }
+1081
+1082 // =========================================================
+1083 // COMBINAR LUGARES
+1084 // =========================================================
+1085
+1086 function mergePlaces(
+1087 ...placeGroups
+1088 ) {
+1089
+1090 const combined =
+1091 new Map();
+1092
+1093 defaultPlaces
+1094 .map(normalizePlace)
+1095 .forEach(place => {
+1096
+1097 combined.set(
+1098 place.id,
+1099 place
+1100 );
+1101 });
+1102
+1103 placeGroups.forEach(group => {
+1104
+1105 if (!Array.isArray(group)) {
+1106 return;
+1107 }
+1108
+1109 group
+1110 .map(normalizePlace)
+1111 .forEach(place => {
+1112
+1113 /*
+1114 * Para los lugares de Supabase usamos
+1115 * primero su UUID.
+1116 */
+1117
+1118 const existingById =
+1119 combined.get(place.id);
+1120
+1121 /*
+1122 * También buscamos por slug para evitar
+1123 * duplicar visualmente un lugar.
+1124 */
+1125
+1126 const existingBySlug =
+1127 Array.from(
+1128 combined.values()
+1129 ).find(
+1130 item =>
+1131 item.slug ===
+1132 place.slug
+1133 );
+1134
+1135 const existing =
+1136 existingById ||
+1137 existingBySlug;
+1138
+1139 if (existing) {
+1140
+1141 /*
+1142 * Si el nuevo lugar viene de Supabase,
+1143 * conservamos su UUID porque será necesario
+1144 * para relacionarlo con discoveries.
+1145 */
+1146
+1147 if (
+1148 place.source ===
+1149 "supabase"
+1150 ) {
+1151
+1152 if (
+1153 existing.id !==
+1154 place.id
+1155 ) {
+1156
+1157 combined.delete(
+1158 existing.id
+1159 );
+1160 }
+1161
+1162 combined.set(
+1163 place.id,
+1164 {
+1165 ...existing,
+1166 ...place
+1167 }
+1168 );
+1169
+1170 } else {
+1171
+1172 combined.set(
+1173 existing.id,
+1174 {
+1175 ...existing,
+1176 ...place,
+1177
+1178 id:
+1179 existing.id
+1180 }
+1181 );
+1182 }
+1183
+1184 } else {
+1185
+1186 combined.set(
+1187 place.id,
+1188 place
+1189 );
+1190 }
+1191 });
+1192 });
+1193
+1194 return Array.from(
+1195 combined.values()
+1196 ).filter(
+1197 place =>
+1198 Number.isFinite(
+1199 place.lat
+1200 ) &&
+1201 Number.isFinite(
+1202 place.lng
+1203 )
+1204 );
+1205 }
+1206
+1207 // =========================================================
+1208 // LEER LUGARES DESDE SUPABASE
+1209 // =========================================================
+1210
+1211 async function loadSupabasePlaces() {
+1212
+1213 if (!supabaseClient) {
+1214 return [];
+1215 }
+1216
+1217 try {
+1218
+1219 const {
+1220 data,
+1221 error
+1222 } =
+1223 await supabaseClient
+1224 .from("places")
+1225 .select("*")
+1226 .order(
+1227 "created_at",
+1228 {
+1229 ascending: true
+1230 }
+1231 );
+1232
+1233 if (error) {
+1234 throw error;
+1235 }
+1236
+1237 return (data || []).map(
+1238 place =>
+1239 normalizePlace({
+1240 ...place,
+1241
+1242 source:
+1243 "supabase"
+1244 })
+1245 );
+1246
+1247 } catch (error) {
+1248
+1249 console.error(
+1250 "No se pudieron cargar los lugares de Supabase:",
+1251 error
+1252 );
+1253
+1254 return [];
+1255 }
+1256 }
+1257
+1258 // =========================================================
+1259 // LEER VÍDEOS DESDE SUPABASE
+1260 // =========================================================
+1261
+1262 async function loadSupabaseVideos() {
+1263
+1264 if (!supabaseClient) {
+1265 return [];
+1266 }
+1267
+1268 try {
+1269
+1270 const {
+1271 data,
+1272 error
+1273 } =
+1274 await supabaseClient
+1275 .from("videos")
+1276 .select("*")
+1277 .order(
+1278 "created_at",
+1279 {
+1280 ascending: true
+1281 }
+1282 );
+1283
+1284 if (error) {
+1285 throw error;
+1286 }
+1287
+1288 return (data || []).map(
+1289 video =>
+1290 normalizeVideo({
+1291 ...video,
+1292
+1293 source:
+1294 "supabase"
+1295 })
+1296 );
+1297
+1298 } catch (error) {
+1299
+1300 console.error(
+1301 "No se pudieron cargar los vídeos de Supabase:",
+1302 error
+1303 );
+1304
+1305 return [];
+1306 }
+1307 }
+1308
+1309 // =========================================================
+1310 // LEER DESCUBRIMIENTOS DESDE SUPABASE
+1311 // =========================================================
+1312
+1313 async function loadSupabaseDiscoveries() {
+1314
+1315 if (!supabaseClient) {
+1316 return [];
+1317 }
+1318
+1319 try {
+1320
+1321 const {
+1322 data,
+1323 error
+1324 } =
+1325 await supabaseClient
+1326 .from("discoveries")
+1327 .select("*")
+1328 .order(
+1329 "created_at",
+1330 {
+1331 ascending: true
+1332 }
+1333 );
+1334
+1335 if (error) {
+1336 throw error;
+1337 }
+1338
+1339 return (data || []).map(
+1340 normalizeDiscovery
+1341 );
+1342
+1343 } catch (error) {
+1344
+1345 console.error(
+1346 "No se pudieron cargar los descubrimientos de Supabase:",
+1347 error
+1348 );
+1349
+1350 return [];
+1351 }
+1352 }
+1353
+1354 // =========================================================
+1355 // COMPROBAR CONEXIÓN CON SUPABASE
+1356 // =========================================================
+1357
+1358 async function testSupabaseConnection() {
+1359
+1360 if (!supabaseClient) {
+1361
+1362 supabaseOnline = false;
+1363
+1364 return false;
+1365 }
+1366
+1367 try {
+1368
+1369 const {
+1370 error
+1371 } =
+1372 await supabaseClient
+1373 .from("places")
+1374 .select(
+1375 "id",
+1376 {
+1377 head: true,
+1378 count: "exact"
+1379 }
+1380 );
+1381
+1382 if (error) {
+1383 throw error;
+1384 }
+1385
+1386 supabaseOnline = true;
+1387
+1388 console.log(
+1389 "☁ Base compartida disponible"
+1390 );
+1391
+1392 return true;
+1393
+1394 } catch (error) {
+1395
+1396 supabaseOnline = false;
+1397
+1398 console.warn(
+1399 "Mundo Infinito continuará sin conexión compartida:",
+1400 error
+1401 );
+1402
+1403 return false;
+1404 }
+1405 }
+1406
+1407 // =========================================================
+1408 // MARCADORES
+1409 // =========================================================
+1410
+1411 function addMarker(place) {
+1412
+1413 if (
+1414 !Number.isFinite(
+1415 place.lat
+1416 ) ||
+1417 !Number.isFinite(
+1418 place.lng
+1419 )
+1420 ) {
+1421
+1422 return;
+1423 }
+1424
+1425 if (
+1426 markers.has(
+1427 place.id
+1428 )
+1429 ) {
+1430
+1431 return;
+1432 }
+1433
+1434 const marker =
+1435 L.marker(
+1436 [
+1437 place.lat,
+1438 place.lng
+1439 ],
+1440 {
+1441 icon:
+1442 createMarkerIcon(
+1443 place
+1444 ),
+1445
+1446 title:
+1447 place.name
+1448 }
+1449 ).addTo(map);
+1450
+1451 marker.on(
+1452 "click",
+1453 () => {
+1454
+1455 openPlace(
+1456 place.id
+1457 );
+1458 }
+1459 );
+1460
+1461 markers.set(
+1462 place.id,
+1463 marker
+1464 );
+1465 }
+1466
+1467 function renderMarkers() {
+1468
+1469 markers.forEach(
+1470 marker => {
+1471
+1472 marker.remove();
+1473 }
+1474 );
+1475
+1476 markers.clear();
+1477
+1478 places.forEach(
+1479 place => {
+1480
+1481 addMarker(
+1482 place
+1483 );
+1484 }
+1485 );
+1486 }
+1487
+1488 // =========================================================
+1489 // BUSCAR LUGAR
+1490 // =========================================================
+1491
+1492 function getPlaceById(
+1493 placeId
+1494 ) {
+1495
+1496 return places.find(
+1497 place =>
+1498 place.id ===
+1499 placeId
+1500 );
+1501 }
+1502
+1503 // =========================================================
+1504 // DESCUBRIMIENTOS DE UN LUGAR
+1505 // =========================================================
+1506
+1507 function getDiscoveriesForPlace(
+1508 place
+1509 ) {
+1510
+1511 if (!place) {
+1512 return [];
+1513 }
+1514
+1515 return discoveries.filter(
+1516 discovery =>
+1517 discovery.placeId ===
+1518 place.id
+1519 );
+1520 }
+1521
+1522 // =========================================================
+1523 // VÍDEOS DE UN LUGAR
+1524 // =========================================================
+1525
+1526 function getVideosForPlace(
+1527 place
+1528 ) {
+1529
+1530 const placeNameNormalized =
+1531 normalize(
+1532 place.name
+1533 );
+1534
+1535 /*
+1536 * Primero obtenemos IDs de vídeos relacionados
+1537 * mediante la tabla discoveries.
+1538 */
+1539
+1540 const relatedVideoIds =
+1541 new Set(
+1542 getDiscoveriesForPlace(
+1543 place
+1544 )
+1545 .map(
+1546 discovery =>
+1547 discovery.videoId
+1548 )
+1549 .filter(Boolean)
+1550 );
+1551
+1552 return videos.filter(
+1553 video => {
+1554
+1555 /*
+1556 * Nueva relación Supabase.
+1557 */
+1558
+1559 if (
+1560 relatedVideoIds.has(
+1561 video.id
+1562 )
+1563 ) {
+1564
+1565 return true;
+1566 }
+1567
+1568 /*
+1569 * Compatibilidad con videos.json antiguo.
+1570 */
+1571
+1572 if (
+1573 video.placeId &&
+1574 video.placeId ===
+1575 place.id
+1576 ) {
+1577
+1578 return true;
+1579 }
+1580
+1581 /*
+1582 * Compatibilidad por nombre.
+1583 */
+1584
+1585 if (
+1586 video.place &&
+1587 normalize(
+1588 video.place
+1589 ) ===
+1590 placeNameNormalized
+1591 ) {
+1592
+1593 return true;
+1594 }
+1595
+1596 return false;
+1597 }
+1598 );
+1599 }
+1600
+1601 // =========================================================
+1602 // TIMESTAMP DE UN VÍDEO PARA UN LUGAR
+1603 // =========================================================
+1604
+1605 function getVideoTimestampForPlace(
+1606 videoId,
+1607 placeId
+1608 ) {
+1609
+1610 const discovery =
+1611 discoveries.find(
+1612 item =>
+1613 item.videoId ===
+1614 videoId &&
+1615 item.placeId ===
+1616 placeId
+1617 );
+1618
+1619 if (!discovery) {
+1620 return 0;
+1621 }
+1622
+1623 return Number(
+1624 discovery.timestampStart || 0
+1625 );
+1626 }
+1627
+1628 // =========================================================
+1629 // FORMATEAR TIMESTAMP
+1630 // Ejemplo: 65 segundos → 01:05
+1631 // =========================================================
+1632
+1633 function formatTimestamp(
+1634 seconds
+1635 ) {
+1636
+1637 const total =
+1638 Math.max(
+1639 0,
+1640 Math.floor(
+1641 Number(seconds) || 0
+1642 )
+1643 );
+1644
+1645 const minutes =
+1646 Math.floor(
+1647 total / 60
+1648 );
+1649
+1650 const remainingSeconds =
+1651 total % 60;
+1652
+1653 return (
+1654 String(minutes)
+1655 .padStart(
+1656 2,
+1657 "0"
+1658 ) +
+1659 ":" +
+1660 String(remainingSeconds)
+1661 .padStart(
+1662 2,
+1663 "0"
+1664 )
+1665 );
+1666 }// =========================================================
+1667 // APP.JS v0.5.0 · BLOQUE 3
+1668 // Fichas + vídeos + timestamps + favoritos
+1669 // =========================================================
+1670
+1671 // =========================================================
+1672 // ABRIR FICHA DE LUGAR
+1673 // =========================================================
+1674
+1675 function openPlace(placeId) {
+1676
+1677 const place =
+1678 getPlaceById(
+1679 placeId
+1680 );
+1681
+1682 if (!place) {
+1683 return;
+1684 }
+1685
+1686 selectedPlace =
+1687 place;
+1688
+1689 closeContent();
+1690
+1691 placeCoverIcon.textContent =
+1692 categoryIcons[
+1693 place.category
+1694 ] || "";
+1695
+1696 placeCategory.textContent =
+1697 place.category;
+1698
+1699 placeName.textContent =
+1700 place.name;
+1701
+1702 placeZone.textContent =
+1703 [
+1704 place.zone,
+1705 place.city
+1706 ]
+1707 .filter(Boolean)
+1708 .join(" · ");
+1709
+1710 placeDescription.textContent =
+1711 place.description;
+1712
+1713 placeLocationText.textContent =
+1714 [
+1715 place.zone,
+1716 place.city,
+1717 place.country ||
+1718 CONFIG.country
+1719 ]
+1720 .filter(Boolean)
+1721 .join(", ");
+1722
+1723 placeTip.textContent =
+1724 categoryTips[
+1725 place.category
+1726 ] ||
+1727 "Consulta tus descubrimientos antes de visitar este lugar.";
+1728
+1729 const mapsQuery =
+1730 encodeURIComponent(
+1731 `${place.name}, ${place.zone}, ${place.city}, ${place.country || CONFIG.country}`
+1732 );
+1733
+1734 placeMapsButton.href =
+1735 `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+1736
+1737 renderPlaceVideos(
+1738 place
+1739 );
+1740
+1741 updateSavedButton();
+1742
+1743 placePanel.classList.add(
+1744 "open"
+1745 );
+1746
+1747 placePanel.setAttribute(
+1748 "aria-hidden",
+1749 "false"
+1750 );
+1751 }
+1752
+1753 // =========================================================
+1754 // CERRAR FICHA
+1755 // =========================================================
+1756
+1757 function closePlace() {
+1758
+1759 placePanel.classList.remove(
+1760 "open"
+1761 );
+1762
+1763 placePanel.setAttribute(
+1764 "aria-hidden",
+1765 "true"
+1766 );
+1767
+1768 selectedPlace =
+1769 null;
+1770 }
+1771
+1772 closePlacePanel.addEventListener(
+1773 "click",
+1774 closePlace
+1775 );
+1776
+1777 // =========================================================
+1778 // MOSTRAR VÍDEOS DEL LUGAR
+1779 // =========================================================
+1780
+1781 function renderPlaceVideos(
+1782 place
+1783 ) {
+1784
+1785 const relatedVideos =
+1786 getVideosForPlace(
+1787 place
+1788 );
+1789
+1790 placeVideoCount.textContent =
+1791 relatedVideos.length;
+1792
+1793 placeVideoActionText.textContent =
+1794 relatedVideos.length === 1
+1795 ? "1 vídeo"
+1796 : `${relatedVideos.length} vídeos`;
+1797
+1798 if (
+1799 relatedVideos.length === 0
+1800 ) {
+1801
+1802 placeVideosList.innerHTML = `
+1803 <div class="empty-state">
+1804
+1805 <span></span>
+1806
+1807 <strong>
+1808 Todavía no hay vídeos
+1809 </strong>
+1810
+1811 <p>
+1812 Los vídeos relacionados con este lugar aparecerán aquí.
+1813 </p>
+1814
+1815 </div>
+1816 `;
+1817
+1818 return;
+1819 }
+1820
+1821 placeVideosList.innerHTML =
+1822 relatedVideos
+1823 .map(video => {
+1824
+1825 const timestamp =
+1826 getVideoTimestampForPlace(
+1827 video.id,
+1828 place.id
+1829 );
+1830
+1831 const timestampHTML =
+1832 timestamp > 0
+1833 ? `
+1834 <span class="video-source">
+1835 ▶ ${formatTimestamp(timestamp)}
+1836 </span>
+1837 `
+1838 : `
+1839 <span class="video-source">
+1840 ${escapeHTML(video.type || "Vídeo")}
+1841 </span>
+1842 `;
+1843
+1844 return `
+1845 <button
+1846 class="video-card"
+1847 type="button"
+1848 data-video-id="${escapeHTML(video.id)}"
+1849 data-video-time="${timestamp}"
+1850 >
+1851
+1852 <div class="video-thumb"></div>
+1853
+1854 <div class="video-info">
+1855
+1856 <strong>
+1857 ${escapeHTML(video.title)}
+1858 </strong>
+1859
+1860 <p>
+1861 ${
+1862 escapeHTML(
+1863 video.description ||
+1864 place.name
+1865 )
+1866 }
+1867 </p>
+1868
+1869 ${timestampHTML}
+1870
+1871 </div>
+1872
+1873 </button>
+1874 `;
+1875 })
+1876 .join("");
+1877
+1878 placeVideosList
+1879 .querySelectorAll(
+1880 "[data-video-id]"
+1881 )
+1882 .forEach(button => {
+1883
+1884 button.addEventListener(
+1885 "click",
+1886 () => {
+1887
+1888 const video =
+1889 videos.find(
+1890 item =>
+1891 item.id ===
+1892 button.dataset.videoId
+1893 );
+1894
+1895 const timestamp =
+1896 Number(
+1897 button.dataset.videoTime ||
+1898 0
+1899 );
+1900
+1901 openVideo(
+1902 video,
+1903 timestamp
+1904 );
+1905 }
+1906 );
+1907 });
+1908 }
+1909
+1910 // =========================================================
+1911 // BOTÓN "VÍDEOS" DE LA FICHA
+1912 // =========================================================
+1913
+1914 placeVideosButton.addEventListener(
+1915 "click",
+1916 () => {
+1917
+1918 if (!selectedPlace) {
+1919 return;
+1920 }
+1921
+1922 const relatedVideos =
+1923 getVideosForPlace(
+1924 selectedPlace
+1925 );
+1926
+1927 if (
+1928 relatedVideos.length === 0
+1929 ) {
+1930
+1931 showToast(
+1932 "Todavía no hay vídeos para este lugar"
+1933 );
+1934
+1935 return;
+1936 }
+1937
+1938 placeVideosList.scrollIntoView({
+1939 behavior: "smooth",
+1940 block: "start"
+1941 });
+1942 }
+1943 );
+1944
+1945 // =========================================================
+1946 // REPRODUCTOR DE VÍDEO
+1947 // Permite comenzar en un segundo concreto
+1948 // =========================================================
+1949
+1950 function openVideo(
+1951 video,
+1952 startAt = 0
+1953 ) {
+1954
+1955 if (
+1956 !video ||
+1957 !video.url
+1958 ) {
+1959
+1960 showToast(
+1961 "Este vídeo todavía no tiene archivo"
+1962 );
+1963
+1964 return;
+1965 }
+1966
+1967 /*
+1968 * Instagram, TikTok, YouTube, etc.
+1969 * se siguen abriendo fuera si no son un MP4 directo.
+1970 */
+1971
+1972 const externalURL =
+1973 /^https?:\/\//i.test(
+1974 video.url
+1975 );
+1976
+1977 const directVideo =
+1978 /\.(mp4|webm|ogg)(\?.*)?$/i.test(
+1979 video.url
+1980 );
+1981
+1982 if (
+1983 externalURL &&
+1984 !directVideo
+1985 ) {
+1986
+1987 window.open(
+1988 video.url,
+1989 "_blank",
+1990 "noopener,noreferrer"
+1991 );
+1992
+1993 return;
+1994 }
+1995
+1996 if (
+1997 !videoModal ||
+1998 !videoPlayer
+1999 ) {
+2000
+2001 window.open(
+2002 video.url,
+2003 "_blank"
+2004 );
+2005
+2006 return;
+2007 }
+2008
+2009 videoModalTitle.textContent =
+2010 video.title ||
+2011 "Vídeo";
+2012
+2013 videoModalPlace.textContent =
+2014 video.place ||
+2015 "Brasil";
+2016
+2017 videoPlayer.src =
+2018 video.url;
+2019
+2020 videoModal.classList.add(
+2021 "open"
+2022 );
+2023
+2024 videoModal.setAttribute(
+2025 "aria-hidden",
+2026 "false"
+2027 );
+2028
+2029 /*
+2030 * Esperamos a que el navegador conozca
+2031 * la duración antes de saltar al timestamp.
+2032 */
+2033
+2034 videoPlayer.onloadedmetadata =
+2035 () => {
+2036
+2037 const safeStart =
+2038 Math.max(
+2039 0,
+2040 Number(startAt) || 0
+2041 );
+2042
+2043 if (
+2044 safeStart > 0 &&
+2045 Number.isFinite(
+2046 videoPlayer.duration
+2047 )
+2048 ) {
+2049
+2050 videoPlayer.currentTime =
+2051 Math.min(
+2052 safeStart,
+2053 Math.max(
+2054 0,
+2055 videoPlayer.duration - 0.2
+2056 )
+2057 );
+2058 }
+2059
+2060 videoPlayer
+2061 .play()
+2062 .catch(() => {
+2063 // Algunos navegadores requieren pulsar Play.
+2064 });
+2065 };
+2066 }
+2067
+2068 // =========================================================
+2069 // CERRAR VÍDEO
+2070 // =========================================================
+2071
+2072 function closeVideo() {
+2073
+2074 if (!videoPlayer) {
+2075 return;
+2076 }
+2077
+2078 videoPlayer.pause();
+2079
+2080 videoPlayer.onloadedmetadata =
+2081 null;
+2082
+2083 videoPlayer.removeAttribute(
+2084 "src"
+2085 );
+2086
+2087 videoPlayer.load();
+2088
+2089 videoModal.classList.remove(
+2090 "open"
+2091 );
+2092
+2093 videoModal.setAttribute(
+2094 "aria-hidden",
+2095 "true"
+2096 );
+2097 }
+2098
+2099 if (
+2100 closeVideoModal
+2101 ) {
+2102
+2103 closeVideoModal.addEventListener(
+2104 "click",
+2105 closeVideo
+2106 );
+2107 }
+2108
+2109 if (
+2110 videoModal
+2111 ) {
+2112
+2113 videoModal.addEventListener(
+2114 "click",
+2115 event => {
+2116
+2117 if (
+2118 event.target ===
+2119 videoModal
+2120 ) {
+2121
+2122 closeVideo();
+2123 }
+2124 }
+2125 );
+2126 }
+2127
+2128 // =========================================================
+2129 // FAVORITOS
+2130 // Por ahora siguen siendo personales en el dispositivo.
+2131 // =========================================================
+2132
+2133 function getSavedPlaces() {
+2134
+2135 const saved =
+2136 loadJSON(
+2137 CONFIG.storage.savedPlaces,
+2138 []
+2139 );
+2140
+2141 return Array.isArray(saved)
+2142 ? saved
+2143 : [];
+2144 }
+2145
+2146 function isPlaceSaved(
+2147 placeId
+2148 ) {
+2149
+2150 return getSavedPlaces()
+2151 .includes(
+2152 placeId
+2153 );
+2154 }
+2155
+2156 function updateSavedButton() {
+2157
+2158 if (!selectedPlace) {
+2159 return;
+2160 }
+2161
+2162 const saved =
+2163 isPlaceSaved(
+2164 selectedPlace.id
+2165 );
+2166
+2167 savePlaceButton
+2168 .classList
+2169 .toggle(
+2170 "saved",
+2171 saved
+2172 );
+2173
+2174 savePlaceButton.innerHTML =
+2175 saved
+2176 ? `
+2177 <span>♥</span>
+2178 <b>Guardado</b>
+2179 `
+2180 : `
+2181 <span>♡</span>
+2182 <b>Guardar</b>
+2183 `;
+2184 }
+2185
+2186 savePlaceButton.addEventListener(
+2187 "click",
+2188 () => {
+2189
+2190 if (!selectedPlace) {
+2191 return;
+2192 }
+2193
+2194 const saved =
+2195 getSavedPlaces();
+2196
+2197 const index =
+2198 saved.indexOf(
+2199 selectedPlace.id
+2200 );
+2201
+2202 if (
+2203 index >= 0
+2204 ) {
+2205
+2206 saved.splice(
+2207 index,
+2208 1
+2209 );
+2210
+2211 showToast(
+2212 "Eliminado de Guardados"
+2213 );
+2214
+2215 } else {
+2216
+2217 saved.push(
+2218 selectedPlace.id
+2219 );
+2220
+2221 showToast(
+2222 "Guardado en Mundo Infinito"
+2223 );
+2224 }
+2225
+2226 saveJSON(
+2227 CONFIG.storage.savedPlaces,
+2228 saved
+2229 );
+2230
+2231 updateSavedButton();
+2232 }
+2233 );
+2234
+2235 // =========================================================
+2236 // BUSCADOR
+2237 // Lugares de Mundo Infinito + ciudades de Brasil
+2238 // =========================================================
+2239
+2240 function searchPlaces(
+2241 query
+2242 ) {
+2243
+2244 const words =
+2245 normalize(query)
+2246 .trim()
+2247 .split(/\s+/)
+2248 .filter(Boolean);
+2249
+2250 if (
+2251 words.length === 0
+2252 ) {
+2253
+2254 return [];
+2255 }
+2256
+2257 return places.filter(
+2258 place => {
+2259
+2260 const searchable =
+2261 normalize(
+2262 [
+2263 place.name,
+2264 place.zone,
+2265 place.city,
+2266 place.category,
+2267 place.description
+2268 ].join(" ")
+2269 );
+2270
+2271 return words.every(
+2272 word =>
+2273 searchable.includes(
+2274 word
+2275 )
+2276 );
+2277 }
+2278 );
+2279 }
+2280
+2281
+2282 // =========================================================
+2283 // BÚSQUEDA DE CIUDADES DE BRASIL
+2284 // No crea marcadores ni guarda nada.
+2285 // Solo mueve el mapa.
+2286 // =========================================================
+2287
+2288 let citySearchTimer =
+2289 null;
+2290
+2291 let citySearchController =
+2292 null;
+2293
+2294 let citySearchRun =
+2295 0;
+2296
+2297
+2298 async function searchBrazilCities(
+2299 query
+2300 ) {
+2301
+2302 const text =
+2303 String(
+2304 query ||
+2305 ""
+2306 ).trim();
+2307
+2308 if (
+2309 text.length <
+2310 2
+2311 ) {
+2312
+2313 return [];
+2314 }
+2315
+2316
+2317 if (
+2318 citySearchController
+2319 ) {
+2320
+2321 citySearchController.abort();
+2322
+2323 }
+2324
+2325
+2326 citySearchController =
+2327 new AbortController();
+2328
+2329
+2330 const params =
+2331 new URLSearchParams({
+2332
+2333 q:
+2334 text,
+2335
+2336 format:
+2337 "jsonv2",
+2338
+2339 addressdetails:
+2340 "1",
+2341
+2342 namedetails:
+2343 "1",
+2344
+2345 limit:
+2346 "10",
+2347
+2348 countrycodes:
+2349 "br"
+2350
+2351 });
+2352
+2353
+2354 const response =
+2355 await fetch(
+2356 "https://nominatim.openstreetmap.org/search?" +
+2357 params.toString(),
+2358 {
+2359
+2360 signal:
+2361 citySearchController.signal,
+2362
+2363 headers: {
+2364
+2365 "Accept":
+2366 "application/json",
+2367
+2368 "Accept-Language":
+2369 "pt-BR,pt;q=0.9,es;q=0.8"
+2370
+2371 }
+2372
+2373 }
+2374 );
+2375
+2376
+2377 if (
+2378 !response.ok
+2379 ) {
+2380
+2381 throw new Error(
+2382 `No se pudieron buscar ciudades (${response.status})`
+2383 );
+2384
+2385 }
+2386
+2387
+2388 const data =
+2389 await response.json();
+2390
+2391
+2392 if (
+2393 !Array.isArray(
+2394 data
+2395 )
+2396 ) {
+2397
+2398 return [];
+2399
+2400 }
+2401
+2402
+2403 const uniqueCities =
+2404 new Map();
+2405
+2406
+2407 data.forEach(
+2408 item => {
+2409
+2410 const address =
+2411 item.address ||
+2412 {};
+2413
+2414
+2415 const countryCode =
+2416 String(
+2417 address.country_code ||
+2418 ""
+2419 ).toLowerCase();
+2420
+2421
+2422 if (
+2423 countryCode &&
+2424 countryCode !==
+2425 "br"
+2426 ) {
+2427
+2428 return;
+2429
+2430 }
+2431
+2432
+2433 const type =
+2434 String(
+2435 item.addresstype ||
+2436 item.type ||
+2437 ""
+2438 ).toLowerCase();
+2439
+2440
+2441 const cityName =
+2442 String(
+2443
+2444 address.city ||
+2445
+2446 address.town ||
+2447
+2448 address.municipality ||
+2449
+2450 address.village ||
+2451
+2452 (
+2453 [
+2454 "city",
+2455 "town",
+2456 "municipality",
+2457 "village",
+2458 "administrative"
+2459 ].includes(type)
+2460
+2461 ? (
+2462 item.namedetails?.name ||
+2463 item.name ||
+2464 ""
+2465 )
+2466
+2467 : ""
+2468 )
+2469
+2470 ).trim();
+2471
+2472
+2473 const state =
+2474 String(
+2475 address.state ||
+2476 ""
+2477 ).trim();
+2478
+2479
+2480 const lat =
+2481 Number(
+2482 item.lat
+2483 );
+2484
+2485
+2486 const lng =
+2487 Number(
+2488 item.lon
+2489 );
+2490
+2491
+2492 if (
+2493 !cityName ||
+2494 !Number.isFinite(
+2495 lat
+2496 ) ||
+2497 !Number.isFinite(
+2498 lng
+2499 )
+2500 ) {
+2501
+2502 return;
+2503
+2504 }
+2505
+2506
+2507 const key =
+2508 normalize(
+2509 `${cityName}-${state}`
+2510 );
+2511
+2512
+2513 if (
+2514 uniqueCities.has(
+2515 key
+2516 )
+2517 ) {
+2518
+2519 return;
+2520
+2521 }
+2522
+2523
+2524 uniqueCities.set(
+2525 key,
+2526 {
+2527
+2528 name:
+2529 cityName,
+2530
+2531 state,
+2532
+2533 country:
+2534 "Brasil",
+2535
+2536 lat,
+2537
+2538 lng
+2539
+2540 }
+2541 );
+2542
+2543 }
+2544 );
+2545
+2546
+2547 return Array.from(
+2548 uniqueCities.values()
+2549 )
+2550 .slice(
+2551 0,
+2552 5
+2553 );
+2554 }
+2555
+2556
+2557 // =========================================================
+2558 // MOSTRAR RESULTADOS DE BÚSQUEDA
+2559 // =========================================================
+2560
+2561 function renderSearchResults(
+2562 localResults,
+2563 cityResults = [],
+2564 {
+2565 searchingCities = false,
+2566 citySearchError = false
+2567 } = {}
+2568 ) {
+2569
+2570 const query =
+2571 searchInput.value.trim();
+2572
+2573
+2574 if (!query) {
+2575
+2576 searchResults.innerHTML =
+2577 "";
+2578
+2579 searchResults.classList.add(
+2580 "hidden"
+2581 );
+2582
+2583 clearSearch.classList.add(
+2584 "hidden"
+2585 );
+2586
+2587 return;
+2588
+2589 }
+2590
+2591
+2592 clearSearch.classList.remove(
+2593 "hidden"
+2594 );
+2595
+2596
+2597 const localHTML =
+2598
+2599 localResults.length
+2600
+2601 ? `
+2602 <div class="search-results-group">
+2603
+2604 <div class="search-results-label">
+2605 Mundo Infinito
+2606 </div>
+2607
+2608 ${
+2609 localResults
+2610 .slice(
+2611 0,
+2612 6
+2613 )
+2614 .map(
+2615 place => `
+2616 <button
+2617 class="search-result"
+2618 type="button"
+2619 data-place-id="${escapeHTML(place.id)}"
+2620 >
+2621
+2622 <div class="search-result-icon">
+2623 ${
+2624 typeof resolveCategoryIcon ===
+2625 "function"
+2626
+2627 ? resolveCategoryIcon(
+2628 place.category
+2629 )
+2630
+2631 : "&#128205;"
+2632 }
+2633 </div>
+2634
+2635 <div>
+2636
+2637 <strong>
+2638 ${escapeHTML(place.name)}
+2639 </strong>
+2640
+2641 <small>
+2642 ${
+2643 escapeHTML(
+2644 [
+2645 place.zone,
+2646 place.city,
+2647 place.category
+2648 ]
+2649 .filter(Boolean)
+2650 .join(" · ")
+2651 )
+2652 }
+2653 </small>
+2654
+2655 </div>
+2656
+2657 </button>
+2658 `
+2659 )
+2660 .join("")
+2661 }
+2662
+2663 </div>
+2664 `
+2665
+2666 : "";
+2667
+2668
+2669 const cityHTML =
+2670
+2671 cityResults.length
+2672
+2673 ? `
+2674 <div class="search-results-group">
+2675
+2676 <div class="search-results-label">
+2677 Ir a una ciudad
+2678 </div>
+2679
+2680 ${
+2681 cityResults
+2682 .map(
+2683 (city, index) => `
+2684 <button
+2685 class="search-result search-city-result"
+2686 type="button"
+2687 data-city-index="${index}"
+2688 >
+2689
+2690 <div class="search-result-icon">
+2691 &#128506;
+2692 </div>
+2693
+2694 <div>
+2695
+2696 <strong>
+2697 ${escapeHTML(city.name)}
+2698 </strong>
+2699
+2700 <small>
+2701 ${
+2702 escapeHTML(
+2703 [
+2704 city.state,
+2705 city.country
+2706 ]
+2707 .filter(Boolean)
+2708 .join(" · ")
+2709 )
+2710 }
+2711 </small>
+2712
+2713 </div>
+2714
+2715 </button>
+2716 `
+2717 )
+2718 .join("")
+2719 }
+2720
+2721 </div>
+2722 `
+2723
+2724 : "";
+2725
+2726
+2727 let statusHTML =
+2728 "";
+2729
+2730
+2731 if (
+2732 searchingCities
+2733 ) {
+2734
+2735 statusHTML = `
+2736 <div class="no-results search-city-status">
+2737
+2738 <span>
+2739 &#8987;
+2740 </span>
+2741
+2742 <strong>
+2743 Buscando ciudades de Brasil...
+2744 </strong>
+2745
+2746 </div>
+2747 `;
+2748
+2749 } else if (
+2750 citySearchError &&
+2751 localResults.length === 0
+2752 ) {
+2753
+2754 statusHTML = `
+2755 <div class="no-results">
+2756
+2757 <span>
+2758 &#128269;
+2759 </span>
+2760
+2761 <strong>
+2762 No se pudo buscar la ciudad
+2763 </strong>
+2764
+2765 <p>
+2766 Prueba de nuevo en unos segundos.
+2767 </p>
+2768
+2769 </div>
+2770 `;
+2771
+2772 } else if (
+2773 localResults.length === 0 &&
+2774 cityResults.length === 0
+2775 ) {
+2776
+2777 statusHTML = `
+2778 <div class="no-results">
+2779
+2780 <span>
+2781 &#128269;
+2782 </span>
+2783
+2784 <strong>
+2785 Sin resultados
+2786 </strong>
+2787
+2788 <p>
+2789 Prueba con otro lugar o ciudad de Brasil.
+2790 </p>
+2791
+2792 </div>
+2793 `;
+2794
+2795 }
+2796
+2797
+2798 searchResults.innerHTML =
+2799 localHTML +
+2800 cityHTML +
+2801 statusHTML;
+2802
+2803
+2804 searchResults
+2805 .querySelectorAll(
+2806 "[data-place-id]"
+2807 )
+2808 .forEach(
+2809 button => {
+2810
+2811 button.addEventListener(
+2812 "click",
+2813 () => {
+2814
+2815 const place =
+2816 getPlaceById(
+2817 button.dataset.placeId
+2818 );
+2819
+2820
+2821 if (!place) {
+2822
+2823 return;
+2824
+2825 }
+2826
+2827
+2828 searchInput.value =
+2829 place.name;
+2830
+2831
+2832 searchResults.classList.add(
+2833 "hidden"
+2834 );
+2835
+2836
+2837 map.setView(
+2838 [
+2839 place.lat,
+2840 place.lng
+2841 ],
+2842 16
+2843 );
+2844
+2845
+2846 window.setTimeout(
+2847 () => {
+2848
+2849 openPlace(
+2850 place.id
+2851 );
+2852
+2853 },
+2854 250
+2855 );
+2856
+2857 }
+2858 );
+2859
+2860 }
+2861 );
+2862
+2863
+2864 searchResults
+2865 .querySelectorAll(
+2866 "[data-city-index]"
+2867 )
+2868 .forEach(
+2869 button => {
+2870
+2871 button.addEventListener(
+2872 "click",
+2873 () => {
+2874
+2875 const city =
+2876 cityResults[
+2877 Number(
+2878 button.dataset.cityIndex
+2879 )
+2880 ];
+2881
+2882
+2883 if (!city) {
+2884
+2885 return;
+2886
+2887 }
+2888
+2889
+2890 searchInput.value =
+2891 city.name;
+2892
+2893
+2894 searchResults.classList.add(
+2895 "hidden"
+2896 );
+2897
+2898
+2899 closePlace();
+2900
+2901 closeContent();
+2902
+2903
+2904 map.flyTo(
+2905 [
+2906 city.lat,
+2907 city.lng
+2908 ],
+2909 12,
+2910 {
+2911
+2912 duration:
+2913 1.2
+2914
+2915 }
+2916 );
+2917
+2918
+2919 showToast(
+2920 `Explorando ${city.name}`
+2921 );
+2922
+2923 }
+2924 );
+2925
+2926 }
+2927 );
+2928
+2929
+2930 searchResults.classList.remove(
+2931 "hidden"
+2932 );
+2933
+2934 }
+2935
+2936
+2937 // =========================================================
+2938 // ACTUALIZAR BÚSQUEDA
+2939 // =========================================================
+2940
+2941 function updateSearch() {
+2942
+2943 const query =
+2944 searchInput.value.trim();
+2945
+2946
+2947 const localResults =
+2948 searchPlaces(
+2949 query
+2950 );
+2951
+2952
+2953 citySearchRun +=
+2954 1;
+2955
+2956
+2957 const runId =
+2958 citySearchRun;
+2959
+2960
+2961 if (
+2962 citySearchTimer
+2963 ) {
+2964
+2965 window.clearTimeout(
+2966 citySearchTimer
+2967 );
+2968
+2969 }
+2970
+2971
+2972 if (
+2973 citySearchController
+2974 ) {
+2975
+2976 citySearchController.abort();
+2977
+2978 citySearchController =
+2979 null;
+2980
+2981 }
+2982
+2983
+2984 if (
+2985 query.length <
+2986 2
+2987 ) {
+2988
+2989 renderSearchResults(
+2990 localResults,
+2991 []
+2992 );
+2993
+2994 return;
+2995
+2996 }
+2997
+2998
+2999 renderSearchResults(
+3000 localResults,
+3001 [],
+3002 {
+3003 searchingCities:
+3004 true
+3005 }
+3006 );
+3007
+3008
+3009 citySearchTimer =
+3010 window.setTimeout(
+3011 async () => {
+3012
+3013 try {
+3014
+3015 const cityResults =
+3016 await searchBrazilCities(
+3017 query
+3018 );
+3019
+3020
+3021 if (
+3022 runId !==
+3023 citySearchRun
+3024 ) {
+3025
+3026 return;
+3027
+3028 }
+3029
+3030
+3031 renderSearchResults(
+3032 localResults,
+3033 cityResults
+3034 );
+3035
+3036
+3037 } catch (
+3038 error
+3039 ) {
+3040
+3041 if (
+3042 error?.name ===
+3043 "AbortError"
+3044 ) {
+3045
+3046 return;
+3047
+3048 }
+3049
+3050
+3051 console.warn(
+3052 "No se pudieron buscar ciudades:",
+3053 error
+3054 );
+3055
+3056
+3057 if (
+3058 runId !==
+3059 citySearchRun
+3060 ) {
+3061
+3062 return;
+3063
+3064 }
+3065
+3066
+3067 renderSearchResults(
+3068 localResults,
+3069 [],
+3070 {
+3071 citySearchError:
+3072 true
+3073 }
+3074 );
+3075
+3076 }
+3077
+3078 },
+3079 350
+3080 );
+3081
+3082 }
+3083
+3084
+3085 searchInput.addEventListener(
+3086 "input",
+3087 updateSearch
+3088 );
+3089
+3090
+3091 clearSearch.addEventListener(
+3092 "click",
+3093 () => {
+3094
+3095 citySearchRun +=
+3096 1;
+3097
+3098
+3099 if (
+3100 citySearchTimer
+3101 ) {
+3102
+3103 window.clearTimeout(
+3104 citySearchTimer
+3105 );
+3106
+3107 }
+3108
+3109
+3110 if (
+3111 citySearchController
+3112 ) {
+3113
+3114 citySearchController.abort();
+3115
+3116 citySearchController =
+3117 null;
+3118
+3119 }
+3120
+3121
+3122 searchInput.value =
+3123 "";
+3124
+3125
+3126 searchResults.innerHTML =
+3127 "";
+3128
+3129
+3130 searchResults.classList.add(
+3131 "hidden"
+3132 );
+3133
+3134
+3135 clearSearch.classList.add(
+3136 "hidden"
+3137 );
+3138
+3139
+3140 searchInput.focus();
+3141
+3142
+3143 closePlace();
+3144
+3145
+3146 map.setView(
+3147 CONFIG.center,
+3148 CONFIG.zoom
+3149 );
+3150
+3151 }
+3152 );
+3153
+3154
+3155 document.addEventListener(
+3156 "click",
+3157 event => {
+3158
+3159 if (
+3160 !event.target.closest(
+3161 ".search-wrap"
+3162 ) &&
+3163 !event.target.closest(
+3164 "#searchResults"
+3165 )
+3166 ) {
+3167
+3168 searchResults.classList.add(
+3169 "hidden"
+3170 );
+3171
+3172 }
+3173
+3174 }
+3175 );
+3176
+3177
+3178 // =========================================================
+3179 // APP.JS v0.5.0 · BLOQUE 4
+3180 //  compartido con Supabase
+3181 // =========================================================
+3182
+3183 // =========================================================
+3184 // ABRIR / CERRAR FORMULARIO
+3185 // =========================================================
+3186
+3187 function openAddDiscovery() {
+3188
+3189 closePlace();
+3190 closeContent();
+3191
+3192 discoveryModal.classList.add(
+3193 "open"
+3194 );
+3195
+3196 discoveryModal.setAttribute(
+3197 "aria-hidden",
+3198 "false"
+3199 );
+3200
+3201 window.setTimeout(
+3202 () => {
+3203
+3204 const input =
+3205 document.getElementById(
+3206 "discoveryTitle"
+3207 );
+3208
+3209 if (input) {
+3210 input.focus();
+3211 }
+3212
+3213 },
+3214 200
+3215 );
+3216 }
+3217
+3218 function closeAddDiscovery() {
+3219
+3220 discoveryModal.classList.remove(
+3221 "open"
+3222 );
+3223
+3224 discoveryModal.setAttribute(
+3225 "aria-hidden",
+3226 "true"
+3227 );
+3228 }
+3229
+3230 openDiscoveryModal.addEventListener(
+3231 "click",
+3232 openAddDiscovery
+3233 );
+3234
+3235 closeDiscoveryModal.addEventListener(
+3236 "click",
+3237 closeAddDiscovery
+3238 );
+3239
+3240 discoveryModal.addEventListener(
+3241 "click",
+3242 event => {
+3243
+3244 if (
+3245 event.target ===
+3246 discoveryModal
+3247 ) {
+3248
+3249 closeAddDiscovery();
+3250 }
+3251 }
+3252 );
+3253
+3254 // =========================================================
+3255 // USAR CENTRO DEL MAPA
+3256 // =========================================================
+3257
+3258 useMapCenter.addEventListener(
+3259 "click",
+3260 () => {
+3261
+3262 const center =
+3263 map.getCenter();
+3264
+3265 discoveryLat.value =
+3266 center.lat.toFixed(6);
+3267
+3268 discoveryLng.value =
+3269 center.lng.toFixed(6);
+3270
+3271 showToast(
+3272 "Coordenadas del mapa añadidas"
+3273 );
+3274 }
+3275 );
+3276
+3277 // =========================================================
+3278 // BUSCAR SI EL LUGAR YA EXISTE EN SUPABASE
+3279 // =========================================================
+3280
+3281 async function findSupabasePlaceBySlug(
+3282 placeSlug
+3283 ) {
+3284
+3285 if (!supabaseClient) {
+3286 return null;
+3287 }
+3288
+3289 try {
+3290
+3291 const {
+3292 data,
+3293 error
+3294 } =
+3295 await supabaseClient
+3296 .from("places")
+3297 .select("*")
+3298 .eq(
+3299 "slug",
+3300 placeSlug
+3301 )
+3302 .maybeSingle();
+3303
+3304 if (error) {
+3305 throw error;
+3306 }
+3307
+3308 return data || null;
+3309
+3310 } catch (error) {
+3311
+3312 console.error(
+3313 "Error buscando el lugar:",
+3314 error
+3315 );
+3316
+3317 return null;
+3318 }
+3319 }
+3320
+3321 // =========================================================
+3322 // CREAR O REUTILIZAR LUGAR
+3323 // =========================================================
 3324
 3325 async function createOrGetPlace({
 3326 name,
@@ -3170,7 +3395,7 @@ async function findSupabasePlaceBySlug(
 3395 ) {
 3396
 3397 console.log(
-3398 "n Coordenadas actualizadas:",
+3398 " Coordenadas actualizadas:",
 3399 name,
 3400 lat,
 3401 lng
@@ -3512,7 +3737,7 @@ async function findSupabasePlaceBySlug(
 3737 }
 3738
 3739 // =========================================================
-3740 // FORMULARIO n · v0.6
+3740 // FORMULARIO  · v0.6
 3741 // Vídeo → exploración → varios detalles → revisión → guardar
 3742 // =========================================================
 3743
@@ -3562,18 +3787,18 @@ async function findSupabasePlaceBySlug(
 3787
 3788 function detailIcon(item) {
 3789 const typeIcons = {
-3790 Lugar: "n",
-3791 Restaurante: "n",
-3792 Bar: "n",
-3793 Playa: "nn",
-3794 Mirador: "n",
-3795 Consejo: "n",
-3796 Precio: "n",
-3797 Transporte: "n",
-3798 Aviso: "nn",
-3799 Compras: "nn",
-3800 Evento: "n",
-3801 Otro: "n"
+3790 Lugar: "",
+3791 Restaurante: "",
+3792 Bar: "",
+3793 Playa: "",
+3794 Mirador: "",
+3795 Consejo: "",
+3796 Precio: "",
+3797 Transporte: "",
+3798 Aviso: "⚠",
+3799 Compras: "",
+3800 Evento: "",
+3801 Otro: ""
 3802 };
 3803
 3804 return (
@@ -3597,7 +3822,7 @@ async function findSupabasePlaceBySlug(
 3822 if (discoveryComment) discoveryComment.value = "";
 3823 if (discoveryLat) discoveryLat.value = "";
 3824 if (discoveryLng) discoveryLng.value = "";
-3825 if (addDetailToDraft) addDetailToDraft.textContent = "n Añadir detalle";
+3825 if (addDetailToDraft) addDetailToDraft.textContent = " Añadir detalle";
 3826 if (cancelDetailEdit) cancelDetailEdit.classList.add("hidden");
 3827 }
 3828
@@ -3672,10 +3897,9 @@ async function findSupabasePlaceBySlug(
 3897 if (discoveryDraft.length === 0 && detectedDetailsList) {
 3898 detectedDetailsList.innerHTML = `
 3899 <div class="empty-state">
-3900 <span>n</span>
+3900 <span></span>
 3901 <strong>Vídeo preparado</strong>
-3902 <p>La exploración automática real se conectará al servicio de análisis. Mientras tanto puedes añadir los detalles manualment
-e.</p>
+3902 <p>La exploración automática real se conectará al servicio de análisis. Mientras tanto puedes añadir los detalles manualmente.</p>
 3903 </div>
 3904 `;
 3905 }
@@ -3751,12 +3975,12 @@ e.</p>
 3975 <div class="detected-detail-meta">
 3976 <span>${escapeHTML(item.category || item.type)}</span>
 3977 ${item.placeText ? `<span>· ${escapeHTML(item.placeText)}</span>` : ""}
-3978 <span class="detail-time">n ${formatTimestamp(item.timestampStart)}</span>
+3978 <span class="detail-time">▶ ${formatTimestamp(item.timestampStart)}</span>
 3979 </div>
 3980 </div>
 3981 <div class="detected-detail-actions">
-3982 <button type="button" data-edit-detail="${index}" aria-label="Editar">/n</button>
-3983 <button type="button" data-delete-detail="${index}" aria-label="Eliminar">nn</button>
+3982 <button type="button" data-edit-detail="${index}" aria-label="Editar">✏</button>
+3983 <button type="button" data-delete-detail="${index}" aria-label="Eliminar"></button>
 3984 </div>
 3985 </article>
 3986 `).join("");
@@ -3823,7 +4047,7 @@ e.</p>
 4047 discoveryComment.value = item.description || "";
 4048 discoveryLat.value = Number.isFinite(item.lat) ? item.lat : "";
 4049 discoveryLng.value = Number.isFinite(item.lng) ? item.lng : "";
-4050 addDetailToDraft.textContent = "3 Guardar cambios";
+4050 addDetailToDraft.textContent = "✓ Guardar cambios";
 4051 cancelDetailEdit?.classList.remove("hidden");
 4052 openDetailEditor();
 4053 }
@@ -3955,7 +4179,7 @@ e.</p>
 4179 ) {
 4180
 4181 console.log(
-4182 "n Coordenadas actualizadas:",
+4182 " Coordenadas actualizadas:",
 4183 name,
 4184 lat,
 4185 lng
@@ -4051,14 +4275,13 @@ e.</p>
 4275
 4276 async function createSupabaseVideo({ title, description, url }) {
 4277 if (!url) return null;
-4278 const { data: existingVideos, error: searchError } = await supabaseClient.from("videos").select("*").eq("source_url", url).limit(1
-);
+4278 const { data: existingVideos, error: searchError } = await supabaseClient.from("videos").select("*").eq("source_url", url).limit(1);
 4279 if (searchError) throw searchError;
 4280 if (Array.isArray(existingVideos) && existingVideos.length > 0) {
 4281 return normalizeVideo({ ...existingVideos[0], source: "supabase" });
 4282 }
-4283 const sourceType = url.includes("instagram.com") ? "Instagram" : url.includes("tiktok.com") ? "TikTok" : (url.includes("youtube.co
-m") || url.includes("youtu.be")) ? "YouTube" : "Vídeo";
+4283 const sourceType = url.includes("instagram.com") ? "Instagram" : url.includes("tiktok.com") ? "TikTok" : (url.includes("youtube.com") || url.includes("you
+tu.be")) ? "YouTube" : "Vídeo";
 4284 const { data, error } = await supabaseClient.from("videos").insert({
 4285 title, description, video_url: null, source_type: sourceType, source_url: url,
 4286 transcript: null, duration_seconds: null
@@ -4067,8 +4290,7 @@ m") || url.includes("youtu.be")) ? "YouTube" : "Vídeo";
 4289 return normalizeVideo({ ...data, source: "supabase" });
 4290 }
 4291
-4292 async function createSupabaseDiscovery({ title, description, category, placeId, videoId = null, timestampStart = 0, timestampEnd = n
-ull }) {
+4292 async function createSupabaseDiscovery({ title, description, category, placeId, videoId = null, timestampStart = 0, timestampEnd = null }) {
 4293 const { data, error } = await supabaseClient.from("discoveries").insert({
 4294 video_id: videoId, place_id: placeId, title, description, category,
 4295 timestamp_start: timestampStart, timestamp_end: timestampEnd,
@@ -4138,7 +4360,7 @@ ull }) {
 4359 if (sharedVideo && !videos.some(v => v.id === sharedVideo.id)) videos.push(sharedVideo);
 4360 renderMarkers();
 4361 closeAddDiscovery();
-4362 showToast(`3 ${discoveryDraft.length} detalles guardados para todos`);
+4362 showToast(`✓ ${discoveryDraft.length} detalles guardados para todos`);
 4363
 4364 if (createdPlaces[0]) {
 4365 map.setView([createdPlaces[0].lat, createdPlaces[0].lng], 14);
@@ -4219,7 +4441,7 @@ ull }) {
 4440 `
 4441 <div class="empty-state">
 4442
-4443 <span>n</span>
+4443 <span></span>
 4444
 4445 <strong>
 4446 No hay vídeos todavía
@@ -4247,7 +4469,7 @@ ull }) {
 4468 >
 4469
 4470 <div class="content-card-icon">
-4471 n
+4471 
 4472 </div>
 4473
 4474 <div class="content-card-text">
@@ -4335,7 +4557,7 @@ ull }) {
 4556 `
 4557 <div class="empty-state">
 4558
-4559 <span>n</span>
+4559 <span></span>
 4560
 4561 <strong>
 4562 Todavía no hay restaurantes
@@ -4366,7 +4588,7 @@ ull }) {
 4587 ${
 4588 categoryIcons[
 4589 place.category
-4590 ] || "n"
+4590 ] || ""
 4591 }
 4592 </div>
 4593
@@ -4454,7 +4676,7 @@ ull }) {
 4675 `
 4676 <div class="empty-state">
 4677
-4678 <span>n</span>
+4678 <span></span>
 4679
 4680 <strong>
 4681 Planificador en preparación
@@ -4495,7 +4717,7 @@ ull }) {
 4716 `
 4717 <div class="empty-state">
 4718
-4719 <span>¤n</span>
+4719 <span>❤</span>
 4720
 4721 <strong>
 4722 Todavía no tienes lugares guardados
@@ -4526,7 +4748,7 @@ ull }) {
 4747 ${
 4748 categoryIcons[
 4749 place.category
-4750 ] || "n"
+4750 ] || ""
 4751 }
 4752 </div>
 4753
@@ -5062,15 +5284,15 @@ ull }) {
 5283 renderMarkers();
 5284
 5285 console.log(
-5286 `n ${places.length} lugares cargados`
+5286 ` ${places.length} lugares cargados`
 5287 );
 5288
 5289 console.log(
-5290 `n ${videos.length} vídeos cargados`
+5290 ` ${videos.length} vídeos cargados`
 5291 );
 5292
 5293 console.log(
-5294 `n ${discoveries.length} descubrimientos compartidos`
+5294 ` ${discoveries.length} descubrimientos compartidos`
 5295 );
 5296 }
 5297
@@ -5287,7 +5509,7 @@ ull }) {
 5508 }
 5509
 5510 console.log(
-5511 "n Mundo Infinito actualizado"
+5511 " Mundo Infinito actualizado"
 5512 );
 5513
 5514 } catch (error) {
@@ -5340,7 +5562,7 @@ ull }) {
 5561 async function init() {
 5562
 5563 console.log(
-5564 "n Iniciando Mundo Infinito v0.6.0"
+5564 " Iniciando Mundo Infinito v0.6.0"
 5565 );
 5566
 5567 /*
@@ -5369,13 +5591,13 @@ ull }) {
 5590 startRealtimeUpdates();
 5591
 5592 console.log(
-5593 "n Mundo Infinito conectado y compartido"
+5593 " Mundo Infinito conectado y compartido"
 5594 );
 5595
 5596 } else {
 5597
 5598 console.log(
-5599 "n Mundo Infinito funcionando en modo local"
+5599 " Mundo Infinito funcionando en modo local"
 5600 );
 5601 }
 5602 }
@@ -5388,4 +5610,4 @@ ull }) {
 5609
 5610 // =========================================================
 5611 // FIN · MUNDO INFINITO v0.6.0
-5612 // =============================
+5612 // ==========================
