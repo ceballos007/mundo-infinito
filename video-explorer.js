@@ -2961,6 +2961,9 @@ city:
 detail.city ||
 CONFIG.city ||
 "Rio de Janeiro",
+state:
+detail.state ||
+"Rio de Janeiro",
 country:
 detail.country ||
 CONFIG.country ||
@@ -3213,4 +3216,4 @@ closeEditor();
 console.log(
 "n Mundo Infinito · Explorador de vídeos v0.6.2 cargado"
 );
-})(); // FIN video-explorer v0
+})(); // FIN video-explorer v0.
