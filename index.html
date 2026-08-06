@@ -47,6 +47,10 @@
     rel="stylesheet"
     href="styles.css"
   >
+
+  <!-- RECOMENDACIONES ESCRITAS · MÓDULO INDEPENDIENTE -->
+  <link rel="stylesheet" href="notes-explorer.css">
+
 </head>
 
 
@@ -147,6 +151,19 @@
       aria-label="Añadir descubrimiento"
     >
       +
+    </button>
+
+
+    <!-- RECOMENDACIONES ESCRITAS · BOTÓN INDEPENDIENTE -->
+
+    <button
+      id="openNotesModal"
+      class="notes-fab"
+      type="button"
+      aria-label="Recomendaciones escritas"
+    >
+      <span>📝</span>
+      Recomendaciones escritas
     </button>
 
 
@@ -553,6 +570,29 @@
           </div>
 
 
+          <label>
+
+            Enlace del Reel o vídeo
+
+            <input
+              id="discoveryVideoLink"
+              name="link"
+              type="url"
+              placeholder="https://www.instagram.com/reel/…"
+            >
+
+          </label>
+
+
+          <div class="source-divider">
+
+            <span>
+              o
+            </span>
+
+          </div>
+
+
           <!-- SUBIDA FUTURA -->
 
           <label
@@ -569,7 +609,7 @@
             </strong>
 
             <small>
-              MP4 · El vídeo se analizará automáticamente
+              MP4 · Próximamente conectado al almacenamiento
             </small>
 
           </label>
@@ -1285,6 +1325,62 @@
 
 
   <!-- =====================================================
+       RECOMENDACIONES ESCRITAS · MÓDULO INDEPENDIENTE
+       ===================================================== -->
+
+  <div
+    id="notesModal"
+    class="notes-modal"
+    aria-hidden="true"
+  >
+
+    <section
+      class="notes-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="notesModalTitle"
+    >
+
+      <button
+        id="closeNotesModal"
+        class="notes-close"
+        type="button"
+        aria-label="Cerrar"
+      >
+        ×
+      </button>
+
+      <span class="notes-eyebrow">
+        Mundo Infinito
+      </span>
+
+      <h2 id="notesModalTitle">
+        Recomendaciones escritas
+      </h2>
+
+      <p>
+        Escribe o pega aquí tus recomendaciones de viaje.
+      </p>
+
+      <textarea
+        id="notesInput"
+        rows="10"
+        placeholder="Ej.: En Ipanema merece la pena ir al atardecer…"
+      ></textarea>
+
+      <button
+        id="analyzeNotesButton"
+        type="button"
+      >
+        🔎 Analizar recomendaciones
+      </button>
+
+    </section>
+
+  </div>
+
+
+  <!-- =====================================================
        MENSAJES
        ===================================================== -->
 
@@ -1326,6 +1422,7 @@
 
   <script src="app.js"></script>
   <script src="video-explorer.js"></script>
+  <script src="notes-explorer.js"></script>
 
 </body>
 </html>
