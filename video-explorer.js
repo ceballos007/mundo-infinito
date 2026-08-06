@@ -1132,7 +1132,443 @@
 
                     }
                   );
+function detailsFromTranscript(
+  transcript
+) {
 
+  if (
+    !transcript
+  ) {
+    return [];
+  }
+
+  const results =
+    [];
+
+  const chunks =
+    Array.isArray(
+      transcript.chunks
+    )
+      ? transcript.chunks
+      : [];
+
+  const fullText =
+    String(
+      transcript.text ||
+      ""
+    ).trim();
+
+
+  // =====================================================
+  // DETECTOR DE PRECIOS
+  // =====================================================
+
+  const priceRegex =
+    /(?:R\$|RS|\$)\s?\d+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?\s?(?:reais|real)/gi;
+
+
+  // =====================================================
+  // LUGARES CONOCIDOS DE RÍO / BRASIL
+  // Se puede ampliar después.
+  // =====================================================
+
+  const knownPlaces = [
+    "Copacabana",
+    "Ipanema",
+    "Leblon",
+    "Lapa",
+    "Santa Teresa",
+    "Botafogo",
+    "Arpoador",
+    "Cristo Redentor",
+    "Corcovado",
+    "Pão de Açúcar",
+    "Pao de Acucar",
+    "Escadaria Selarón",
+    "Escadaria Selaron",
+    "Maracanã",
+    "Maracana",
+    "Jardim Botânico",
+    "Jardim Botanico",
+    "Ilha Grande",
+    "Lopes Mendes"
+  ];
+
+
+  // =====================================================
+  // ANALIZAR FRAGMENTOS CON TIMESTAMP
+  // =====================================================
+
+  chunks.forEach(
+    chunk => {
+
+      const text =
+        String(
+          chunk.text ||
+          ""
+        ).trim();
+
+
+      const timestamp =
+        Array.isArray(
+          chunk.timestamp
+        )
+          ? Number(
+              chunk.timestamp[0] ||
+              0
+            )
+          : 0;
+
+
+      // -------------------------------------------------
+      // LUGARES
+      // -------------------------------------------------
+
+      knownPlaces.forEach(
+        placeName => {
+
+          if (
+            text
+              .toLowerCase()
+              .includes(
+                placeName
+                  .toLowerCase()
+              )
+          ) {
+
+            const alreadyExists =
+              results.some(
+                item =>
+                  item.title ===
+                    placeName &&
+                  item.timestampStart ===
+                    timestamp
+              );
+
+
+            if (
+              !alreadyExists
+            ) {
+
+              results.push({
+                id:
+                  crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : `auto-${Date.now()}-${Math.random()}`,
+
+                title:
+                  placeName,
+
+                place:
+                  placeName,
+
+                type:
+                  "Lugar",
+
+                category:
+                  "Lugar",
+
+                comment:
+                  text,
+
+                timestampStart:
+                  timestamp,
+
+                timestampEnd:
+                  null,
+
+                lat:
+                  null,
+
+                lng:
+                  null,
+
+                confidence:
+                  0.85,
+
+                automatic:
+                  true
+              });
+
+            }
+
+          }
+
+        }
+      );
+
+
+      // -------------------------------------------------
+      // PRECIOS
+      // -------------------------------------------------
+
+      const prices =
+        text.match(
+          priceRegex
+        );
+
+
+      if (
+        prices
+      ) {
+
+        prices.forEach(
+          price => {
+
+            results.push({
+              id:
+                crypto.randomUUID
+                  ? crypto.randomUUID()
+                  : `auto-${Date.now()}-${Math.random()}`,
+
+              title:
+                price,
+
+              place:
+                CONFIG.city ||
+                "Río de Janeiro",
+
+              type:
+                "Precio",
+
+              category:
+                "Consejo",
+
+              comment:
+                text,
+
+              timestampStart:
+                timestamp,
+
+              timestampEnd:
+                null,
+
+              lat:
+                null,
+
+              lng:
+                null,
+
+              confidence:
+                0.8,
+
+              automatic:
+                true
+            });
+
+          }
+        );
+
+      }
+
+
+      // -------------------------------------------------
+      // CONSEJOS
+      // -------------------------------------------------
+
+      const adviceWords = [
+        "recomendo",
+        "recomiendo",
+        "vale a pena",
+        "mejor",
+        "melhor",
+        "cuidado",
+        "importante",
+        "tem que",
+        "hay que",
+        "evita",
+        "evitar"
+      ];
+
+
+      const isAdvice =
+        adviceWords.some(
+          word =>
+            text
+              .toLowerCase()
+              .includes(
+                word
+              )
+        );
+
+
+      if (
+        isAdvice
+      ) {
+
+        results.push({
+          id:
+            crypto.randomUUID
+              ? crypto.randomUUID()
+              : `auto-${Date.now()}-${Math.random()}`,
+
+          title:
+            "Consejo del vídeo",
+
+          place:
+            CONFIG.city ||
+            "Río de Janeiro",
+
+          type:
+            "Consejo",
+
+          category:
+            "Consejo",
+
+          comment:
+            text,
+
+          timestampStart:
+            timestamp,
+
+          timestampEnd:
+            null,
+
+          lat:
+            null,
+
+          lng:
+            null,
+
+          confidence:
+            0.7,
+
+          automatic:
+            true
+        });
+
+      }
+
+    }
+  );
+
+
+  // =====================================================
+  // FALLBACK SI WHISPER NO DEVUELVE CHUNKS
+  // =====================================================
+
+  if (
+    !chunks.length &&
+    fullText
+  ) {
+
+    const prices =
+      fullText.match(
+        priceRegex
+      );
+
+
+    knownPlaces.forEach(
+      placeName => {
+
+        if (
+          fullText
+            .toLowerCase()
+            .includes(
+              placeName
+                .toLowerCase()
+            )
+        ) {
+
+          results.push({
+            id:
+              crypto.randomUUID
+                ? crypto.randomUUID()
+                : `auto-${Date.now()}-${Math.random()}`,
+
+            title:
+              placeName,
+
+            place:
+              placeName,
+
+            type:
+              "Lugar",
+
+            category:
+              "Lugar",
+
+            comment:
+              fullText,
+
+            timestampStart:
+              0,
+
+            timestampEnd:
+              null,
+
+            lat:
+              null,
+
+            lng:
+              null,
+
+            confidence:
+              0.7,
+
+            automatic:
+              true
+          });
+
+        }
+
+      }
+    );
+
+
+    prices?.forEach(
+      price => {
+
+        results.push({
+          id:
+            crypto.randomUUID
+              ? crypto.randomUUID()
+              : `auto-${Date.now()}-${Math.random()}`,
+
+          title:
+            price,
+
+          place:
+            CONFIG.city ||
+            "Río de Janeiro",
+
+          type:
+            "Precio",
+
+          category:
+            "Consejo",
+
+          comment:
+            fullText,
+
+          timestampStart:
+            0,
+
+          timestampEnd:
+            null,
+
+          lat:
+            null,
+
+          lng:
+            null,
+
+          confidence:
+            0.6,
+
+          automatic:
+            true
+        });
+
+      }
+    );
+
+  }
+
+
+  return results;
+
+}
 
               console.log(
                 "📝 TRANSCRIPCIÓN DEL VÍDEO:",
