@@ -103,22 +103,17 @@ let saving = false;
 // ICONOS
 // =======================================================
 const ICONS = {
-  Lugar: "📍",
-  Restaurante: "🍴",
-  Bar: "🍹",
-  Playa: "🏖️",
-  Mirador: "🌄",
-  Consejo: "💡",
-  Precio: "💰",
-  Transporte: "🚕",
-  Aviso: "⚠️",
-  Compras: "🛍️",
-  Evento: "🎉",
-  "Vida nocturna": "🍹",
-  Gastronomía: "🥘",
-  Cultura: "🎨",
-  Parque: "🌿",
-  Otro: "✨"
+Lugar: "n",
+Restaurante: "n",
+Playa: "nn",
+Mirador: "n",
+Consejo: "n",
+Precio: "n",
+Transporte: "n",
+Aviso: "nn",
+Compras: "nn",
+Evento: "n",
+Otro: "n"
 };
 // =======================================================
 // UTILIDADES DE TIEMPO
@@ -2815,406 +2810,6 @@ discovery
 );
 }
 }
-
-// =======================================================
-// DECIDIR QUÉ DEBE SER UN MARCADOR
-// v0.6.5
-//
-// Un vídeo puede contener:
-//   - lugares reales -> crean / reutilizan un marcador;
-//   - información sobre un lugar -> se guarda dentro del
-//     marcador del lugar, sin crear un punto falso.
-//
-// Ejemplo:
-//   "SAARA" -> marcador.
-//   "Horarios de atención en SAARA" -> detalle de SAARA.
-//   "Precios de souvenirs en SAARA" -> detalle de SAARA.
-// =======================================================
-
-function normalizeExplorerText(
-  value
-) {
-
-  return String(
-    value ||
-    ""
-  )
-    .normalize(
-      "NFD"
-    )
-    .replace(
-      /[\u0300-\u036f]/g,
-      ""
-    )
-    .toLowerCase()
-    .replace(
-      /\s+/g,
-      " "
-    )
-    .trim();
-
-}
-
-
-function looksLikeInformationDetail(
-  detail
-) {
-
-  const type =
-    normalizeExplorerText(
-      detail?.type
-    );
-
-  const category =
-    normalizeExplorerText(
-      detail?.category
-    );
-
-  const title =
-    normalizeExplorerText(
-      detail?.title
-    );
-
-
-  /*
-   * Tipos que normalmente describen información
-   * sobre un lugar y no un lugar nuevo.
-   */
-
-  const informationTypes =
-    new Set([
-      "consejo",
-      "precio",
-      "aviso"
-    ]);
-
-
-  if (
-    informationTypes.has(
-      type
-    ) ||
-    informationTypes.has(
-      category
-    )
-  ) {
-
-    return true;
-
-  }
-
-
-  /*
-   * Patrones habituales que Gemini puede devolver
-   * como títulos aunque realmente sean atributos
-   * del lugar.
-   */
-
-  const informationPatterns = [
-
-    /^horario\b/,
-    /^horarios\b/,
-    /^precio\b/,
-    /^precios\b/,
-    /^cuanto cuesta\b/,
-    /^cuánto cuesta\b/,
-    /^entrada\b/,
-    /^entradas\b/,
-    /^recomendacion\b/,
-    /^recomendación\b/,
-    /^recomendaciones\b/,
-    /^consejo\b/,
-    /^consejos\b/,
-    /^aviso\b/,
-    /^avisos\b/,
-    /^como llegar\b/,
-    /^cómo llegar\b/,
-    /^como ir\b/,
-    /^cómo ir\b/,
-    /^como pedir\b/,
-    /^cómo pedir\b/,
-    /^que comprar\b/,
-    /^qué comprar\b/,
-    /^cuando ir\b/,
-    /^cuándo ir\b/,
-    /^mejor hora\b/,
-    /^mejor momento\b/,
-    /^que pedir\b/,
-    /^qué pedir\b/,
-    /^que hacer\b/,
-    /^qué hacer\b/,
-    /^donde aparcar\b/,
-    /^dónde aparcar\b/,
-    /^transporte\b/,
-    /^uber\b/,
-    /^taxi\b/
-
-  ];
-
-
-  return informationPatterns.some(
-    pattern =>
-      pattern.test(
-        title
-      )
-  );
-
-}
-
-
-// =======================================================
-// EXTRAER UN LUGAR MENCIONADO EN EL TÍTULO
-// =======================================================
-
-function extractPlaceFromInformationalTitle(
-  title
-) {
-
-  const text =
-    String(
-      title ||
-      ""
-    ).trim();
-
-
-  if (!text) {
-    return "";
-  }
-
-
-  /*
-   * Captura ejemplos como:
-   *
-   * "Horarios de atención en SAARA"
-   * "Precios de souvenirs y prendas en SAARA"
-   * "Cómo pedir Uber en Galeão"
-   *
-   * Tomamos lo que aparece después del último " en ".
-   */
-
-  const enMatches =
-    Array.from(
-      text.matchAll(
-        /\s+en\s+(.+?)(?=[.!?;:]?$)/gi
-      )
-    );
-
-
-  if (
-    enMatches.length
-  ) {
-
-    return String(
-      enMatches[
-        enMatches.length - 1
-      ][1] ||
-      ""
-    ).trim();
-
-  }
-
-
-  return "";
-
-}
-
-
-// =======================================================
-// RESOLVER EL LUGAR REAL AL QUE PERTENECE UN DETALLE
-// =======================================================
-
-function resolveMapTarget(
-  detail
-) {
-
-  const title =
-    String(
-      detail?.title ||
-      ""
-    ).trim();
-
-  const place =
-    String(
-      detail?.place ||
-      ""
-    ).trim();
-
-
-  const informational =
-    looksLikeInformationDetail(
-      detail
-    );
-
-
-  /*
-   * Si es información, preferimos el campo place.
-   * Si Gemini no lo rellenó, intentamos extraer el
-   * lugar desde el propio título.
-   */
-
-  if (
-    informational
-  ) {
-
-    const extracted =
-      extractPlaceFromInformationalTitle(
-        title
-      );
-
-
-    const targetName =
-      place ||
-      extracted;
-
-
-    if (
-      !targetName
-    ) {
-
-      return {
-        localizable:
-          false,
-
-        informational:
-          true,
-
-        name:
-          "",
-
-        zone:
-          "",
-
-        reason:
-          "No se ha podido identificar a qué lugar pertenece esta información."
-      };
-
-    }
-
-
-    return {
-      localizable:
-        true,
-
-      informational:
-        true,
-
-      name:
-        targetName,
-
-      zone:
-        "",
-
-      reason:
-        ""
-    };
-
-  }
-
-
-  /*
-   * Si parece un lugar real, el nombre del marcador
-   * debe ser el título detectado.
-   */
-
-  return {
-    localizable:
-      Boolean(
-        title
-      ),
-
-    informational:
-      false,
-
-    name:
-      title,
-
-    zone:
-      place,
-
-    reason:
-      title
-        ? ""
-        : "El descubrimiento no tiene un nombre de lugar."
-  };
-
-}
-
-
-// =======================================================
-// CATEGORÍA DEL MARCADOR
-//
-// Cuando el detalle es "Precio", "Consejo", etc. no
-// queremos que el marcador se llame Consejo. Intentamos
-// conservar una categoría útil para el lugar.
-// =======================================================
-
-function categoryForMapTarget(
-  detail,
-  target
-) {
-
-  if (
-    !target?.informational
-  ) {
-
-    return (
-      detail?.category ||
-      detail?.type ||
-      "Lugar"
-    );
-
-  }
-
-
-  const category =
-    String(
-      detail?.category ||
-      ""
-    ).trim();
-
-  const type =
-    String(
-      detail?.type ||
-      ""
-    ).trim();
-
-
-  const invalid =
-    new Set([
-      "Consejo",
-      "Precio",
-      "Aviso"
-    ]);
-
-
-  if (
-    category &&
-    !invalid.has(
-      category
-    )
-  ) {
-
-    return category;
-
-  }
-
-
-  if (
-    type &&
-    !invalid.has(
-      type
-    )
-  ) {
-
-    return type;
-
-  }
-
-
-  return "Lugar";
-
-}
-
-
 // =======================================================
 // GUARDAR TODO
 // =======================================================
@@ -3328,66 +2923,34 @@ for (
 const detail
 of draftDetails
 ) {
-
-const target =
-resolveMapTarget(
-detail
-);
-
-
-/*
- * Si ni siquiera podemos identificar un lugar real,
- * no inventamos un marcador.
- */
-
-if (
-!target.localizable ||
-!target.name
-) {
-
-console.warn(
-"⚠️ No se puede añadir al mapa:",
-detail.title,
-target.reason
-);
-
-continue;
-
-}
-
-
-/*
- * El marcador se geolocaliza con el nombre REAL del lugar.
- *
- * Para un lugar:
- *   Belmonte Leblon -> Belmonte Leblon
- *
- * Para información:
- *   Horarios de atención en SAARA -> SAARA
- */
-
 let lat =
-null;
+Number(
+detail.lat
+);
 
 let lng =
-null;
+Number(
+detail.lng
+);
 
-let geocodeData =
-null;
-
+if (
+!Number.isFinite(lat) ||
+!Number.isFinite(lng)
+) {
 
 try {
 
 console.log(
-target.informational
-? "🧩 Asociando información a:"
-: "🧭 Localizando:",
-target.name
+"🧭 Localizando:",
+detail.title
 );
 
 const {
-data,
-error
+data:
+geocodeData,
+
+error:
+geocodeError
 } =
 
 await supabaseClient
@@ -3399,10 +2962,10 @@ await supabaseClient
 body: {
 
 name:
-target.name,
+detail.title,
 
 zone:
-target.zone ||
+detail.place ||
 "",
 
 city:
@@ -3424,23 +2987,17 @@ CONFIG.country ||
 }
 );
 
-
-geocodeData =
-data;
-
-
 if (
-error
+geocodeError
 ) {
 
 console.warn(
 "No se pudo geolocalizar:",
-target.name,
-error
+detail.title,
+geocodeError
 );
 
 }
-
 
 if (
 geocodeData?.found &&
@@ -3466,10 +3023,15 @@ Number(
 geocodeData.lng
 );
 
+detail.lat =
+lat;
+
+detail.lng =
+lng;
 
 console.log(
 "📍 Localizado:",
-target.name,
+detail.title,
 lat,
 lng
 );
@@ -3482,149 +3044,84 @@ geocodeError
 
 console.warn(
 "Error localizando:",
-target.name,
+detail.title,
 geocodeError
 );
 
 }
 
+}
 
 /*
- * Si el lugar no se puede localizar de forma fiable,
- * no creamos ningún punto inventado.
+ * Si no hemos encontrado coordenadas reales,
+ * no colocamos el descubrimiento en un punto inventado.
  */
 
 if (
-!Number.isFinite(
-lat
-) ||
-!Number.isFinite(
-lng
-)
+!Number.isFinite(lat) ||
+!Number.isFinite(lng)
 ) {
 
 console.warn(
 "⚠️ Ubicación pendiente:",
-target.name,
-"· detalle:",
 detail.title
 );
 
 continue;
 
 }
-
-
-/*
- * Creamos o reutilizamos UN ÚNICO lugar.
- *
- * Si hay varios detalles sobre SAARA todos usarán
- * el slug "saara" y quedarán vinculados al mismo punto.
- */
-
 const savedPlace =
 await createOrGetPlace({
-
 name:
-target.name,
-
-zone:
-target.zone ||
-geocodeData?.address?.suburb ||
-geocodeData?.address?.neighbourhood ||
-geocodeData?.address?.city_district ||
-"",
-
-category:
-categoryForMapTarget(
-detail,
-target
-),
-
-description:
-target.informational
-
-? (
-detail.comment ||
-`Información encontrada sobre ${target.name}.`
-)
-
-: (
-detail.comment ||
-"Detalle encontrado en un vídeo de Mundo Infinito."
-),
-
-lat,
-
-lng
-
-});
-
-
-if (
-!savedPlace
-) {
-
-throw new Error(
-`No se pudo guardar ${target.name}`
-);
-
-}
-
-
-addPlaceToApp(
-savedPlace
-);
-
-
-if (
-!firstPlace
-) {
-
-firstPlace =
-savedPlace;
-
-}
-
-
-/*
- * El descubrimiento conserva SU título original.
- *
- * Por ejemplo:
- * place     = SAARA
- * discovery = "Horarios de atención en SAARA"
- *
- * Así aparece como información dentro de la ficha
- * del marcador SAARA.
- */
-
-const savedDiscovery =
-await createSupabaseDiscovery({
-
-title:
 detail.title,
-
-description:
-detail.comment ||
-"",
-
+zone:
+detail.place,
 category:
 detail.category ||
 detail.type ||
-"Consejo",
-
+"Lugar",
+description:
+detail.comment ||
+"Detalle encontrado en un vídeo de Mundo Infinito.",
+lat,
+lng
+});
+if (
+!savedPlace
+) {
+throw new Error(
+`No se pudo guardar ${detail.title}`
+);
+}
+addPlaceToApp(
+savedPlace
+);
+if (
+!firstPlace
+) {
+firstPlace =
+savedPlace;
+}
+const savedDiscovery =
+await createSupabaseDiscovery({
+title:
+detail.title,
+description:
+detail.comment ||
+"",
+category:
+detail.category ||
+detail.type ||
+"Lugar",
 placeId:
 savedPlace.id,
-
 videoId:
 savedVideo.id,
-
 timestampStart:
 Number(
 detail.timestampStart ||
 0
 ),
-
 timestampEnd:
 detail.timestampEnd ==
 null
@@ -3632,31 +3129,14 @@ null
 : Number(
 detail.timestampEnd
 )
-
 });
-
-
 addDiscoveryToApp(
 savedDiscovery
 );
-
-
 created.push(
 savedDiscovery
 );
-
-
-console.log(
-target.informational
-? "🔗 Información asociada:"
-: "✅ Lugar guardado:",
-detail.title,
-"→",
-savedPlace.name
-);
-
 }
-
 // =================================================
 // 3. ACTUALIZAR MAPA
 // =================================================
@@ -3768,6 +3248,6 @@ closeEditor();
 // LISTO
 // =======================================================
 console.log(
-"n Mundo Infinito · Explorador de vídeos v0.6.5 cargado"
+"n Mundo Infinito · Explorador de vídeos v0.6.2 cargado"
 );
 })(); // FIN video-explorer v0.6
