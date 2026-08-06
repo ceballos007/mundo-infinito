@@ -3105,72 +3105,6 @@
 
     try {
 
-      // ---------------------------------------------------
-      // PRIMERO EDGE FUNCTION
-      // ---------------------------------------------------
-
-      automaticDetails =
-        await requestAutomaticAnalysis(
-          source
-        );
-
-
-      // ---------------------------------------------------
-      // SI EDGE NO DEVUELVE NADA,
-      // USAR LA TRANSCRIPCIÓN LOCAL
-      // ---------------------------------------------------
-
-      if (
-        (
-          !Array.isArray(
-            automaticDetails
-          ) ||
-          automaticDetails.length === 0
-        ) &&
-        source.transcript &&
-        typeof detailsFromTranscript === "function"
-      ) {
-
-        console.log(
-          "🧠 Analizando la transcripción local…"
-        );
-
-
-        automaticDetails =
-          detailsFromTranscript(
-            source.transcript
-          );
-
-
-        console.log(
-          "✨ Detalles obtenidos de la transcripción:",
-          automaticDetails
-        );
-
-      }
-
-
-    } catch (
-      error
-    ) {
-
-      console.warn(
-        "Mundo Infinito v0.6.2: análisis automático no disponible.",
-        error
-      );
-
-
-      if (
-        source.transcript &&
-        typeof detailsFromTranscript === "function"
-      ) {
-
-           try {
-
-      // ---------------------------------------------------
-      // ANALIZAR EN SERVIDOR CON GEMINI
-      // ---------------------------------------------------
-
       console.log(
         "🧠 Enviando vídeo a analyze-video…"
       );
@@ -3221,6 +3155,9 @@
     }
 
 
+    await animation;
+
+
     if (
       runId !==
       explorationRun
@@ -3236,9 +3173,6 @@
     // =====================================================
 
     if (
-      Array.isArray(
-        automaticDetails
-      ) &&
       automaticDetails.length > 0
     ) {
 
@@ -3307,6 +3241,7 @@
 
     openEditor();
 
+  }
   }  // =======================================================
   // ANALIZADOR AUTOMÁTICO / EDGE FUNCTION
   // =======================================================
