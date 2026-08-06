@@ -3283,41 +3283,60 @@
         typeof detailsFromTranscript === "function"
       ) {
 
-        try {
+           try {
 
-          automaticDetails =
-            detailsFromTranscript(
-              source.transcript
-            );
+      // ---------------------------------------------------
+      // ANALIZAR EN SERVIDOR CON GEMINI
+      // ---------------------------------------------------
 
-
-          console.log(
-            "✨ Detalles locales encontrados:",
-            automaticDetails
-          );
+      console.log(
+        "🧠 Enviando vídeo a analyze-video…"
+      );
 
 
-        } catch (
-          transcriptError
-        ) {
-
-          console.warn(
-            "No se pudieron interpretar los detalles de la transcripción:",
-            transcriptError
-          );
+      automaticDetails =
+        await requestAutomaticAnalysis(
+          source
+        );
 
 
-          automaticDetails =
-            [];
+      console.log(
+        "✨ Respuesta automática de Gemini:",
+        automaticDetails
+      );
 
-        }
+
+      if (
+        !Array.isArray(
+          automaticDetails
+        )
+      ) {
+
+        automaticDetails =
+          [];
 
       }
 
+
+    } catch (
+      error
+    ) {
+
+      console.error(
+        "❌ Error analizando el vídeo con Gemini:",
+        error
+      );
+
+
+      automaticDetails =
+        [];
+
+
+      showToast?.(
+        "No se pudo analizar automáticamente el vídeo"
+      );
+
     }
-
-
-    await animation;
 
 
     if (
