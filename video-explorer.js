@@ -1,5 +1,4 @@
 // =========================================================
-/ =========================================================
 // MUNDO INFINITO · video-explorer v0.6.2
 // Extensión segura sobre app.js v0.5 estable
 // Un vídeo -> varios detalles -> revisión -> Supabase
