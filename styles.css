@@ -3721,3 +3721,33 @@ button:disabled {
 /* =========================================================
    FIN · MUNDO INFINITO v0.6
    ========================================================= */
+/* =========================================================
+   MUNDO INFINITO · CABECERA CENTRADA
+   ========================================================= */
+
+.topbar {
+  left: 50% !important;
+  right: auto !important;
+  width: min(94%, 580px);
+  transform: translateX(-50%) !important;
+}
+
+/* Centrar visualmente el contenido superior */
+.brand-row {
+  justify-content: center;
+}
+
+.welcome {
+  text-align: center;
+}
+
+@media (max-width: 820px) {
+
+  .topbar {
+    left: 50% !important;
+    right: auto !important;
+    width: calc(100% - 20px);
+    transform: translateX(-50%) !important;
+  }
+
+}
