@@ -1744,10 +1744,9 @@ function openPlace(placeId) {
     "open"
   );
 
-  placePanel.setAttribute(
-    "aria-hidden",
-    "false"
-  );
+  document.body.classList.add(
+  "place-open"
+);
 }
 
 // =========================================================
@@ -1760,10 +1759,9 @@ function closePlace() {
     "open"
   );
 
-  placePanel.setAttribute(
-    "aria-hidden",
-    "true"
-  );
+  document.body.classList.remove(
+  "place-open"
+);
 
   selectedPlace =
     null;
