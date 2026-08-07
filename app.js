@@ -1,8 +1,3 @@
-Biblioteca
-/
-app-A95-CORREGIDO-COORDENADAS-Y-PAIS.txt
-
-
 // =========================================================
 // MUNDO INFINITO · v0.6.0
 // Mapa + Supabase + descubrimientos compartidos
@@ -3333,9 +3328,7 @@ async function createOrGetPlace({
   category,
   description,
   lat,
-  lng,
-  city = "",
-  country = ""
+  lng
 }) {
 
   const placeSlug =
@@ -3349,9 +3342,11 @@ async function createOrGetPlace({
   if (existing) {
 
     if (
-      hasUsableCoordinates(
-        lat,
-        lng
+      Number.isFinite(
+        Number(lat)
+      ) &&
+      Number.isFinite(
+        Number(lng)
       )
     ) {
 
@@ -3378,16 +3373,6 @@ async function createOrGetPlace({
             description:
               description ||
               existing.description,
-
-            city:
-              city ||
-              existing.city ||
-              CONFIG.city,
-
-            country:
-              country ||
-              existing.country ||
-              CONFIG.country,
 
             latitude:
               Number(lat),
@@ -3466,27 +3451,23 @@ async function createOrGetPlace({
         zone,
 
         city:
-          city ||
           CONFIG.city,
 
         country:
-          country ||
           CONFIG.country,
 
         description,
 
         latitude:
-          hasUsableCoordinates(
-            lat,
-            lng
+          Number.isFinite(
+            Number(lat)
           )
             ? Number(lat)
             : null,
 
         longitude:
-          hasUsableCoordinates(
-            lat,
-            lng
+          Number.isFinite(
+            Number(lng)
           )
             ? Number(lng)
             : null
@@ -4110,34 +4091,6 @@ addDetailToDraft?.addEventListener("click", () => {
 });
 
 // =========================================================
-// COORDENADAS REALES
-// 0,0 no es una ubicación válida para Mundo Infinito.
-// =========================================================
-function hasUsableCoordinates(
-  lat,
-  lng
-) {
-  const latitude =
-    Number(lat);
-
-  const longitude =
-    Number(lng);
-
-  return (
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude) &&
-    latitude >= -90 &&
-    latitude <= 90 &&
-    longitude >= -180 &&
-    longitude <= 180 &&
-    !(
-      Math.abs(latitude) < 0.000001 &&
-      Math.abs(longitude) < 0.000001
-    )
-  );
-}
-
-// =========================================================
 // FUNCIONES SUPABASE REUTILIZADAS
 // =========================================================
 
@@ -4159,9 +4112,7 @@ async function createOrGetPlace({
   category,
   description,
   lat,
-  lng,
-  city = "",
-  country = ""
+  lng
 }) {
 
   const placeSlug =
@@ -4175,9 +4126,11 @@ async function createOrGetPlace({
   if (existing) {
 
     if (
-      hasUsableCoordinates(
-        lat,
-        lng
+      Number.isFinite(
+        Number(lat)
+      ) &&
+      Number.isFinite(
+        Number(lng)
       )
     ) {
 
@@ -4204,16 +4157,6 @@ async function createOrGetPlace({
             description:
               description ||
               existing.description,
-
-            city:
-              city ||
-              existing.city ||
-              CONFIG.city,
-
-            country:
-              country ||
-              existing.country ||
-              CONFIG.country,
 
             latitude:
               Number(lat),
@@ -4292,27 +4235,23 @@ async function createOrGetPlace({
         zone,
 
         city:
-          city ||
           CONFIG.city,
 
         country:
-          country ||
           CONFIG.country,
 
         description,
 
         latitude:
-          hasUsableCoordinates(
-            lat,
-            lng
+          Number.isFinite(
+            Number(lat)
           )
             ? Number(lat)
             : null,
 
         longitude:
-          hasUsableCoordinates(
-            lat,
-            lng
+          Number.isFinite(
+            Number(lng)
           )
             ? Number(lng)
             : null
