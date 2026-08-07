@@ -3538,6 +3538,18 @@ button:disabled {
 
   display:
     block;
+}/* =========================================================
+   MUNDO INFINITO · MÓVIL
+   Ocultar botones de recomendaciones con ficha abierta
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  body.place-open #openNotesModal,
+  body.place-open #openDiscoveryModal {
+    display: none !important;
+  }
+
 }
 
 
