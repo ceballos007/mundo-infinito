@@ -4423,11 +4423,195 @@ closeContentPanel.addEventListener(
   closeContent
 );
 
+// // =========================================================
+// MUNDO INFINITO · FILTROS POR CIUDAD
+// Vídeos + Gastronomía
+// =========================================================
+
+function sortCities(cities) {
+
+  return [...new Set(
+    cities
+      .map(city =>
+        String(city || "").trim()
+      )
+      .filter(Boolean)
+  )].sort(
+    (a, b) =>
+      a.localeCompare(
+        b,
+        "es",
+        {
+          sensitivity: "base"
+        }
+      )
+  );
+}
+
+
+// =========================================================
+// OBTENER LUGARES RELACIONADOS CON UN VÍDEO
+// =========================================================
+
+function getPlacesForVideo(
+  video
+) {
+
+  if (!video) {
+    return [];
+  }
+
+  const relatedPlaceIds =
+    new Set();
+
+  // Relación moderna:
+  // discoveries -> videoId + placeId
+  discoveries
+    .filter(
+      discovery =>
+        discovery.videoId ===
+        video.id
+    )
+    .forEach(
+      discovery => {
+
+        if (
+          discovery.placeId
+        ) {
+          relatedPlaceIds.add(
+            discovery.placeId
+          );
+        }
+
+      }
+    );
+
+  // Compatibilidad antigua
+  if (
+    video.placeId
+  ) {
+    relatedPlaceIds.add(
+      video.placeId
+    );
+  }
+
+  let relatedPlaces =
+    places.filter(
+      place =>
+        relatedPlaceIds.has(
+          place.id
+        )
+    );
+
+  // Compatibilidad por nombre
+  if (
+    relatedPlaces.length === 0 &&
+    video.place
+  ) {
+
+    const videoPlaceName =
+      normalize(
+        video.place
+      );
+
+    relatedPlaces =
+      places.filter(
+        place =>
+          normalize(
+            place.name
+          ) ===
+          videoPlaceName
+      );
+  }
+
+  return relatedPlaces;
+}
+
+
+// =========================================================
+// CIUDADES DE UN VÍDEO
+// =========================================================
+
+function getCitiesForVideo(
+  video
+) {
+
+  return sortCities(
+    getPlacesForVideo(
+      video
+    )
+      .map(
+        place =>
+          place.city
+      )
+  );
+}
+
+
+// =========================================================
+// PESTAÑAS DE CIUDAD
+// =========================================================
+
+function cityTabsHTML(
+  cities,
+  selectedCity
+) {
+
+  const buttons = [
+    {
+      value: "all",
+      label: "Todos"
+    },
+    ...cities.map(
+      city => ({
+        value: city,
+        label: city
+      })
+    )
+  ];
+
+  return `
+    <div
+      class="city-tabs"
+      role="tablist"
+      aria-label="Filtrar por ciudad"
+    >
+      ${
+        buttons
+          .map(
+            item => `
+              <button
+                class="city-tab ${
+                  selectedCity ===
+                  item.value
+                    ? "active"
+                    : ""
+                }"
+                type="button"
+                data-city-filter="${escapeHTML(
+                  item.value
+                )}"
+              >
+                ${escapeHTML(
+                  item.label
+                )}
+              </button>
+            `
+          )
+          .join("")
+      }
+    </div>
+  `;
+}
+
+
 // =========================================================
 // PANEL TODOS LOS VÍDEOS
 // =========================================================
 
-function renderAllVideosPanel() {
+function renderAllVideosPanel(
+  selectedCity = "all"
+) {
 
   if (
     videos.length === 0
@@ -4437,7 +4621,6 @@ function renderAllVideosPanel() {
       "Vídeos",
       `
         <div class="empty-state">
-
           <span>🎥</span>
 
           <strong>
@@ -4447,7 +4630,6 @@ function renderAllVideosPanel() {
           <p>
             Los vídeos guardados aparecerán aquí.
           </p>
-
         </div>
       `
     );
@@ -4455,47 +4637,166 @@ function renderAllVideosPanel() {
     return;
   }
 
-  const html =
-    videos
-      .map(
-        video => `
-          <button
-            class="content-card"
-            type="button"
-            data-global-video="${escapeHTML(video.id)}"
-          >
+  // -----------------------------------------------
+  // Ciudades que realmente tienen vídeos
+  // -----------------------------------------------
 
-            <div class="content-card-icon">
-              🎥
-            </div>
-
-            <div class="content-card-text">
-
-              <strong>
-                ${escapeHTML(video.title)}
-              </strong>
-
-              <p>
-                ${
-                  escapeHTML(
-                    video.place ||
-                    video.type ||
-                    "Brasil"
-                  )
-                }
-              </p>
-
-            </div>
-
-          </button>
-        `
+  const cities =
+    sortCities(
+      videos.flatMap(
+        video =>
+          getCitiesForVideo(
+            video
+          )
       )
-      .join("");
+    );
+
+  // Si la ciudad seleccionada ya no existe,
+  // volvemos automáticamente a Todos.
+  if (
+    selectedCity !== "all" &&
+    !cities.includes(
+      selectedCity
+    )
+  ) {
+    selectedCity =
+      "all";
+  }
+
+  // -----------------------------------------------
+  // Filtrar vídeos
+  // -----------------------------------------------
+
+  const filteredVideos =
+    selectedCity ===
+    "all"
+      ? videos
+      : videos.filter(
+          video =>
+            getCitiesForVideo(
+              video
+            ).includes(
+              selectedCity
+            )
+        );
+
+  const cardsHTML =
+    filteredVideos.length
+      ? filteredVideos
+          .map(
+            video => {
+
+              const videoCities =
+                getCitiesForVideo(
+                  video
+                );
+
+              const placeLabel =
+                videoCities.length
+                  ? videoCities.join(
+                      " · "
+                    )
+                  : (
+                      video.place ||
+                      video.type ||
+                      "Brasil"
+                    );
+
+              return `
+                <button
+                  class="content-card"
+                  type="button"
+                  data-global-video="${escapeHTML(
+                    video.id
+                  )}"
+                >
+
+                  <div
+                    class="content-card-icon"
+                  >
+                    🎥
+                  </div>
+
+                  <div
+                    class="content-card-text"
+                  >
+
+                    <strong>
+                      ${escapeHTML(
+                        video.title
+                      )}
+                    </strong>
+
+                    <p>
+                      ${escapeHTML(
+                        placeLabel
+                      )}
+                    </p>
+
+                  </div>
+
+                </button>
+              `;
+            }
+          )
+          .join("")
+      : `
+          <div class="empty-state">
+
+            <span>🎥</span>
+
+            <strong>
+              No hay vídeos en esta ciudad
+            </strong>
+
+          </div>
+        `;
+
+  const html = `
+    ${cityTabsHTML(
+      cities,
+      selectedCity
+    )}
+
+    <div class="city-filter-content">
+      ${cardsHTML}
+    </div>
+  `;
 
   openContent(
     "Vídeos",
     html
   );
+
+  // -----------------------------------------------
+  // Cambiar ciudad
+  // -----------------------------------------------
+
+  contentPanelBody
+    .querySelectorAll(
+      "[data-city-filter]"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            renderAllVideosPanel(
+              button.dataset
+                .cityFilter
+            );
+
+          }
+        );
+
+      }
+    );
+
+  // -----------------------------------------------
+  // Abrir vídeo
+  // -----------------------------------------------
 
   contentPanelBody
     .querySelectorAll(
@@ -4512,34 +4813,44 @@ function renderAllVideosPanel() {
               videos.find(
                 item =>
                   item.id ===
-                  button.dataset.globalVideo
+                  button.dataset
+                    .globalVideo
               );
 
-            if (video) {
+            if (
+              video
+            ) {
 
               openVideo(
                 video,
                 0
               );
+
             }
+
           }
         );
+
       }
     );
 }
+
 
 // =========================================================
 // PANEL GASTRONOMÍA
 // =========================================================
 
-function renderFoodPanel() {
+function renderFoodPanel(
+  selectedCity = "all"
+) {
 
   const foodPlaces =
     places.filter(
       place =>
         [
           "Restaurante",
-          "Gastronomía"
+          "Gastronomía",
+          "Bar"
         ].includes(
           place.category
         )
@@ -4561,7 +4872,7 @@ function renderFoodPanel() {
           </strong>
 
           <p>
-            Cuando añadáis restaurantes aparecerán aquí automáticamente.
+            Cuando añadas lugares de comida aparecerán aquí automáticamente.
           </p>
 
         </div>
@@ -4571,17 +4882,73 @@ function renderFoodPanel() {
     return;
   }
 
-  const html =
-    foodPlaces
+  // -----------------------------------------------
+  // Ciudades con gastronomía
+  // -----------------------------------------------
+
+  const cities =
+    sortCities(
+      foodPlaces.map(
+        place =>
+          place.city
+      )
+    );
+
+  if (
+    selectedCity !== "all" &&
+    !cities.includes(
+      selectedCity
+    )
+  ) {
+    selectedCity =
+      "all";
+  }
+
+  // -----------------------------------------------
+  // Filtrar lugares
+  // -----------------------------------------------
+
+  const filteredPlaces =
+    selectedCity ===
+    "all"
+      ? foodPlaces
+      : foodPlaces.filter(
+          place =>
+            place.city ===
+            selectedCity
+        );
+
+  // Orden alfabético dentro de cada ciudad
+  filteredPlaces.sort(
+    (a, b) =>
+      String(
+        a.name || ""
+      ).localeCompare(
+        String(
+          b.name || ""
+        ),
+        "es",
+        {
+          sensitivity: "base"
+        }
+      )
+  );
+
+  const cardsHTML =
+    filteredPlaces
       .map(
         place => `
           <button
             class="content-card"
             type="button"
-            data-food-place="${escapeHTML(place.id)}"
+            data-food-place="${escapeHTML(
+              place.id
+            )}"
           >
 
-            <div class="content-card-icon">
+            <div
+              class="content-card-icon"
+            >
               ${
                 categoryIcons[
                   place.category
@@ -4589,18 +4956,25 @@ function renderFoodPanel() {
               }
             </div>
 
-            <div class="content-card-text">
+            <div
+              class="content-card-text"
+            >
 
               <strong>
-                ${escapeHTML(place.name)}
+                ${escapeHTML(
+                  place.name
+                )}
               </strong>
 
               <p>
                 ${
                   escapeHTML(
-                    place.zone ||
-                    place.city ||
-                    "Brasil"
+                    [
+                      place.zone,
+                      place.city
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
                   )
                 }
               </p>
@@ -4612,10 +4986,51 @@ function renderFoodPanel() {
       )
       .join("");
 
+  const html = `
+    ${cityTabsHTML(
+      cities,
+      selectedCity
+    )}
+
+    <div class="city-filter-content">
+      ${cardsHTML}
+    </div>
+  `;
+
   openContent(
     "Gastronomía",
     html
   );
+
+  // -----------------------------------------------
+  // Cambiar ciudad
+  // -----------------------------------------------
+
+  contentPanelBody
+    .querySelectorAll(
+      "[data-city-filter]"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            renderFoodPanel(
+              button.dataset
+                .cityFilter
+            );
+
+          }
+        );
+
+      }
+    );
+
+  // -----------------------------------------------
+  // Abrir restaurante/lugar
+  // -----------------------------------------------
 
   contentPanelBody
     .querySelectorAll(
@@ -4630,10 +5045,13 @@ function renderFoodPanel() {
 
             const place =
               getPlaceById(
-                button.dataset.foodPlace
+                button.dataset
+                  .foodPlace
               );
 
-            if (!place) {
+            if (
+              !place
+            ) {
               return;
             }
 
@@ -4653,15 +5071,17 @@ function renderFoodPanel() {
                 openPlace(
                   place.id
                 );
+
               },
               250
             );
+
           }
         );
+
       }
     );
 }
-
 // =========================================================
 // PANEL MI VIAJE
 // =========================================================
