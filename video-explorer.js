@@ -1711,6 +1711,51 @@ return [];
 }
 }
 // =======================================================
+// VALIDAR COORDENADAS DEL VÍDEO
+// 0,0 se considera "sin localizar" para evitar marcadores
+// en el Golfo de Guinea.
+// =======================================================
+
+function videoHasRealCoordinates(
+lat,
+lng
+) {
+
+const latitude =
+Number(
+lat
+);
+
+const longitude =
+Number(
+lng
+);
+
+return (
+Number.isFinite(
+latitude
+) &&
+Number.isFinite(
+longitude
+) &&
+latitude >= -90 &&
+latitude <= 90 &&
+longitude >= -180 &&
+longitude <= 180 &&
+!(
+Math.abs(
+latitude
+) < 0.000001 &&
+Math.abs(
+longitude
+) < 0.000001
+)
+);
+
+}
+
+
+// =======================================================
 // NORMALIZAR RESULTADOS AUTOMÁTICOS
 // =======================================================
 function normalizeAutomaticDetail(
@@ -1807,29 +1852,44 @@ end
 end =
 null;
 }
-let lat =
-Number(
+const rawLat =
 item.latitude ??
-item.lat
-);
-let lng =
-Number(
+item.lat;
+
+const rawLng =
 item.longitude ??
-item.lng
+item.lng;
+
+let lat =
+(
+rawLat === null ||
+rawLat === undefined ||
+rawLat === ""
+)
+? null
+: Number(
+rawLat
 );
+
+let lng =
+(
+rawLng === null ||
+rawLng === undefined ||
+rawLng === ""
+)
+? null
+: Number(
+rawLng
+);
+
 if (
-!Number.isFinite(
-lat
+!videoHasRealCoordinates(
+lat,
+lng
 )
 ) {
 lat =
 null;
-}
-if (
-!Number.isFinite(
-lng
-)
-) {
 lng =
 null;
 }
@@ -2945,19 +3005,39 @@ for (
 const detail
 of draftDetails
 ) {
+const rawDetailLat =
+detail.lat;
+
+const rawDetailLng =
+detail.lng;
+
 let lat =
-Number(
-detail.lat
+(
+rawDetailLat === null ||
+rawDetailLat === undefined ||
+rawDetailLat === ""
+)
+? null
+: Number(
+rawDetailLat
 );
 
 let lng =
-Number(
-detail.lng
+(
+rawDetailLng === null ||
+rawDetailLng === undefined ||
+rawDetailLng === ""
+)
+? null
+: Number(
+rawDetailLng
 );
 
 if (
-!Number.isFinite(lat) ||
-!Number.isFinite(lng)
+!videoHasRealCoordinates(
+lat,
+lng
+)
 ) {
 
 try {
@@ -3023,15 +3103,9 @@ geocodeError
 
 if (
 geocodeData?.found &&
-Number.isFinite(
-Number(
-geocodeData.lat
-)
-) &&
-Number.isFinite(
-Number(
+videoHasRealCoordinates(
+geocodeData.lat,
 geocodeData.lng
-)
 )
 ) {
 
@@ -3080,8 +3154,10 @@ geocodeError
  */
 
 if (
-!Number.isFinite(lat) ||
-!Number.isFinite(lng)
+!videoHasRealCoordinates(
+lat,
+lng
+)
 ) {
 
 console.warn(
