@@ -5088,23 +5088,230 @@ function renderFoodPanel(
 
 function renderTripPanel() {
 
-  openContent(
-    "Mi viaje",
-    `
-      <div class="empty-state">
+  const itinerary = [
+    {
+      city: "Florianópolis",
+      from: "10 ago",
+      to: "11 ago",
+      nights: 1,
+      hotel: "Rede Andrade Cecomtur",
+      icon: "🏨"
+    },
+    {
+      city: "Florianópolis",
+      from: "11 ago",
+      to: "14 ago",
+      nights: 3,
+      hotel: "Graffi Beach House",
+      icon: "🏨"
+    },
+    {
+      city: "São Paulo",
+      from: "14 ago",
+      to: "17 ago",
+      nights: 3,
+      hotel: "Estanplaza Paulista",
+      icon: "🏨"
+    },
+    {
+      city: "Foz do Iguaçu",
+      from: "17 ago",
+      to: "18 ago",
+      nights: 1,
+      hotel: "Iguassu Express Hotel",
+      icon: "🏨"
+    },
+    {
+      city: "Río de Janeiro",
+      from: "18 ago",
+      to: "22 ago",
+      nights: 4,
+      hotel: "HomeXchange",
+      icon: "🏠"
+    },
+    {
+      city: "Ilha Grande",
+      from: "22 ago",
+      to: "24 ago",
+      nights: 2,
+      hotel: "Lonier Ilha Inn Flats",
+      icon: "🏨"
+    },
+    {
+      city: "Salvador",
+      from: "24 ago",
+      to: "26 ago",
+      nights: 2,
+      hotel: "Apto Salvador N906 Vista Mar · Farol da Barra",
+      icon: "🏠"
+    },
+    {
+      city: "Morro de São Paulo",
+      from: "26 ago",
+      to: "29 ago",
+      nights: 3,
+      hotel: "Pousada Bahia Brasil",
+      icon: "🏨"
+    },
+    {
+      city: "São Paulo",
+      from: "29 ago",
+      to: "30 ago",
+      nights: 1,
+      hotel: "Estanplaza Paulista",
+      icon: "🏨"
+    }
+  ];
 
-        <span>📅</span>
+  const totalNights =
+    itinerary.reduce(
+      (total, item) =>
+        total + item.nights,
+      0
+    );
 
-        <strong>
-          Planificador en preparación
-        </strong>
+  const html = `
+    <div class="trip-summary">
 
-        <p>
-          Aquí organizaremos los descubrimientos por días cuando avancemos con la siguiente fase.
-        </p>
+      <div class="trip-summary-main">
+        <span class="trip-summary-flag">
+          🇧🇷
+        </span>
+
+        <div>
+          <strong>
+            Brasil 2026
+          </strong>
+
+          <p>
+            10 → 30 agosto
+          </p>
+        </div>
+      </div>
+
+      <div class="trip-summary-stats">
+
+        <div>
+          <strong>
+            ${itinerary.length}
+          </strong>
+          <span>
+            etapas
+          </span>
+        </div>
+
+        <div>
+          <strong>
+            ${totalNights}
+          </strong>
+          <span>
+            noches
+          </span>
+        </div>
 
       </div>
-    `
+
+    </div>
+
+    <div class="trip-timeline">
+
+      ${
+        itinerary
+          .map(
+            (item, index) => `
+              <div class="trip-stop">
+
+                <div class="trip-line-column">
+
+                  <div class="trip-dot">
+                    ${index + 1}
+                  </div>
+
+                  ${
+                    index <
+                    itinerary.length - 1
+                      ? `
+                        <div
+                          class="trip-line"
+                        ></div>
+                      `
+                      : ""
+                  }
+
+                </div>
+
+                <div class="trip-card">
+
+                  <div class="trip-card-top">
+
+                    <div>
+                      <span class="trip-stage">
+                        ETAPA ${index + 1}
+                      </span>
+
+                      <h3>
+                        ${escapeHTML(
+                          item.city
+                        )}
+                      </h3>
+                    </div>
+
+                    <div class="trip-nights">
+                      ${item.nights}
+                      ${
+                        item.nights === 1
+                          ? "noche"
+                          : "noches"
+                      }
+                    </div>
+
+                  </div>
+
+                  <div class="trip-dates">
+                    📅
+                    ${escapeHTML(
+                      item.from
+                    )}
+                    →
+                    ${escapeHTML(
+                      item.to
+                    )}
+                  </div>
+
+                  <div class="trip-hotel">
+
+                    <span>
+                      ${item.icon}
+                    </span>
+
+                    <div>
+                      <small>
+                        Alojamiento
+                      </small>
+
+                      <strong>
+                        ${escapeHTML(
+                          item.hotel
+                        )}
+                      </strong>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            `
+          )
+          .join("")
+      }
+
+    </div>
+  `;
+
+  openContent(
+    "Mi viaje",
+    html
   );
 }
 
